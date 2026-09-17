@@ -1,0 +1,10 @@
+name = "lph-materials-invoice"
+main = "worker.js"
+compatibility_date = "2024-09-01"
+ 
+# Secret (set separately, never committed):
+#   wrangler secret put GITHUB_TOKEN
+#
+# Deploy:
+#   wrangler deploy
+ 
