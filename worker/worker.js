@@ -1,4 +1,4 @@
-/ LPH Materials vs Invoice — Cloudflare Worker relay.
+// LPH Materials vs Invoice — Cloudflare Worker relay.
 //
 // Holds a GitHub fine-grained PAT server-side (as the GITHUB_TOKEN secret) and
 // commits writes to mattsbaker1980-dev/LPH-Materials-Invoice on the browser's
