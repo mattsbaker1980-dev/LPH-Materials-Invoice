@@ -179,6 +179,7 @@ const BULK_COLUMN_MAP = [
   { key: 'itemName', match: ['item name'] },
   { key: 'itemType', match: ['item type'] },
   { key: 'itemPrice', match: ['item price'] },
+  { key: 'pricebookPrice', match: ['pricebook price'] },
   { key: 'invoiceTotal', match: ['invoice item totals'] },
 ];
  
@@ -214,8 +215,10 @@ function parseLineItemsReport(text) {
     const itemName = get('itemName');
     const itemType = String(get('itemType') || '').toLowerCase();
     const itemPrice = toNum(get('itemPrice'));
+    const pricebookPrice = toNum(get('pricebookPrice'));
     if (itemName) {
       const entry = { name: String(itemName), price: itemPrice };
+      if (!itemPrice && pricebookPrice) { entry.listPrice = pricebookPrice; }
       if (itemType.indexOf('material') !== -1) { groups[jobNum].materialItems.push(entry); }
       else { groups[jobNum].serviceItems.push(entry); }
     }
