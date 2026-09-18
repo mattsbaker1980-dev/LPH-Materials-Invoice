@@ -101,12 +101,24 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
 .tab-btn.active{color:var(--ink);border-bottom-color:var(--accent);}
 .flag-pill{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--warn-bg);color:var(--warn);margin:0 4px 4px 0;}
 .flag-pill.clean{background:var(--good-bg);color:var(--good);}
-.compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:14px;}
+.compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:14px;}
 .compare-col{background:var(--steel);border-radius:8px;padding:12px 14px;}
 .compare-col h4{font-size:12.5px;font-weight:600;color:var(--muted);margin:0 0 8px;}
 .compare-col .txt{white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--ink);}
 .item-list{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink);}
 .item-list .item-price{color:var(--muted);font-weight:600;font-size:12px;margin-left:4px;}
+.breakdown-section{margin-bottom:10px;}
+.breakdown-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;}
+.breakdown-subtotal,.breakdown-total,.breakdown-compare{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.breakdown-subtotal{font-size:12.5px;color:var(--muted);padding-top:4px;margin-top:2px;border-top:1px dashed var(--line);}
+.breakdown-subtotal span:last-child{font-weight:600;color:var(--ink);}
+.breakdown-total{font-size:13.5px;font-weight:700;color:var(--ink);padding-top:8px;margin-top:8px;border-top:1px solid var(--line);}
+.breakdown-compare{font-size:12.5px;margin-top:6px;flex-wrap:wrap;}
+.breakdown-compare span:first-child{font-weight:600;color:var(--muted);}
+.breakdown-compare.ok span.breakdown-val{color:var(--good);font-weight:700;}
+.breakdown-compare.mismatch span.breakdown-val{color:var(--warn);font-weight:700;}
+.breakdown-flag{font-size:11px;font-weight:600;background:var(--warn-bg);color:var(--warn);padding:2px 8px;border-radius:999px;flex-basis:100%;}
+.breakdown-note{font-size:11.5px;color:var(--muted-2);font-style:italic;margin-top:4px;}
 .paste-detail-row td{background:var(--steel);padding:16px 18px;}
 .match-badge{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--good-bg);color:var(--good);font-weight:600;}
 .match-badge.none{background:var(--line-soft);color:var(--muted);}
@@ -592,8 +604,7 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
               statusBadgeHtml + flagsListHtml + overrideControls +
               '<div class="compare-grid">' +
                 '<div class="compare-col"><h4>Description of work (tech write-up)</h4><div class="txt">' + (pasted.invoiceSummary ? escapeHtml(pasted.invoiceSummary) : '<span class="no-summary">Not found in the pasted text.</span>') + '</div></div>' +
-                '<div class="compare-col"><h4>Materials &amp; equipment used</h4>' + renderItemsBlock(pasted.materialItems, pasted.materialsText) + '</div>' +
-                '<div class="compare-col"><h4>Services billed</h4>' + renderItemsBlock(pasted.serviceItems, pasted.servicesText) + '</div>' +
+                '<div class="compare-col"><h4>Invoice breakdown</h4>' + renderInvoiceBreakdown(pasted, j.revenue) + '</div>' +
               '</div>' +
             '</div>';
         } else {
@@ -618,6 +629,37 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
     return '<ul class="item-list">' + list.map(function(it){
       return '<li>' + escapeHtml(it.name) + (it.price ? ' <span class="item-price">$'+it.price.toFixed(2)+'</span>' : '') + '</li>';
     }).join('') + '</ul>';
+  }
+
+  function sumItemPrices(items){
+    if(!items || !items.length) return 0;
+    return items.reduce(function(sum, it){ return sum + (it.price || 0); }, 0);
+  }
+
+  function renderInvoiceBreakdown(record, invoiceTotalNum){
+    var matItems = record.materialItems || [];
+    var svcItems = record.serviceItems || [];
+    var matBlock = renderItemsBlock(matItems, record.materialsText);
+    var svcBlock = renderItemsBlock(svcItems, record.servicesText);
+    var nothingFound = matBlock.indexOf('no-summary') !== -1 && svcBlock.indexOf('no-summary') !== -1;
+    if(nothingFound) return '<span class="no-summary">Not found in the pasted text.</span>';
+    var html = '<div class="breakdown-section"><div class="breakdown-label">Materials &amp; equipment</div>' + matBlock +
+      (matItems.length ? '<div class="breakdown-subtotal"><span>Subtotal</span><span>'+fmtMoney(sumItemPrices(matItems))+'</span></div>' : '') + '</div>';
+    html += '<div class="breakdown-section"><div class="breakdown-label">Services</div>' + svcBlock +
+      (svcItems.length ? '<div class="breakdown-subtotal"><span>Subtotal</span><span>'+fmtMoney(sumItemPrices(svcItems))+'</span></div>' : '') + '</div>';
+    if(!matItems.length && !svcItems.length){
+      html += '<div class="breakdown-note">Line-item prices weren’t captured for this record (older import), so this can’t be reconciled to a total yet.</div>';
+      return html;
+    }
+    var billedTotal = sumItemPrices(matItems) + sumItemPrices(svcItems);
+    html += '<div class="breakdown-total"><span>Billed items total</span><span>'+fmtMoney(billedTotal)+'</span></div>';
+    var invoiceKnown = invoiceTotalNum !== null && invoiceTotalNum !== undefined && !isNaN(invoiceTotalNum) && invoiceTotalNum !== 0;
+    if(invoiceKnown){
+      var matches = Math.abs(billedTotal - invoiceTotalNum) < 1;
+      html += '<div class="breakdown-compare ' + (matches ? 'ok' : 'mismatch') + '"><span>Invoice total</span><span class="breakdown-val">'+fmtMoney(invoiceTotalNum)+'</span>' +
+        (matches ? '' : '<span class="breakdown-flag">doesn’t match — check for missing or unpriced items</span>') + '</div>';
+    }
+    return html;
   }
 
   var KEYWORDS = [
@@ -754,8 +796,7 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
         dr.innerHTML = '<td colspan="5">' + statusHtml + ' ' + matchHtml + flagsHtml + overrideControls +
           '<div class="compare-grid">' +
             '<div class="compare-col"><h4>Description of work (tech write-up)</h4><div class="txt">' + (r.invoiceSummary ? escapeHtml(r.invoiceSummary) : '<span class="no-summary">Not found in the pasted text.</span>') + '</div></div>' +
-            '<div class="compare-col"><h4>Materials &amp; equipment used</h4>' + renderItemsBlock(r.materialItems, r.materialsText) + '</div>' +
-            '<div class="compare-col"><h4>Services billed</h4>' + renderItemsBlock(r.serviceItems, r.servicesText) + '</div>' +
+            '<div class="compare-col"><h4>Invoice breakdown</h4>' + renderInvoiceBreakdown(r, matchedJob ? matchedJob.revenue : toNum(r.total)) + '</div>' +
           '</div></td>';
         tbody.appendChild(dr);
       }
