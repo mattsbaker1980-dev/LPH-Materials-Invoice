@@ -178,6 +178,7 @@ const BULK_COLUMN_MAP = [
   { key: 'invoiceSummary', match: ['invoice summary'] },
   { key: 'itemName', match: ['item name'] },
   { key: 'itemType', match: ['item type'] },
+  { key: 'itemPrice', match: ['item price'] },
   { key: 'invoiceTotal', match: ['invoice item totals'] },
 ];
  
@@ -212,9 +213,11 @@ function parseLineItemsReport(text) {
     }
     const itemName = get('itemName');
     const itemType = String(get('itemType') || '').toLowerCase();
+    const itemPrice = toNum(get('itemPrice'));
     if (itemName) {
-      if (itemType.indexOf('material') !== -1) { groups[jobNum].materialItems.push(itemName); }
-      else { groups[jobNum].serviceItems.push(itemName); }
+      const entry = { name: String(itemName), price: itemPrice };
+      if (itemType.indexOf('material') !== -1) { groups[jobNum].materialItems.push(entry); }
+      else { groups[jobNum].serviceItems.push(entry); }
     }
   }
   return Object.keys(groups).map((k) => groups[k]);
@@ -321,8 +324,8 @@ async function processLineItemsReport(text, label) {
  
   let flaggedCount = 0;
   const records = groups.map((g) => {
-    const servicesText = g.serviceItems.join(', ');
-    const materialsText = g.materialItems.join(', ');
+    const servicesText = g.serviceItems.map((it) => it.name).join(', ');
+    const materialsText = g.materialItems.map((it) => it.name).join(', ');
     const flags = getFlags(g.invoiceSummary, servicesText, materialsText);
     if (flags.length) flaggedCount++;
     const existing = existingById[g.jobNumber];
@@ -333,6 +336,8 @@ async function processLineItemsReport(text, label) {
       invoiceSummary: g.invoiceSummary,
       servicesText,
       materialsText,
+      serviceItems: g.serviceItems,
+      materialItems: g.materialItems,
       total: g.invoiceTotal ? g.invoiceTotal.toFixed(2) : (existing ? existing.total : ''),
       flags,
       manualOverride: existing ? existing.manualOverride : null,
