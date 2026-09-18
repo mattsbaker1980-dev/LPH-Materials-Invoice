@@ -107,6 +107,7 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
 .compare-col .txt{white-space:pre-wrap;font-size:13px;line-height:1.6;color:var(--ink);}
 .item-list{margin:0;padding-left:18px;font-size:13px;line-height:1.7;color:var(--ink);}
 .item-list .item-price{color:var(--muted);font-weight:600;font-size:12px;margin-left:4px;}
+.item-list .item-list-price{color:var(--muted-2);font-size:11px;font-style:italic;margin-left:2px;}
 .breakdown-section{margin-bottom:10px;}
 .breakdown-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;}
 .breakdown-subtotal,.breakdown-total,.breakdown-compare{display:flex;justify-content:space-between;align-items:center;gap:8px;}
@@ -621,13 +622,19 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
     });
   }
 
+  function itemPriceHtml(it){
+    if(it.price){ return ' <span class="item-price">$'+it.price.toFixed(2)+'</span>'; }
+    if(it.listPrice){ return ' <span class="item-price">$0.00</span> <span class="item-list-price">(list $'+it.listPrice.toFixed(2)+')</span>'; }
+    return '';
+  }
+
   function renderItemsBlock(items, textFallback){
     var list = (items && items.length)
       ? items
       : (textFallback ? textFallback.split(',').map(function(s){ return {name: s.trim()}; }).filter(function(it){ return it.name; }) : []);
     if(!list.length) return '<span class="no-summary">Not found in the pasted text.</span>';
     return '<ul class="item-list">' + list.map(function(it){
-      return '<li>' + escapeHtml(it.name) + (it.price ? ' <span class="item-price">$'+it.price.toFixed(2)+'</span>' : '') + '</li>';
+      return '<li>' + escapeHtml(it.name) + itemPriceHtml(it) + '</li>';
     }).join('') + '</ul>';
   }
 
@@ -811,6 +818,7 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
     {key:'itemName', match:['item name']},
     {key:'itemType', match:['item type']},
     {key:'itemPrice', match:['item price']},
+    {key:'pricebookPrice', match:['pricebook price']},
     {key:'invoiceTotal', match:['invoice item totals']}
   ];
 
@@ -843,8 +851,10 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
       var itemName = get('itemName');
       var itemType = String(get('itemType') || '').toLowerCase();
       var itemPrice = toNum(get('itemPrice'));
+      var pricebookPrice = toNum(get('pricebookPrice'));
       if(itemName){
         var entry = {name: String(itemName), price: itemPrice};
+        if(!itemPrice && pricebookPrice){ entry.listPrice = pricebookPrice; }
         if(itemType.indexOf('material') !== -1){ groups[jobNum].materialItems.push(entry); }
         else { groups[jobNum].serviceItems.push(entry); }
       }
