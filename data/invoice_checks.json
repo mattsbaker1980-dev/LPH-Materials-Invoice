@@ -132,6 +132,39 @@
     "savedAt": 1789734449779
   },
   {
+    "id": "277372894",
+    "invoiceNumber": "277372894",
+    "jobSummary": "",
+    "invoiceSummary": "Years worth of filter media premier one 16-25”",
+    "servicesText": "Premier One / Pristine Air Replacement Media Standard Sizes, Annual Member HVAC System Check",
+    "materialsText": "PREMIERONE 16X25 MEDIA REPLACEMENT FILTERS, CO2 Cartridges",
+    "serviceItems": [
+      {
+        "name": "Premier One / Pristine Air Replacement Media Standard Sizes",
+        "price": 0
+      },
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "PREMIERONE 16X25 MEDIA REPLACEMENT FILTERS",
+        "price": 0
+      },
+      {
+        "name": "CO2 Cartridges",
+        "price": 0,
+        "listPrice": 2.88
+      }
+    ],
+    "total": "128.19",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790246311518
+  },
+  {
     "id": "280641928",
     "invoiceNumber": "280641928",
     "jobSummary": "",
@@ -777,6 +810,39 @@
     "savedAt": 1789734449779
   },
   {
+    "id": "302212621",
+    "invoiceNumber": "302212621",
+    "jobSummary": "",
+    "invoiceSummary": "Completed cooling systems check on a new Bosch inverter heat pump. I cleared the drain lines. I tested the blower capacitor and it is in spec. I visually inspected both indoor and outdoor coils. I ran the system and took amp draws on both motors and the compressor. I tested the refrigerant circuit. We discussed cleanings and IAQ. I gave him options and he respectfully declined. At today’s visit the system is cooling properly.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "Air Filter Pleated 16\" x 25\" x 1\"",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "Air Filter Pleated 16\" x 25\" x 1\"",
+        "price": 0
+      }
+    ],
+    "total": "",
+    "flags": [
+      "drain",
+      "pump",
+      "coil",
+      "compressor",
+      "capacitor",
+      "blower",
+      "refrigerant",
+      "motor"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790246311519
+  },
+  {
     "id": "302868516",
     "invoiceNumber": "302868516",
     "jobSummary": "",
@@ -981,6 +1047,25 @@
     "savedAt": 1789734449779
   },
   {
+    "id": "304693261",
+    "invoiceNumber": "304693261",
+    "jobSummary": "",
+    "invoiceSummary": "Upon technician arrival technician completed plumbing system safety check. Technician has provided homeowner with solutions for concerns and recommendations for homeowners system to address ongoing issues and assist in protecting the plumbing system as a whole. Once homeowner has some time to look at the estimates that are being provided technician will be more than happy to assist. Thank you for having me out and have a wonderful rest of your day.",
+    "servicesText": "Annual Member Plumbing System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member Plumbing System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790246311519
+  },
+  {
     "id": "304795355",
     "invoiceNumber": "304795355",
     "jobSummary": "",
@@ -1094,6 +1179,35 @@
     "savedAt": 1790178773318
   },
   {
+    "id": "305365884",
+    "invoiceNumber": "305365884",
+    "jobSummary": "",
+    "invoiceSummary": "Completed heating systems check on a gas furnace. I cleared the drain line. I cleaned the flame sensor. I scoped the heat exchanger and found rust but no cracks. I tested the inlet and outlet gas pressures. I ran the system and took an efficiency test. We discussed cleaning and IAQ and i gave her options, she respectfully declined. At todays visit the system is heating properly.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "Air Filter Pleated 16\" x 25\" x 1\"",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "Air Filter Pleated 16\" x 25\" x 1\"",
+        "price": 0
+      }
+    ],
+    "total": "",
+    "flags": [
+      "drain",
+      "furnace",
+      "outlet",
+      "heat exchanger"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790246311519
+  },
+  {
     "id": "305536060",
     "invoiceNumber": "305536060",
     "jobSummary": "",
@@ -1128,6 +1242,27 @@
     "flags": [],
     "manualOverride": null,
     "savedAt": 1789734449779
+  },
+  {
+    "id": "307405053",
+    "invoiceNumber": "307405053",
+    "jobSummary": "",
+    "invoiceSummary": "Completed the indoor section of the cooling check. I inspected the indoor coil and it is good. I ran the system and tested the temperature split. I did not do the outdoor section due to the weather. I spoke with him about rescheduling it for a clear day and he declined. We also talked about IAQ and i gave him options and he declined. At this visit the system is running properly.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [
+      "coil"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790246311519
   },
   {
     "id": "307405173",
@@ -1218,6 +1353,25 @@
     ],
     "manualOverride": null,
     "savedAt": 1789734449780
+  },
+  {
+    "id": "308426930",
+    "invoiceNumber": "308426930",
+    "jobSummary": "",
+    "invoiceSummary": "Performed heating system check on a whirlpool package unit. At this time, unit is operating properly and within spec. Measurements taken during this visit can be referred to in the system evaluation form.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790246311519
   },
   {
     "id": "308462247",
@@ -1484,6 +1638,48 @@
     "flags": [],
     "manualOverride": null,
     "savedAt": 1789734449780
+  },
+  {
+    "id": "313195159",
+    "invoiceNumber": "313195159",
+    "jobSummary": "",
+    "invoiceSummary": "LPH completed a heating system check on the 7-month-old system. During the inspection, I noticed the furnace had some light dirt buildup. I recommend cleaning the furnace to help maintain a clean system and support proper operation and efficiency. Homeowner declined cleaning at this time. System is operating properly at this time.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [
+      "furnace"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790246311519
+  },
+  {
+    "id": "313721936",
+    "invoiceNumber": "313721936",
+    "jobSummary": "",
+    "invoiceSummary": "Performed cooling system check on a Payne gas furnace. At this time, the unit and all components are operating properly and within spec. Measurements taken during this visit can be referred to on the system evaluation form.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [
+      "furnace"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790246311520
   },
   {
     "id": "313824545",
@@ -3078,6 +3274,46 @@
     "savedAt": 1790178773321
   },
   {
+    "id": "330794087",
+    "invoiceNumber": "330794087",
+    "jobSummary": "",
+    "invoiceSummary": "Completed a heating and cooling systems check. I cleared the drain lines. I cleaned the flame sensor. I tested the inlet and outlet gas pressures. I scoped the heat exchanger and I found minimal rust and no cracks. I ran the heat and took an efficiency test. For the ac I visually inspected both the indoor and outdoor coils. I ran the system and took amp draws on both motors and the compressor. I tested the refrigerant circuit. When inspecting the duct work I found some microbial growth. I discussed everything with them and they opted to have a uv system installed. I installed a uv system to help eliminate microbial growth as well as airborne bacteria and viruses.",
+    "servicesText": "Annual Member HVAC System Check, Premier One 403H / Pristine Air FM2 UV with Oxidation, PREMIERONE MUV403H-16/5",
+    "materialsText": "PREMIERONE 500161ADPT 1.5\" OFFSET DUCT ADAPTER/MOUNT FOR MUV-403H UNITS",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      },
+      {
+        "name": "Premier One 403H / Pristine Air FM2 UV with Oxidation",
+        "price": 0
+      },
+      {
+        "name": "PREMIERONE MUV403H-16/5",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "PREMIERONE 500161ADPT 1.5\" OFFSET DUCT ADAPTER/MOUNT FOR MUV-403H UNITS",
+        "price": 0
+      }
+    ],
+    "total": "1449.69",
+    "flags": [
+      "drain",
+      "coil",
+      "compressor",
+      "refrigerant",
+      "outlet",
+      "motor",
+      "heat exchanger"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790246311521
+  },
+  {
     "id": "330869904",
     "invoiceNumber": "330869904",
     "jobSummary": "",
@@ -3148,6 +3384,48 @@
     "flags": [],
     "manualOverride": null,
     "savedAt": 1789734449780
+  },
+  {
+    "id": "330969135",
+    "invoiceNumber": "330969135",
+    "jobSummary": "",
+    "invoiceSummary": "If you have any other questions or concerns that arise after today’s visit, please do not hesitate to give us a call. Thank you for continuing to trust Lancaster Plumbing and Heating with all of your home service needs.",
+    "servicesText": "Annual Member Plumbing System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member Plumbing System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790246311521
+  },
+  {
+    "id": "330969225",
+    "invoiceNumber": "330969225",
+    "jobSummary": "",
+    "invoiceSummary": "Out to home today for the yearly plumbing system check. Upon arrival to the home, there were no concerns about the plumbing system. Performed full home plumbing inspection. Tested the water quality and water pressure inside the home to verify proper function of systems. Performed flush of the water heater system. Throughout the inspection, found one minor concern to note. Found corrosion starting to form in several locations on the garbage disposal. No moisture was detected inside the cabinet. Inquired about age of unit, system is approximately 8 years old. Provided proactive replacement costs for unit per homeowner request. Pricing provided today is valid for 60 days. Everything else is in good condition or new. Thank you for trusting LPH.",
+    "servicesText": "Annual Member Plumbing System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member Plumbing System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [
+      "water heater",
+      "disposal",
+      "garbage disposal"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790246311521
   },
   {
     "id": "331140369",
@@ -3390,6 +3668,22 @@
     ],
     "manualOverride": null,
     "savedAt": 1789734449780
+  },
+  {
+    "id": "332005931",
+    "invoiceNumber": "332005931",
+    "jobSummary": "",
+    "invoiceSummary": "Performed heating system check on Weil-McLain oil boiler. At this time, unit is running properly and within spec. Measurements taken during this visit can be referred to on the system evaluation form.",
+    "servicesText": "",
+    "materialsText": "",
+    "serviceItems": [],
+    "materialItems": [],
+    "total": "",
+    "flags": [
+      "boiler"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790246311521
   },
   {
     "id": "332101229",
@@ -3898,6 +4192,25 @@
     "savedAt": 1789734449781
   },
   {
+    "id": "333826326",
+    "invoiceNumber": "333826326",
+    "jobSummary": "",
+    "invoiceSummary": "Thank you for allowing LPH into your home and for the opportunity to evaluate your electrical system. We look forward to servicing you again in the future.",
+    "servicesText": "Annual Member Electrical System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member Electrical System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790246311522
+  },
+  {
     "id": "333832004",
     "invoiceNumber": "333832004",
     "jobSummary": "",
@@ -3921,6 +4234,25 @@
     "flags": [],
     "manualOverride": null,
     "savedAt": 1789734449781
+  },
+  {
+    "id": "333937200",
+    "invoiceNumber": "333937200",
+    "jobSummary": "",
+    "invoiceSummary": "Today we were called out to perform an electrical system check. Provide solutions for all recommendations. Homeowner went with the full package. Return trip is scheduled for Thursday. Emailed invoice to homeowner.",
+    "servicesText": "Annual Member Electrical System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member Electrical System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790246311522
   },
   {
     "id": "333969192",
@@ -3993,6 +4325,49 @@
     "savedAt": 1789734449781
   },
   {
+    "id": "333988017",
+    "invoiceNumber": "333988017",
+    "jobSummary": "",
+    "invoiceSummary": "LPH replaced UV bulbs and cleaned the condenser. System is operating properly at this time.",
+    "servicesText": "Premier One / Pristine Air Replacement UV Lamp, Maintained Condensing Unit Cleaning ** Special **, Annual Member HVAC System Check",
+    "materialsText": "CO2 Cartridges, Air Filter Pleated 20\" x 25\" x 1\", PREMIERONE LSK07401H-16 16\" BULB REPLACEMENT KIT *NO OXI BULB*",
+    "serviceItems": [
+      {
+        "name": "Premier One / Pristine Air Replacement UV Lamp",
+        "price": 0
+      },
+      {
+        "name": "Maintained Condensing Unit Cleaning ** Special **",
+        "price": 0
+      },
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "CO2 Cartridges",
+        "price": 0,
+        "listPrice": 2.88
+      },
+      {
+        "name": "Air Filter Pleated 20\" x 25\" x 1\"",
+        "price": 0
+      },
+      {
+        "name": "PREMIERONE LSK07401H-16 16\" BULB REPLACEMENT KIT *NO OXI BULB*",
+        "price": 0
+      }
+    ],
+    "total": "373.18",
+    "flags": [
+      "condenser"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790246311522
+  },
+  {
     "id": "333992744",
     "invoiceNumber": "333992744",
     "jobSummary": "",
@@ -4010,6 +4385,30 @@
     "flags": [],
     "manualOverride": null,
     "savedAt": 1789734449781
+  },
+  {
+    "id": "333996585",
+    "invoiceNumber": "333996585",
+    "jobSummary": "",
+    "invoiceSummary": "Today I arrived at the Hess household to conduct their annual electrical system and safety check. Upon performing a thorough evaluation of the homes main electrical service I found no discrepancies. The homes main breaker panel exhibits no signs of deterioration. I found no rust, corrosion, or oxidization on any of the wiring, or panel housing itself. The panel is reading proper voltage of at least 240V and all breakers are tightened and properly sized. The external portion of the service consisting of the meter base and service wiring is in good and serviceable condition with no signs of deterioration or damage that could allow for failures. The rest of the homes electrical systems were all functioning and providing appropriate power outputs with no faults. The homes life safety devices consisting of smoke/ carbon monoxide detectors as well as GFCI receptacles, were up to code and in working order. For all of the reasons listed, I had no recommendations for the Hess’s at the time of my departure and all systems were tested and functioning properly. Thank you for allowing us to complete your annual electrical system check. We appreciate the opportunity to help ensure your homes electrical systems remain safe, reliable, and efficient. If you have any questions, please don’t hesitate to reach out. We look forward to assisting you in the future!",
+    "servicesText": "Annual Member Electrical System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member Electrical System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [
+      "breaker",
+      "panel",
+      "wiring",
+      "gfci"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790246311522
   },
   {
     "id": "334064583",
