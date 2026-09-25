@@ -100,6 +100,25 @@
     "savedAt": 1789734449779
   },
   {
+    "id": "271660854",
+    "invoiceNumber": "271660854",
+    "jobSummary": "",
+    "invoiceSummary": "Annual member heating check can customer option. Customer will call in to schedule it at a later date.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563897
+  },
+  {
     "id": "277174572",
     "invoiceNumber": "277174572",
     "jobSummary": "",
@@ -243,6 +262,27 @@
     "savedAt": 1789734449779
   },
   {
+    "id": "283139445",
+    "invoiceNumber": "283139445",
+    "jobSummary": "",
+    "invoiceSummary": "Completed heating system check on newer furnace. 3 years old. Inspected condensate. Clear standing water. No action required. Tested combustion. Inspected electrical components and controls. Checked manifold gas pressure. Temp rise is normal. Observed no defects during visit. Operation is all normal at this time.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [
+      "furnace"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790332563898
+  },
+  {
     "id": "288295944",
     "invoiceNumber": "288295944",
     "jobSummary": "",
@@ -262,6 +302,33 @@
     ],
     "manualOverride": null,
     "savedAt": 1789734449779
+  },
+  {
+    "id": "288296612",
+    "invoiceNumber": "288296612",
+    "jobSummary": "",
+    "invoiceSummary": "Signed customer up s member this visit.",
+    "servicesText": "Annual Member HVAC System Check, Service Partner Plan (M), Replace Voltage Regulator 5MFD-15MFD",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      },
+      {
+        "name": "Service Partner Plan (M)",
+        "price": 0
+      },
+      {
+        "name": "Replace Voltage Regulator 5MFD-15MFD",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "246.77",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563898
   },
   {
     "id": "288401963",
@@ -411,6 +478,25 @@
     "savedAt": 1789734449779
   },
   {
+    "id": "293268888",
+    "invoiceNumber": "293268888",
+    "jobSummary": "",
+    "invoiceSummary": "Quoting repair will take time. Vendor looking for parts in system and pricing/availability.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563898
+  },
+  {
     "id": "293441140",
     "invoiceNumber": "293441140",
     "jobSummary": "",
@@ -491,6 +577,30 @@
     "flags": [],
     "manualOverride": null,
     "savedAt": 1789734449779
+  },
+  {
+    "id": "295843883",
+    "invoiceNumber": "295843883",
+    "jobSummary": "",
+    "invoiceSummary": "Annual member heating check replace air filter. Give customer the option for the cleaning. Customer would like to call and schedule it. Try to get it done while I was on site. Customer wanted to wait.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "Air Filter Pleated 16\" x 25\" x 1\"",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "Air Filter Pleated 16\" x 25\" x 1\"",
+        "price": 0
+      }
+    ],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563898
   },
   {
     "id": "296046593",
@@ -663,6 +773,42 @@
     ],
     "manualOverride": null,
     "savedAt": 1790178773317
+  },
+  {
+    "id": "298570362",
+    "invoiceNumber": "298570362",
+    "jobSummary": "",
+    "invoiceSummary": "Thank you for allowing LPH into your home. We appreciate the opportunity to serve you and look forward to servicing you again in the future.",
+    "servicesText": "Annual Member Electrical System Check, Replace 15a or 20a 125v Duplex Receptacle, Install 15a 3-w Toggle Switch, Replace Existing Recept W/ Gfi Recept",
+    "materialsText": "GFI 20 Amp Tamper and Weather Resistant White",
+    "serviceItems": [
+      {
+        "name": "Annual Member Electrical System Check",
+        "price": 0
+      },
+      {
+        "name": "Replace 15a or 20a 125v Duplex Receptacle",
+        "price": 0
+      },
+      {
+        "name": "Install 15a 3-w Toggle Switch",
+        "price": 102.68
+      },
+      {
+        "name": "Replace Existing Recept W/ Gfi Recept",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "GFI 20 Amp Tamper and Weather Resistant White",
+        "price": 0
+      }
+    ],
+    "total": "407.24",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563898
   },
   {
     "id": "298710176",
@@ -1416,6 +1562,25 @@
     "savedAt": 1789734449780
   },
   {
+    "id": "309114291",
+    "invoiceNumber": "309114291",
+    "jobSummary": "",
+    "invoiceSummary": "***PLEASE MAIL INVOICE AND ESTIMATE***",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563899
+  },
+  {
     "id": "309433475",
     "invoiceNumber": "309433475",
     "jobSummary": "",
@@ -1941,6 +2106,37 @@
     "savedAt": 1789734449780
   },
   {
+    "id": "320100217",
+    "invoiceNumber": "320100217",
+    "jobSummary": "",
+    "invoiceSummary": "Customer stated this visit that they have a dust problem and feel they dust all the time. During evaluation noticed dust in cabinet and on blower wheel. Emailed solution to protect system and improve indoor air quality.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "Air Filter Pleated 16\" x 25\" x 1\", CO2 Cartridges",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "Air Filter Pleated 16\" x 25\" x 1\"",
+        "price": 0
+      },
+      {
+        "name": "CO2 Cartridges",
+        "price": 0,
+        "listPrice": 2.88
+      }
+    ],
+    "total": "",
+    "flags": [
+      "blower"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790332563899
+  },
+  {
     "id": "320870176",
     "invoiceNumber": "320870176",
     "jobSummary": "",
@@ -2097,6 +2293,32 @@
     "savedAt": 1789734449780
   },
   {
+    "id": "322098007",
+    "invoiceNumber": "322098007",
+    "jobSummary": "",
+    "invoiceSummary": "Performed a heating check on a 2 year old Rheem gas furnace and homeowner keeps up with filter. Checked complete operation of system and talked to homeowner bout uv systems and air cleaners and they are not interested at this time. System is heating at todays visit.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "Air Filter Pleated 16\" x 25\" x 1\"",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "Air Filter Pleated 16\" x 25\" x 1\"",
+        "price": 0
+      }
+    ],
+    "total": "",
+    "flags": [
+      "furnace"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790332563899
+  },
+  {
     "id": "322536488",
     "invoiceNumber": "322536488",
     "jobSummary": "",
@@ -2223,6 +2445,97 @@
     "savedAt": 1789734449780
   },
   {
+    "id": "323413170",
+    "invoiceNumber": "323413170",
+    "jobSummary": "",
+    "invoiceSummary": "The homeowner declined the cleaning service and would prefer to clean the unit themselves.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "Air Filter Pleated 16\" x 25\" x 1\", CO2 Cartridges",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "Air Filter Pleated 16\" x 25\" x 1\"",
+        "price": 0
+      },
+      {
+        "name": "CO2 Cartridges",
+        "price": 0,
+        "listPrice": 2.88
+      }
+    ],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563899
+  },
+  {
+    "id": "323550344",
+    "invoiceNumber": "323550344",
+    "jobSummary": "",
+    "invoiceSummary": "Performed heating and cooling system check. Tested system operation and documented operating specs that can be referenced on the evaluation form. Replaced dirty air filter. Customer opted to have burnt ultraviolet and oxidation bulbs. Replaced bulbs this visit. Customer opted to hold off on any cleanings this visit. System is performing within manufacture spec and operating properly at this time.",
+    "servicesText": "Annual Member HVAC System Check, Premier One / Pristine Air One Replacement UV and Oxidation Lamps",
+    "materialsText": "PREMIERONE LSK07403H-16/5 16\" + 5\" OXI BULB REPLACEMENT, 20 X 20 X 4 PLEATED AIR FILTER MERV 8, CO2 Cartridges",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      },
+      {
+        "name": "Premier One / Pristine Air One Replacement UV and Oxidation Lamps",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "PREMIERONE LSK07403H-16/5 16\" + 5\" OXI BULB REPLACEMENT",
+        "price": 0
+      },
+      {
+        "name": "20 X 20 X 4 PLEATED AIR FILTER MERV 8",
+        "price": 0,
+        "listPrice": 8.7
+      },
+      {
+        "name": "CO2 Cartridges",
+        "price": 0,
+        "listPrice": 2.88
+      }
+    ],
+    "total": "281.52",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563900
+  },
+  {
+    "id": "323695315",
+    "invoiceNumber": "323695315",
+    "jobSummary": "",
+    "invoiceSummary": "Completed heating system check on 5 years old gas furnace. Replaced media filter. (Supplied) inspected blower/motor and electrical components. Blower wheel is dusty/dirty from when home was constructed. Minor. Checked manifold gas pressure. Normal. Performed combustion test. Normal. Temp rise and amp draws are good are all normal. Overall operation is within mfg. spec at this time.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [
+      "furnace",
+      "blower",
+      "filter",
+      "motor"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790332563900
+  },
+  {
     "id": "323830346",
     "invoiceNumber": "323830346",
     "jobSummary": "",
@@ -2261,6 +2574,34 @@
     ],
     "manualOverride": null,
     "savedAt": 1790178773320
+  },
+  {
+    "id": "324146263",
+    "invoiceNumber": "324146263",
+    "jobSummary": "",
+    "invoiceSummary": "Completed a heating and cooling systems check on a newer system. I cleared the drain lines. I tested the inlet and outlet gas pressures. I scoped the heat exchanger. I visually inspected both the indoor and outdoor coils. I cleaned the flame sensor. I ran the heat and took and efficiency test. For the cooling i ran the system and took amp draws on both motors and the compressor. I tested the refrigerant circuit. We discussed new filters and uv bulbs. I gave him the option and he respectfully declined. At today’s visit the system is heating and cooling properly. Please mail customer invoice.",
+    "servicesText": "Annual Member HVAC System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [
+      "drain",
+      "coil",
+      "compressor",
+      "filter",
+      "refrigerant",
+      "outlet",
+      "motor",
+      "heat exchanger"
+    ],
+    "manualOverride": null,
+    "savedAt": 1790332563900
   },
   {
     "id": "324630331",
@@ -2723,6 +3064,34 @@
     "savedAt": 1789734449780
   },
   {
+    "id": "327207234",
+    "invoiceNumber": "327207234",
+    "jobSummary": "",
+    "invoiceSummary": "Homeowner approved the recommended cleaning. After completing the work, LPH verified the system is operating properly at this time.",
+    "servicesText": "Annual Member HVAC System Check, Maintained Condensing Unit Cleaning ** Special **",
+    "materialsText": "Air Filter Pleated 16\" x 25\" x 1\"",
+    "serviceItems": [
+      {
+        "name": "Annual Member HVAC System Check",
+        "price": 0
+      },
+      {
+        "name": "Maintained Condensing Unit Cleaning ** Special **",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "Air Filter Pleated 16\" x 25\" x 1\"",
+        "price": 0
+      }
+    ],
+    "total": "174.10",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563900
+  },
+  {
     "id": "327224627",
     "invoiceNumber": "327224627",
     "jobSummary": "",
@@ -2856,6 +3225,30 @@
     ],
     "manualOverride": null,
     "savedAt": 1789734449780
+  },
+  {
+    "id": "327685673",
+    "invoiceNumber": "327685673",
+    "jobSummary": "",
+    "invoiceSummary": "Washer gfi is installed today and tested properly.",
+    "servicesText": "Replace Existing Recept W/ Gfi Recept",
+    "materialsText": "GFI 20 Amp Tamper and Weather Resistant White",
+    "serviceItems": [
+      {
+        "name": "Replace Existing Recept W/ Gfi Recept",
+        "price": 0
+      }
+    ],
+    "materialItems": [
+      {
+        "name": "GFI 20 Amp Tamper and Weather Resistant White",
+        "price": 0
+      }
+    ],
+    "total": "129.42",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563901
   },
   {
     "id": "327872048",
@@ -3234,6 +3627,25 @@
     ],
     "manualOverride": null,
     "savedAt": 1789734449780
+  },
+  {
+    "id": "330682589",
+    "invoiceNumber": "330682589",
+    "jobSummary": "",
+    "invoiceSummary": "Thank you for allowing LPH into your home today. We appreciate the opportunity to inspect your electrical system and provide recommendations to help keep your home safe, reliable, and properly maintained. We look forward to servicing you again in the future.",
+    "servicesText": "Annual Member Electrical System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member Electrical System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563901
   },
   {
     "id": "330747324",
@@ -3862,6 +4274,25 @@
     "savedAt": 1789734449781
   },
   {
+    "id": "332633290",
+    "invoiceNumber": "332633290",
+    "jobSummary": "",
+    "invoiceSummary": "Technician performed a thorough plumbing system inspection on all accessible plumbing fixtures throughout the home to evaluate overall operation, drainage, water flow, and visible plumbing conditions. During the inspection, technician identified a few concerns within the plumbing system and discussed recommended solutions with the homeowner to address the issues found. Technician reviewed available repair and improvement options to help maintain proper system performance and prevent future plumbing problems.",
+    "servicesText": "Annual Member Plumbing System Check",
+    "materialsText": "",
+    "serviceItems": [
+      {
+        "name": "Annual Member Plumbing System Check",
+        "price": 0
+      }
+    ],
+    "materialItems": [],
+    "total": "",
+    "flags": [],
+    "manualOverride": null,
+    "savedAt": 1790332563902
+  },
+  {
     "id": "332639178",
     "invoiceNumber": "332639178",
     "jobSummary": "",
@@ -4329,8 +4760,8 @@
     "invoiceNumber": "333988017",
     "jobSummary": "",
     "invoiceSummary": "LPH replaced UV bulbs and cleaned the condenser. System is operating properly at this time.",
-    "servicesText": "Premier One / Pristine Air Replacement UV Lamp, Maintained Condensing Unit Cleaning ** Special **, Annual Member HVAC System Check",
-    "materialsText": "CO2 Cartridges, Air Filter Pleated 20\" x 25\" x 1\", PREMIERONE LSK07401H-16 16\" BULB REPLACEMENT KIT *NO OXI BULB*",
+    "servicesText": "Premier One / Pristine Air Replacement UV Lamp, Maintained Condensing Unit Cleaning ** Special **",
+    "materialsText": "CO2 Cartridges, Air Filter Pleated 20\" x 25\" x 1\"",
     "serviceItems": [
       {
         "name": "Premier One / Pristine Air Replacement UV Lamp",
@@ -4338,10 +4769,6 @@
       },
       {
         "name": "Maintained Condensing Unit Cleaning ** Special **",
-        "price": 0
-      },
-      {
-        "name": "Annual Member HVAC System Check",
         "price": 0
       }
     ],
@@ -4353,10 +4780,6 @@
       },
       {
         "name": "Air Filter Pleated 20\" x 25\" x 1\"",
-        "price": 0
-      },
-      {
-        "name": "PREMIERONE LSK07401H-16 16\" BULB REPLACEMENT KIT *NO OXI BULB*",
         "price": 0
       }
     ],
