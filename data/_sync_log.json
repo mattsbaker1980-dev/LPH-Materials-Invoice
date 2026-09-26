@@ -1,6 +1,6 @@
 {
-  "time": "2026-09-25T10:36:05.221Z",
+  "time": "2026-09-26T12:32:50.408Z",
   "stage": "done",
-  "detail": "[{\"label\":\"mcp-Microsoft_365-read_resource-1790332547903.txt\",\"kind\":\"jobs\",\"result\":{\"parsed\":370,\"added\":0,\"updated\":370,\"total\":593}},{\"label\":\"mcp-Microsoft_365-read_resource-1790332550297.txt\",\"kind\":\"lineItems\",\"result\":{\"parsed\":55,\"flagged\":27,\"added\":17,\"updated\":38,\"total\":524}}]",
+  "detail": "[{\"label\":\"mcp-Microsoft_365-read_resource-1790425956224.txt\",\"kind\":\"jobs\",\"result\":{\"parsed\":351,\"added\":20,\"updated\":331,\"total\":967}},{\"label\":\"mcp-Microsoft_365-read_resource-1790425958015.txt\",\"kind\":\"lineItems\",\"result\":{\"parsed\":54,\"flagged\":24,\"added\":0,\"updated\":54,\"total\":841}}]",
   "run_context": "scheduled"
 }
