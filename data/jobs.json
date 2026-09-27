@@ -13562,18 +13562,18 @@
     "jobNumber": "339034701",
     "jobType": "Sewer Camera Video Inspection - Svc Request",
     "businessUnit": "Sewer Service",
-    "status": "Completed",
-    "summary": "Call Description:  Line Stoppage 2 down spouts outside \nAffected Drain(s)/Location(s):  needs a camera inspection \nWhere do you see the back-up? in 2 down spouts\n\nDate/Time Req: 9/21  9-4\nDisp Chg:  $79  quote price on site\nContact #:  0084\nPreferred Method:  CALL \nCustomer Req Drive Time: \nCustomer Availability Notes:  all day",
-    "revenue": 149,
+    "status": "Compl",
+    "summary": "Customer Availability Notes:  all day",
+    "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
     "grossMargin": -1045.95527164,
     "grossMarginPct": -7.019834037852349,
-    "totalCosts": 1194.95527164,
-    "technician": "Mike D.",
-    "customer": "Peirce Dever",
-    "completionDate": "2026-09-21T04:00:00.000Z",
-    "invoiceDate": "2026-09-21T04:00:00.000Z"
+    "totalCosts": 0,
+    "technician": "",
+    "customer": "",
+    "completionDate": "",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "339035195",
@@ -13835,7 +13835,7 @@
     "jobType": "Leak - Plumbing - Water Lines",
     "businessUnit": "Plumbing Demand",
     "status": "Completed",
-    "summary": "Call Description: Water Leak from Plumbing - There's a black stain on basement ceiling that's about the size of an orange coming from 1st floor - h/o believes it's either HVAC unit pipes leaking or the toilet. She also asked for tech to check one of her drains while there\nArea(s) Affected: Basement ceiling coming from 1st floor\nActive Leak? Yes\nDate/Time: 9/21 -- 7:30-8AM\nDisp Chg: $79\nContact #: 0402 C",
+    "summary": "Contact #: 0402 C",
     "revenue": 2546.25,
     "materialCostRaw": 39.72,
     "materialPct": 1.4605250094684086,
@@ -13844,8 +13844,8 @@
     "totalCosts": 6382.351678,
     "technician": "Mason K.",
     "customer": "William Belknap",
-    "completionDate": "2026-09-22T04:00:00.000Z",
-    "invoiceDate": "2026-09-22T04:00:00.000Z"
+    "completionDate": "2026-09-22T00:00:00.000Z",
+    "invoiceDate": "2026-09-22T00:00:00.000Z"
   },
   {
     "jobNumber": "339063698",
@@ -13937,7 +13937,7 @@
     "jobType": "Estimate - HVAC Install",
     "businessUnit": "HVAC Install Sales",
     "status": "Completed",
-    "summary": "Tech Lead: Cayden W \nPerformed By: CA \nEstimate For: 2x mini split heads 1 out door \nThe current equipment- Mini splits \nNotes: Refrigerant leak on system \nContact #: 7353 \nCall",
+    "summary": "Call",
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
@@ -13946,7 +13946,8 @@
     "totalCosts": 0,
     "technician": "Jeff W.",
     "customer": "Anthony Floreani",
-    "completionDate": "2026-09-22T04:00:00.000Z"
+    "completionDate": "2026-09-22T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "339066333",
