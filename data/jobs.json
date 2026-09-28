@@ -4644,9 +4644,9 @@
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": -947.112,
+    "grossMargin": -763.8,
     "grossMarginPct": 0,
-    "totalCosts": 947.112,
+    "totalCosts": 763.8,
     "technician": "Ryan K.",
     "customer": "Steven Ruhl & Dorothy Keener",
     "completionDate": "2026-09-25T00:00:00.000Z",
@@ -13562,18 +13562,18 @@
     "jobNumber": "339034701",
     "jobType": "Sewer Camera Video Inspection - Svc Request",
     "businessUnit": "Sewer Service",
-    "status": "Compl",
+    "status": "Completed",
     "summary": "Customer Availability Notes:  all day",
-    "revenue": 0,
+    "revenue": 149,
     "materialCostRaw": 0,
     "materialPct": 0,
     "grossMargin": -1045.95527164,
     "grossMarginPct": -7.019834037852349,
-    "totalCosts": 0,
-    "technician": "",
-    "customer": "",
-    "completionDate": "",
-    "invoiceDate": ""
+    "totalCosts": 1194.95527164,
+    "technician": "Mike D.",
+    "customer": "Peirce Dever",
+    "completionDate": "2026-09-21T00:00:00.000Z",
+    "invoiceDate": "2026-09-21T00:00:00.000Z"
   },
   {
     "jobNumber": "339035195",
@@ -13733,7 +13733,7 @@
     "jobType": "Estimate - HVAC Install",
     "businessUnit": "HVAC Install Sales",
     "status": "Completed",
-    "summary": "Estimate For: new gas furnace  and 1 2nd on including the AC \nCurrent Equip Type:  gas furnace in a mobile home \nEquip Age:  15 yrs \nEquip Working Without Concerns?\nIs Ductwork in Place?  yes \nJob Completion Timeframe:\nDate/Time:   9/ 22       9-4\nDisp Chg: N/A\nContact #:  717-380-0328\nPreferred Method:  call \nCustomer Req Drive Time:  none\nCustomer Availability Notes:  all day",
+    "summary": "Customer Availability Notes:  all day",
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
@@ -13742,15 +13742,15 @@
     "totalCosts": 0,
     "technician": "Jeff W.",
     "customer": "Beverly Wiggins",
-    "completionDate": "2026-09-22T04:00:00.000Z",
-    "invoiceDate": "2026-09-22T04:00:00.000Z"
+    "completionDate": "2026-09-22T00:00:00.000Z",
+    "invoiceDate": "2026-09-22T00:00:00.000Z"
   },
   {
     "jobNumber": "339056807",
     "jobType": "Sold Work - Plumbing",
     "businessUnit": "Plumbing Demand",
     "status": "Completed",
-    "summary": "Call Description: This solution is to attempt rebuild of existing outdoor hydrant by turning off water to home and draining down the system. Once drained technician will remove existing handle assembly and rod. Technician will install new components onto rod assembly and re install. Upon completion technician will test to ensure proper operation. *if rebuild is unsuccessful technician will provide pricing to replace the fixture with new.*\nIs System Functional? Y/N\nSold By: Robert R \nDuration: 30min\nMaterial Source: overnighted ARRIVED\nCounter Pick Up or Delivery?: Delivery \nDate & Time of Delivery: 9/22 \nDate/Time: 9/22 12-4\nContact #: (845) 239-9207\nPreferred Method: C\nCustomer Req Drive Time:\nCustomer Availability Notes: Afternoon \n\nGreensky APP ID:\nDeposit Method: CC\nIs the deposit applied to the invoice?\nDeposit Amount: 107.00\nBalance Method:\nBalance Amount:",
+    "summary": "Balance Amount:",
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
@@ -13759,8 +13759,8 @@
     "totalCosts": 796.77,
     "technician": "Robert R.",
     "customer": "Peter Rustico",
-    "completionDate": "2026-09-22T04:00:00.000Z",
-    "invoiceDate": "2026-09-22T04:00:00.000Z"
+    "completionDate": "2026-09-22T00:00:00.000Z",
+    "invoiceDate": "2026-09-22T00:00:00.000Z"
   },
   {
     "jobNumber": "339056937",
@@ -14124,7 +14124,7 @@
     "jobType": "No Water/Low Pressure Concern",
     "businessUnit": "Plumbing Demand",
     "status": "Completed",
-    "summary": "No water/ Low pressure\n Piper gave him a FREE Estimated***\nCustomer called to schedule an appointment for a quote to address low water pressure at their residential property.\nPlumbing; customer reports bad water pressure at their house and would like an estimate for resolving the issue. There is also a garage at the same address, but the main concern is the house.\n\nDate/Time: 09/22\n9-4\nContact: 2269 CAll  30 mins",
+    "summary": "Contact: 2269 CAll  30 mins",
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
@@ -14133,8 +14133,8 @@
     "totalCosts": 1014.585,
     "technician": "Layne B.",
     "customer": "Joshua Hyle",
-    "completionDate": "2026-09-22T04:00:00.000Z",
-    "invoiceDate": "2026-09-22T04:00:00.000Z"
+    "completionDate": "2026-09-22T00:00:00.000Z",
+    "invoiceDate": "2026-09-22T00:00:00.000Z"
   },
   {
     "jobNumber": "339259803",
@@ -14923,7 +14923,7 @@
     "jobType": "Sold Work - Plumbing",
     "businessUnit": "Plumbing Demand",
     "status": "Completed",
-    "summary": "--- ---\nCall Description: replace Hydrant outside \nIs System Functional? Y/N\nSold By: Robert R \nDuration: 1 hour  \nMaterial Source: Warehouse \nCounter Pick Up or Delivery?:\nDate & Time of Delivery:\nDate/Time: 9/24 9-4 after 3pm \nContact #: 9207\nPreferred Method: C\nCustomer Req Drive Time:\nCustomer Availability Notes:\n\nGreensky APP ID:\nDeposit Method: CC\nIs the deposit applied to the invoice? yes\nDeposit Amount: $107.00\nBalance Method: CC \nBalance Amount: Invoice balance",
+    "summary": "Balance Amount: Invoice balance",
     "revenue": 962.68,
     "materialCostRaw": 0,
     "materialPct": 0,
@@ -14932,8 +14932,8 @@
     "totalCosts": 1334.3702043,
     "technician": "Robert R.",
     "customer": "Peter Rustico",
-    "completionDate": "2026-09-24T04:00:00.000Z",
-    "invoiceDate": "2026-09-24T04:00:00.000Z"
+    "completionDate": "2026-09-24T00:00:00.000Z",
+    "invoiceDate": "2026-09-24T00:00:00.000Z"
   },
   {
     "jobNumber": "339669817",
