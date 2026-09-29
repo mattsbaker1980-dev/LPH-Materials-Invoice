@@ -93,6 +93,18 @@ td.type{max-width:220px;color:var(--muted);font-size:12.5px;}
 .ai-box{background:#F4F1FB;border:1px solid #DDD4F2;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;}
 .ai-box b{color:#5B3FA6;}
 .ai-box ul{margin:6px 0 0;padding-left:18px;}
+.why{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px 14px;margin-bottom:14px;}
+.why-row{display:grid;grid-template-columns:200px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:13px;}
+.why-row:last-child{border-bottom:none;}
+.why-row>.pill{align-self:start;justify-self:start;}
+.why-row .how{color:var(--muted);font-size:12.5px;margin-top:3px;line-height:1.5;}
+.gap{background:#F4F1FB;border:1px solid #DDD4F2;border-radius:6px;padding:8px 12px;margin-top:8px;font-size:12.5px;line-height:1.5;}
+.gap b{color:#5B3FA6;}
+.gap ul{margin:4px 0 6px;padding-left:18px;}
+.guide{font-size:13px;line-height:1.6;color:var(--ink);}
+.guide summary{font-size:13px;font-weight:600;color:var(--ink);margin:0;}
+.guide ol{margin:8px 0 0;padding-left:20px;}
+@media (max-width:700px){ .why-row{grid-template-columns:1fr;} }
 details summary{cursor:pointer;font-size:12.5px;color:var(--muted);margin-top:12px;}
 .more{text-align:center;padding:14px;}
 .cc{display:inline-flex;align-items:center;gap:6px;}
@@ -147,6 +159,17 @@ tr.reviewed td{opacity:.72;}
     </div>
   </div>
 
+  <details class="panel guide" id="guide">
+    <summary>How to use this page</summary>
+    <ol>
+      <li><b>Start with the list as it opens</b> — it shows only jobs that need attention and that nobody has marked Reviewed yet.</li>
+      <li><b>Click a job</b> to open it. The top box explains each flag in plain English and what to check. Below that, compare the three panels side by side: what the tech <i>wrote</i>, what was <i>billed</i> (MAT = material used, SVC = service line), and the <i>options</i> the tech built.</li>
+      <li><b>Flags come from two places.</b> Plain flags are simple math on the ServiceTitan reports (e.g. PO cost vs. materials recorded). Flags marked <b>✦</b> come from Claude reading the write-up against the invoice. Both are pointers, not verdicts — confirm in ServiceTitan with the <i>Open job</i> / <i>Open invoice</i> buttons.</li>
+      <li><b>When you’re done with a job, click “Needs checked”</b> to mark it Reviewed. It drops off the default list and the count at the top goes down.</li>
+      <li>Use the <b>Technicians</b> tab to spot patterns (e.g. one tech who rarely builds options), then click a name to see their jobs.</li>
+    </ol>
+  </details>
+
   <div id="jobsTab">
     <div class="stats" id="stats"></div>
     <div class="table-wrap">
@@ -180,6 +203,18 @@ tr.reviewed td{opacity:.72;}
     negative_margin:'Negative margin', short_visit:'Very short visit', long_visit:'Long visit',
     ai_not_billed:'Work done, not billed', ai_billed_not_described:'Billed, not described', ai_options:'Options gap',
     ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note'
+  };
+  // Plain-English "what this means / what to check" shown under each flag.
+  var HOW = {
+    no_options:'No estimate was built on this visit. On a system check or service call the tech should almost always find something to offer. Check: were there really no recommendations?',
+    one_option:'Only one estimate was built. Customers usually do better with a choice (good / better / best). Check: was a second option reasonable?',
+    po_not_billed:'Money was spent on a purchase order for this job but the invoice is $0. Check: is the work billed on another job, is it warranty, or was it missed?',
+    po_not_recorded:'Parts were bought on a purchase order for this job, but little or nothing was entered on the invoice as materials used, so job costing and inventory are off. Check the PO in ServiceTitan (Job Costing / Purchasing) against the MAT lines under What was billed.',
+    materials_not_billed:'Materials were used from stock but nothing was billed. Check: warranty, callback, or missed charge?',
+    no_writeup:'Something was billed but the tech left no invoice summary. Ask the tech for a write-up.',
+    negative_margin:'Costs are higher than revenue on this job. Usually fine on memberships and warranty; worth a look on sold work.',
+    short_visit:'Very little time on site for a billed job. Check the timesheet.',
+    long_visit:'Much more time on site than is typical for this job type. Check the timesheet and whether it was sold/billed accordingly.'
   };
   var NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
 
@@ -396,11 +431,18 @@ tr.reviewed td{opacity:.72;}
     var h='';
     if(j.aiReview){
       var iss=j.aiReview.issues||[];
-      h+='<div class="ai-box"><b>✦ Claude review</b> — '+(iss.length?iss.length+' issue'+(iss.length>1?'s':''):'write-up and invoice match')+(j.aiReview.note?' · '+esc(j.aiReview.note):'')+
+      h+='<div class="ai-box"><b>✦ Claude review</b> — '+(iss.length?iss.length+' issue'+(iss.length>1?'s':''):'no billing issues found between the write-up and the invoice')+(j.aiReview.note?' · '+esc(j.aiReview.note):'')+
         (iss.length?'<ul>'+iss.map(function(i){return '<li>'+(i.severity==='high'?'<b style="color:var(--warn)">High:</b> ':'')+esc(i.text)+'</li>';}).join('')+'</ul>':'')+'</div>';
     }
     var rule = j.flags.filter(function(f){return f.code.indexOf('ai_')!==0;});
-    if(rule.length) h+='<div style="margin-bottom:12px;">'+rule.map(function(f){return '<span class="pill '+f.level+'">'+esc(f.text)+'</span>';}).join('')+'</div>';
+    if(rule.length) h+='<div class="why">'+rule.map(function(f){
+      var extra='';
+      if(f.code==='po_not_recorded' && j.aiReview && j.aiReview.gapFor!=null){
+        var li=j.aiReview.likelyUnrecorded||[];
+        extra='<div class="gap"><b>✦ What the write-up says was used that isn\u2019t recorded as materials:</b>'+(li.length?'<ul>'+li.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'')+(j.aiReview.gapNote?'<div>'+esc(j.aiReview.gapNote)+'</div>':'')+'<div class="none">Taken from the tech\u2019s write-up, not the PO itself \u2014 compare against the PO in ServiceTitan.</div></div>';
+      }
+      return '<div class="why-row"><span class="pill '+f.level+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span><div><div>'+esc(f.text)+'</div><div class="how">'+esc(HOW[f.code]||'')+'</div>'+extra+'</div></div>';
+    }).join('')+'</div>';
 
     // write-up
     var wu = j.invoices.filter(function(i){return i.summary;}).map(function(i){ return (j.invoices.length>1?'<div class="none" style="font-style:normal;font-weight:600;">Invoice '+esc(i.invoiceNumber)+'</div>':'')+'<div class="txt">'+esc(i.summary)+'</div>'; }).join('<hr style="border:none;border-top:1px solid var(--line-soft);">');

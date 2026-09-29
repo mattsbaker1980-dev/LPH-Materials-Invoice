@@ -48,6 +48,27 @@ or it contradicts itself or the invoice (e.g. says "system is not heating" but n
 
 `other` — anything else clearly worth a manager's attention. Use sparingly.
 
+## Materials gap (only for jobs that have a `materialsGap` block)
+
+These jobs had parts bought on a purchase order (`purchasedOnPO`, a dollar total — the PO's
+line items are NOT available) but little or nothing recorded as materials used on the invoice
+(`recordedMaterials`, `recordedMaterialCost`). Job costing is off by roughly the difference.
+
+Read the write-up (and the billed service lines) and list, in `likelyUnrecorded`, the physical
+parts/materials the tech says were installed or used that do NOT appear in `recordedMaterials`.
+- Name them the way a warehouse person would look for them ("SDR 35 sewer pipe",
+  "crushed stone", "main shut-off valve", "50 gal electric water heater").
+- Include equipment billed as a service line (e.g. a water heater or furnace) if it was
+  probably bought on the PO — say so in `gapNote`.
+- Only list things the write-up actually mentions. If it doesn't say what was used, return an
+  empty list and set `gapNote` to "Write-up doesn't say what was used — check the PO."
+- `gapNote`: one or two sentences, e.g. "About $3,600 bought on PO; only small fittings recorded.
+  The pipe, stone and fittings for the sewer run and interior drains aren't on the invoice as materials."
+
+Always copy `purchasedOnPO` into `materialsGapFor` for these jobs. This is a guide for the
+manager checking the PO, not an accusation — don't also raise it as a `not_billed` issue unless
+the write-up describes billable work that isn't priced anywhere on the invoice.
+
 ## Output
 
 Write a JSON array to `results.json`. Copy `jobNumber` and `fingerprint` exactly from the queue.
@@ -60,7 +81,11 @@ Write a JSON array to `results.json`. Copy `jobNumber` and `fingerprint` exactly
      {"type": "not_billed", "severity": "high",
       "text": "Write-up says the tech replaced the run capacitor; no capacitor or repair line on the invoice."}
    ],
-   "note": "Otherwise matches."}
+   "note": "Otherwise matches."},
+  {"jobNumber": "336230547", "fingerprint": "k2j9x", "verdict": "ok", "issues": [],
+   "materialsGapFor": 3662.5,
+   "likelyUnrecorded": ["SDR 35 sewer pipe", "Sch 40 PVC pipe and fittings (house trap, interior drains)", "Two-way clean-out", "Crushed stone bedding", "J-hooks", "Main shut-off valve", "Rheem 50 gal electric water heater (billed as a service line)"],
+   "gapNote": "About $3,660 bought on PO; only $17 of small fittings recorded. The sewer-run and interior drain materials aren't recorded as used."}
 ]
 ```
 
