@@ -117,6 +117,21 @@ details summary{cursor:pointer;font-size:12.5px;color:var(--muted);margin-top:12
 .status-btn.fail{background:var(--warn-bg);color:var(--warn);border-color:#F1C3B9;}
 .status-btn:hover{filter:brightness(0.96);}
 .status-btn:disabled{opacity:.6;cursor:wait;}
+.tgl{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:12.5px;font-weight:600;white-space:nowrap;}
+.tgl input{position:absolute;opacity:0;width:0;height:0;}
+.tgl .trk{width:38px;height:22px;border-radius:999px;background:#C9D1D9;position:relative;transition:background .15s;flex-shrink:0;}
+.tgl .knb{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s;}
+.tgl input:checked + .trk{background:var(--good);}
+.tgl.fail input:checked + .trk{background:var(--warn);}
+.tgl input:checked + .trk .knb{left:19px;}
+.tgl input:focus-visible + .trk{outline:2px solid var(--accent);outline-offset:2px;}
+.tgl.needs .tl{color:var(--needs);} .tgl.pass .tl{color:var(--good);} .tgl.fail .tl{color:var(--warn);}
+.tgl.busy{opacity:.55;pointer-events:none;}
+.linkbox{background:var(--good-bg);border:1px solid #BFDCC9;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;}
+.linkbox.none{background:var(--needs-bg);border-color:#EED9B3;font-style:normal;color:var(--ink);}
+.linkbox a{font-weight:600;cursor:pointer;}
+.billed-on{font-size:12px;color:var(--good);font-weight:600;margin-top:2px;}
+.billed-on a{cursor:pointer;}
 .check{display:flex;align-items:center;gap:8px;font-size:13px;height:33px;}
 .check input{width:16px;height:16px;}
 tr.reviewed td{opacity:.72;}
@@ -199,7 +214,7 @@ tr.reviewed td{opacity:.72;}
   var ST = 'https://go.servicetitan.com/#/';
   var FLAG_LABELS = {
     no_options:'No options presented', one_option:'Only one option',
-    po_not_billed:'PO costs, $0 invoiced', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
+    po_not_billed:'PO costs, $0 invoiced', sold_not_found:'Sold, not billed yet', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
     negative_margin:'Negative margin', short_visit:'Very short visit', long_visit:'Long visit',
     ai_not_billed:'Work done, not billed', ai_billed_not_described:'Billed, not described', ai_options:'Options gap',
     ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note'
@@ -209,6 +224,7 @@ tr.reviewed td{opacity:.72;}
     no_options:'No estimate was built on this visit. On a system check or service call the tech should almost always find something to offer. Check: were there really no recommendations?',
     one_option:'Only one estimate was built. Customers usually do better with a choice (good / better / best). Check: was a second option reasonable?',
     po_not_billed:'Money was spent on a purchase order for this job but the invoice is $0. Check: is the work billed on another job, is it warranty, or was it missed?',
+    sold_not_found:'An estimate was sold on this job but it isn\u2019t billed here, and no later job for this customer has an invoice matching it (checked for 14+ days). Check: was the work scheduled, done, or cancelled?',
     po_not_recorded:'Parts were bought on a purchase order for this job, but little or nothing was entered on the invoice as materials used, so job costing and inventory are off. Check the PO in ServiceTitan (Job Costing / Purchasing) against the MAT lines under What was billed.',
     materials_not_billed:'Materials were used from stock but nothing was billed. Check: warranty, callback, or missed charge?',
     no_writeup:'Something was billed but the tech left no invoice summary. Ask the tech for a write-up.',
@@ -304,11 +320,16 @@ tr.reviewed td{opacity:.72;}
       if(!res.ok) throw new Error(res.status);
       if(next==='needs') delete statuses[jobNo]; else statuses[jobNo]=next;
       render();
-    }catch(e){ alert('Could not save the status ('+e.message+'). Try again.'); if(btn) btn.disabled=false; }
+    }catch(e){ alert('Could not save the status ('+e.message+'). Try again.'); if(btn) btn.disabled=false; render(); }
   }
   function statusBtn(j){
-    var s = statusOf(j), lbl = s==='pass'?'Reviewed':s==='fail'?'Failed':'Needs checked';
-    return '<button class="status-btn '+s+'" data-status="'+esc(j.jobNumber)+'" title="Click to change">'+lbl+'</button>';
+    var s = statusOf(j), on = s!=='needs', lbl = s==='pass'?'Reviewed':s==='fail'?'Failed':'Needs checked';
+    return '<label class="tgl '+s+'" title="'+(on?'Switch off to mark Needs checked':'Switch on to mark Reviewed')+'"><input type="checkbox" class="status-tgl" data-status="'+esc(j.jobNumber)+'"'+(on?' checked':'')+'><span class="trk"><span class="knb"></span></span><span class="tl">'+lbl+'</span></label>';
+  }
+  function soldWorkLine(j,x){
+    var l=(j.soldWork||[]).find(function(s){return s.estimateId===x.id;}); if(!l) return '';
+    if(l.jobNumber) return '<div class="billed-on">\u2713 Billed on follow-up <a class="jumpjob" data-job="'+esc(l.jobNumber)+'">job '+esc(l.jobNumber)+'</a> ('+fdate(l.date)+', invoice '+money2(l.invoiced)+(l.match==='exact'?', exact match':', likely match')+')</div>';
+    return '<div class="billed-on" style="color:var(--needs);">Not billed on this job \u2014 no follow-up invoice found yet</div>';
   }
   function copyBtn(v){ return v ? '<button class="copy-btn" data-copy="'+esc(v)+'">Copy</button>' : ''; }
 
@@ -412,7 +433,7 @@ tr.reviewed td{opacity:.72;}
         '<td class="type">'+esc(j.jobType)+'</td>'+
         '<td class="num">'+money(j._rev)+'</td>'+
         '<td class="num">'+hrs(j._hrs)+'</td>'+
-        '<td class="num"><span class="'+optCls+'">'+j._opts+'</span>'+(j._sold?' <span style="color:var(--good);font-size:12px;">('+j._sold+' sold)</span>':'')+'</td>'+
+        '<td class="num"><span class="'+optCls+'">'+j._opts+'</span>'+(j._sold?' <span style="color:var(--good);font-size:12px;">('+j._sold+' sold)</span>':'')+(j.fromEstimate?'<div style="color:var(--good);font-size:11.5px;">sold on '+esc(j.fromEstimate.jobNumber)+'</div>':'')+'</td>'+
         '<td class="num">'+(j._mat||j._po? money(j._mat)+(j._po?' / '+money(j._po):''):'—')+'</td>'+
         '<td>'+flagPills(j,3)+'</td>'+
         '<td class="nowrap">'+statusBtn(j)+'</td></tr>';
@@ -465,9 +486,11 @@ tr.reviewed td{opacity:.72;}
     var es = j.estimates.slice().sort(function(a,b){ var o={Sold:0,Open:1,Dismissed:2}; return (o[a.status]||3)-(o[b.status]||3) || b.subtotal-a.subtotal; });
     var e = es.length ? es.map(function(x){ return '<div class="est"><div class="hd"><span><span class="st '+esc(x.status)+'">'+esc(x.status||'—')+'</span>'+esc(x.name||'(no name)')+(x.recommended?' <span class="pill info" style="margin:0 0 0 4px;">Recommended</span>':'')+'</span><span>'+money2(x.subtotal)+'</span></div>'+
       '<div class="meta">'+[x.createdBy?'By '+esc(x.createdBy):'', x.created?'created '+fdate(x.created):'', x.soldOn?'sold '+fdate(x.soldOn)+(x.soldBy?' by '+esc(x.soldBy):''):''].filter(Boolean).join(' · ')+'</div>'+
-      (x.summary?'<div class="sum">'+esc(x.summary)+'</div>':'')+'</div>'; }).join('')
+      soldWorkLine(j,x)+(x.summary?'<div class="sum">'+esc(x.summary)+'</div>':'')+'</div>'; }).join('')
       : '<div class="none">'+(d.estimatesCount? d.estimatesCount+' estimate(s) on the job, not in the estimates report window.' : 'No estimates built on this job.')+'</div>';
-    h+='<div class="card"><h4><span>Options presented</span><span>'+j._opts+'</span></h4>'+e+'</div>';
+    var lk='';
+    if(j.fromEstimate){ var fe=j.fromEstimate; lk+='<div class="linkbox">Follow-up job for work sold on <a class="jumpjob" data-job="'+esc(fe.jobNumber)+'">job '+esc(fe.jobNumber)+'</a>: \u201c'+esc(fe.estimateName)+'\u201d '+money2(fe.subtotal)+(fe.soldOn?' (sold '+fdate(fe.soldOn)+')':'')+(fe.match==='exact'?' \u2014 invoice lines match the estimate exactly.':' \u2014 likely match (same customer, similar amount).')+'</div>'; }
+    h+='<div class="card"><h4><span>Options presented</span><span>'+j._opts+'</span></h4>'+lk+e+'</div>';
     h+='</div>';
     // facts
     var med = j.medianHours;
@@ -521,7 +544,8 @@ tr.reviewed td{opacity:.72;}
     if((t=e.target.closest('.tab-btn'))){ switchTab(t.dataset.tab); return; }
     if((t=e.target.closest('.copy-btn'))){ var v=t.dataset.copy; var done=function(){ t.textContent='Copied'; t.classList.add('copied'); setTimeout(function(){ t.textContent='Copy'; t.classList.remove('copied'); },1200); };
       if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(done,function(){ fallbackCopy(v); done(); }); } else { fallbackCopy(v); done(); } return; }
-    if((t=e.target.closest('.status-btn'))){ var jn=t.dataset.status; var cur=statuses[jn]||'needs'; setStatus(jn, cur==='needs'?'pass':'needs', t); return; }
+    if(e.target.closest('.tgl')) return; // handled by the change event below
+    if((t=e.target.closest('a.jumpjob'))){ e.preventDefault(); state.q=t.dataset.job; $('searchBox').value=t.dataset.job; state.open=t.dataset.job; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
     if(e.target.closest('a,button,details')) return;
     if((t=e.target.closest('tr.job[data-j]'))){ state.open = state.open===t.dataset.j?null:t.dataset.j; render(); return; }
   });
@@ -532,6 +556,11 @@ tr.reviewed td{opacity:.72;}
     $('techsTab').style.display = tab==='techs'?'':'none';
     render();
   }
+  document.addEventListener('change', function(e){
+    var t=e.target; if(!t.classList || !t.classList.contains('status-tgl')) return;
+    var lab=t.closest('.tgl'); if(lab) lab.classList.add('busy');
+    setStatus(t.dataset.status, t.checked?'pass':'needs', null).catch(function(){}).then(function(){ if(lab) lab.classList.remove('busy'); });
+  });
   function fallbackCopy(text){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); }
   $('hideZero').checked = hideZero;
   $('hideZero').addEventListener('change', function(){ hideZero=this.checked; tryLS('jr_hideZero', hideZero?'1':'0'); state.limit=200; render(); });

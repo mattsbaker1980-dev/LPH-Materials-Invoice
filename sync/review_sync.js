@@ -375,6 +375,13 @@ function computeFlags(job, ctx) {
     ai.issues.forEach((x) => add('ai_' + (x.type || 'issue'), x.severity === 'high' ? 'warn' : 'info', x.text));
   }
 
+  // --- sold work not found on any invoice yet
+  const today = new Date().toISOString().slice(0, 10);
+  const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  (job.soldWork || []).filter((x) => !x.jobNumber && (x.soldOn || job.completionDate || today) <= cutoff).forEach((x) => {
+    add('sold_not_found', 'info', `Sold "${x.estimateName}" ($${Math.round(x.subtotal).toLocaleString()}) on ${x.soldOn || job.completionDate} — no invoice found for it yet on this or a later job`);
+  });
+
   // --- costs vs billing
   if (poCost >= 25 && invTotal <= 0 && job.invoices.length) {
     const wr = d.warranty || d.recall || /warranty|recall/i.test(type);
@@ -405,10 +412,44 @@ function reviewFingerprint(job) {
   const s = JSON.stringify([
     job.invoices.map((i) => [i.invoiceNumber, i.summary, i.total, (i.items || []).map((x) => [x.name, x.price])]),
     job.estimates.map((e) => [e.id, e.status, e.subtotal, e.summary || '']),
-  ]);
+  ].concat(job.soldWork && job.soldWork.length ? [job.soldWork.map((x) => [x.estimateId, x.jobNumber])] : [])
+   .concat(job.fromEstimate ? [[job.fromEstimate.jobNumber, job.fromEstimate.estimateId]] : []));
   let h = 5381;
   for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
   return h.toString(36);
+}
+
+// Sold work is often done later on a separate job (e.g. sold on a service call, installed on a
+// "Sold Work" job days later). Link each sold estimate that wasn't billed on its own job to the
+// follow-up job for the same customer where it was billed.
+const custKey = (s) => String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+const posItems = (j) => j.invoices.flatMap((i) => i.items || []).filter((x) => x.price > 0).reduce((a, x) => a + x.price, 0);
+function linkSoldWork(jobs) {
+  const byCust = {};
+  jobs.forEach((j) => { delete j.soldWork; delete j.fromEstimate; (byCust[custKey(j.customer)] = byCust[custKey(j.customer)] || []).push(j); });
+  for (const a of jobs) {
+    const billedHere = Math.max(posItems(a), (a.materials && a.materials.revenue) || 0);
+    for (const e of a.estimates.filter((x) => x.status === 'Sold' && x.subtotal > 0)) {
+      if (billedHere >= e.subtotal * 0.5) continue; // billed on this job
+      const since = e.soldOn || a.completionDate || '';
+      const cands = (byCust[custKey(a.customer)] || []).filter((b) => b !== a && (b.completionDate || '') >= since && b.invoices.length && !b.fromEstimate);
+      let best = null;
+      for (const b of cands) {
+        const pos = posItems(b), tot = b.invoices.reduce((s, i) => s + (i.total || 0), 0);
+        const exact = Math.abs(pos - e.subtotal) <= 1.01;
+        const likely = Math.abs(pos - e.subtotal) <= e.subtotal * 0.15 || Math.abs(tot - e.subtotal) <= e.subtotal * 0.15;
+        const m = exact ? 'exact' : likely ? 'likely' : null;
+        if (m && (!best || (m === 'exact' && best.m !== 'exact') || (m === best.m && b.completionDate < best.b.completionDate))) best = { b, m, tot };
+      }
+      const link = { estimateId: e.id, estimateName: e.name, subtotal: e.subtotal, soldOn: e.soldOn || null };
+      if (best) {
+        a.soldWork = (a.soldWork || []).concat(Object.assign(link, { jobNumber: best.b.jobNumber, jobId: best.b.jobId, date: best.b.completionDate, invoiced: Math.round(best.tot * 100) / 100, match: best.m }));
+        best.b.fromEstimate = { jobNumber: a.jobNumber, jobId: a.jobId, estimateId: e.id, estimateName: e.name, subtotal: e.subtotal, soldOn: e.soldOn || null, match: best.m };
+      } else {
+        a.soldWork = (a.soldWork || []).concat(Object.assign(link, { jobNumber: null }));
+      }
+    }
+  }
 }
 
 function recomputeMonth(monthData) {
@@ -565,6 +606,12 @@ async function main() {
     }
   }
 
+  // 4a. link sold estimates to follow-up jobs across the touched months and their neighbours
+  const touched = Object.keys(monthCache).filter((m) => monthCache[m].dirty);
+  const near = (m, d) => { const [y, mm] = m.split('-').map(Number); const t = new Date(Date.UTC(y, mm - 1 + d, 1)); return t.toISOString().slice(0, 7); };
+  for (const m of touched) for (const n of [near(m, -1), near(m, 1)]) if (index.months.includes(n)) { await loadMonth(n); monthCache[n].dirty = true; }
+  linkSoldWork(Object.values(monthCache).flatMap((b) => Object.values(b.data.jobs)));
+
   // 4. recompute flags for every touched month (medians are per month)
   for (const [mo, b] of Object.entries(monthCache)) {
     if (!b.dirty) continue;
@@ -605,4 +652,4 @@ async function writeLog(store, log) {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e.stack || e.message); process.exit(1); });
 
-module.exports = { readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
+module.exports = { linkSoldWork, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };

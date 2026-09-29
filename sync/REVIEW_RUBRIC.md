@@ -38,6 +38,10 @@ option. One option for one small, simple fix is fine. Don't raise this for sold-
 
 - A **sold estimate that isn't on this job's invoice** — sold work is usually done and billed on a
   separate follow-up job.
+- If the queue item has `soldWorkBilledOn`, that sold estimate WAS billed on the follow-up job listed.
+  The write-up on this visit may only describe the proposed work — that is normal, not a `writeup` issue.
+- If the queue item has `fromEstimate`, this job is the follow-up that carried out work sold on an
+  earlier job; judge the invoice against that estimate and this write-up.
 - Installing a **customer-supplied** part (filter, batteries, pad) during a visit.
 - Booking notes that differ from what the tech found — the write-up is what matters.
 - If the write-up says the customer declined everything but an estimate is marked Sold (or the reverse),

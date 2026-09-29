@@ -83,6 +83,8 @@ async function queue(o) {
         })),
         estimates: j.estimates.map((e) => `${e.status}: ${e.name} $${e.subtotal}${e.summary ? ' — ' + clip(e.summary, 300) : ''}`),
         costs: { material: j.materials ? j.materials.materialCost : null, po: poOf(j) },
+        soldWorkBilledOn: (j.soldWork || []).filter((x) => x.jobNumber).map((x) => `"${x.estimateName}" $${x.subtotal} billed on job ${x.jobNumber} (${x.date}, invoice $${x.invoiced})`),
+        fromEstimate: j.fromEstimate ? `Work sold on job ${j.fromEstimate.jobNumber}: "${j.fromEstimate.estimateName}" $${j.fromEstimate.subtotal}` : undefined,
       });
       if (needsGapReview(j)) {
         const last = out[out.length - 1];
