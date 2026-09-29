@@ -155,9 +155,12 @@ async function apply(o) {
     const job = months[mo].data.jobs[r.jobNumber];
     if (!job) { missing++; continue; }
     if (r.fingerprint !== L.reviewFingerprint(job)) { stale++; continue; } // data changed after it was queued
-    const keepGt = job.aiReview && job.aiReview.gt;
+    const old = job.aiReview || {};
+    const keepGt = old.gt;
     job.aiReview = {
       gt: keepGt,
+      // keep an earlier materials-gap read unless this result brings a new one (needsGapReview re-queues if the PO total changes)
+      gapFor: old.gapFor, likelyUnrecorded: old.likelyUnrecorded, gapNote: old.gapNote,
       fingerprint: r.fingerprint, reviewedAt: new Date().toISOString(),
       verdict: r.verdict === 'issues' && (r.issues || []).length ? 'issues' : 'ok',
       issues: (r.issues || []).slice(0, 6).map((x) => ({ type: String(x.type || 'other').replace(/[^a-z_]/gi, ''), severity: x.severity === 'high' ? 'high' : 'low', text: String(x.text || '').slice(0, 300) })),
