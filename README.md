@@ -27,3 +27,24 @@ This mirrors the pattern already used for the Labor Productivity dashboard's Wor
 - `data/invoice_checks.json` — array of invoice discrepancy-check records, from bulk import or manual paste
 
 Both start as empty arrays (`[]`) and are only ever written to by the Worker, never edited by hand.
+
+## Job Review (`review.html`)
+
+A per-job review page built from four ServiceTitan scheduled reports, read as real `.xlsx` files from Gmail
+(an Outlook rule redirects `noreply@onservicetitan.com` to Gmail; Gmail's RAW message format keeps attachments byte-exact).
+
+| Report | Used for |
+|---|---|
+| Materials vs Invoice | revenue, material / PO / total costs, margin, booking notes |
+| Daily Job Detail | hours worked / paid / sold, estimate count, campaign, warranty/recall |
+| Invoice Line Items with Description | tech write-up (invoice summary), billed items, PO + material cost per invoice |
+| All Estimates – Daily (Creation Date, all statuses) | every option presented, with summary and who built it |
+
+Daily flow (scheduled Claude task):
+1. `sync/gmail_extract.js` — decode Gmail RAW messages, write the `.xlsx` attachments.
+2. `sync/review_sync.js` — parse + merge into `data/review/YYYY-MM.json` (one record per job, bucketed by completion month), compute rule flags.
+3. `sync/review_ai.js queue` → Claude reviews write-up vs invoice vs options per `sync/REVIEW_RUBRIC.md` → `review_ai.js apply`.
+
+Rule flags: no options / one option, estimate with no description, PO costs on a $0 invoice, material cost with nothing billed,
+billed with no write-up, negative margin, very short / unusually long visits. Claude flags: work done but not billed,
+billed but not described, options gap, write-up issues.

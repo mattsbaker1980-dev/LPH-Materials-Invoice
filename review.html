@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B2430; --paper:#FFFFFF; --steel:#EEF2F5; --line:#D7DEE4; --line-soft:#E6EAED;
+  --accent:#E2620E; --accent-dark:#B94E09; --good:#2E7D4F; --good-bg:#E7F3EC;
+  --warn:#C6432D; --warn-bg:#FBEAE6; --muted:#667085; --muted-2:#8C93A0;
+  --needs:#8A5A00; --needs-bg:#FBF0DD; --info:#34598A; --info-bg:#E8EFF8;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--steel);color:var(--ink);font-family:'Inter',system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;}
+a{color:var(--info);}
+.wrap{max-width:1800px;margin:0 auto;padding:0 32px 60px;}
+header.top{background:var(--ink);color:var(--paper);padding:22px 0;}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:0 !important;}
+header.top h1{font-size:19px;font-weight:600;margin:0;letter-spacing:-0.01em;}
+header.top p{font-size:13px;color:#AEB6C2;margin:4px 0 0;}
+.btn{font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:6px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+.btn-ghost{background:transparent;border-color:#4A5361;color:#fff;}
+.btn-ghost:hover{background:#2C333D;}
+.btn-line{background:var(--paper);border-color:var(--line);color:var(--ink);}
+.btn-line:hover{border-color:var(--muted-2);}
+.tabbar{background:var(--paper);border-bottom:1px solid var(--line);margin-bottom:22px;}
+.tabbar-inner{display:flex;gap:4px;padding-top:10px;padding-bottom:0 !important;}
+.tab-btn{font-family:inherit;font-size:13.5px;font-weight:600;color:var(--muted);background:transparent;border:none;padding:10px 4px;margin-right:22px;cursor:pointer;border-bottom:2px solid transparent;}
+.tab-btn:hover{color:var(--ink);}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--accent);}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:18px;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:18px;}
+.stat{background:var(--paper);padding:14px 18px;cursor:pointer;}
+.stat:hover{background:#FAFBFC;}
+.stat.active{box-shadow:inset 0 -3px 0 var(--accent);}
+.stat .num{font-size:24px;font-weight:700;line-height:1.1;}
+.stat .lbl{font-size:12.5px;color:var(--muted);margin-top:4px;}
+.stat.warn .num{color:var(--warn);}
+.controls{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-size:12.5px;color:var(--muted);}
+select,.search{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13px;}
+.search{min-width:220px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{font-size:12.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--muted);cursor:pointer;user-select:none;}
+.chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+.table-wrap{border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:var(--paper);}
+table{width:100%;border-collapse:collapse;min-width:1100px;}
+thead th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);background:var(--steel);cursor:pointer;white-space:nowrap;position:sticky;top:0;}
+thead th:hover{color:var(--ink);}
+th.num,td.num{text-align:right;}
+tbody td{padding:10px 12px;font-size:13.5px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+tbody tr.job{cursor:pointer;}
+tbody tr.job:hover{background:#F6F8FA;}
+tbody tr.job.open{background:#F6F8FA;}
+td.nowrap{white-space:nowrap;}
+td.type{max-width:220px;color:var(--muted);font-size:12.5px;}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;margin:0 4px 4px 0;white-space:nowrap;}
+.pill.warn{background:var(--warn-bg);color:var(--warn);}
+.pill.info{background:var(--info-bg);color:var(--info);}
+.pill.good{background:var(--good-bg);color:var(--good);}
+.pill.ai::before{content:"✦ ";}
+.opt{font-weight:600;}
+.opt.zero{color:var(--warn);}
+.detail td{background:var(--steel);padding:16px 18px;}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px 14px;}
+.card h4{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px;display:flex;justify-content:space-between;gap:8px;}
+.txt{white-space:pre-wrap;font-size:13px;line-height:1.6;}
+.none{color:var(--muted-2);font-style:italic;font-size:13px;}
+.items{list-style:none;margin:0;padding:0;font-size:13px;}
+.items li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line-soft);}
+.items li .t{font-size:10.5px;font-weight:700;color:var(--muted-2);margin-right:6px;}
+.items li .p{font-weight:600;white-space:nowrap;}
+.totline{display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding-top:8px;}
+.costline{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);padding-top:3px;}
+.est{border-bottom:1px solid var(--line-soft);padding:8px 0;}
+.est:last-child{border-bottom:none;}
+.est .hd{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:600;}
+.est .meta{font-size:11.5px;color:var(--muted);margin:2px 0 4px;}
+.est .sum{white-space:pre-wrap;font-size:12.5px;line-height:1.55;max-height:140px;overflow:auto;}
+.st{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:999px;margin-right:6px;}
+.st.Sold{background:var(--good-bg);color:var(--good);}
+.st.Open{background:var(--needs-bg);color:var(--needs);}
+.st.Dismissed{background:var(--line-soft);color:var(--muted);}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;font-size:12.5px;margin-top:14px;}
+.facts div span{display:block;color:var(--muted);font-size:11.5px;margin-bottom:2px;}
+.links{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;}
+.ai-box{background:#F4F1FB;border:1px solid #DDD4F2;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;}
+.ai-box b{color:#5B3FA6;}
+.ai-box ul{margin:6px 0 0;padding-left:18px;}
+details summary{cursor:pointer;font-size:12.5px;color:var(--muted);margin-top:12px;}
+.more{text-align:center;padding:14px;}
+.footer-note{font-size:12px;color:var(--muted-2);margin-top:14px;line-height:1.6;}
+.empty{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:50px;text-align:center;color:var(--muted);}
+.bar{height:6px;border-radius:3px;background:var(--line-soft);overflow:hidden;min-width:60px;}
+.bar i{display:block;height:100%;background:var(--accent);}
+@media (max-width:700px){ .wrap{padding:0 16px 40px;} .search{min-width:0;width:100%;} }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div>
+      <h1>Job Review</h1>
+      <p id="subhead">Loading&hellip;</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <a class="btn btn-ghost" href="./index.html">Materials vs Invoice &rarr;</a>
+    </div>
+  </div>
+</header>
+
+<div class="tabbar">
+  <div class="wrap tabbar-inner">
+    <button class="tab-btn active" data-tab="jobs">Jobs</button>
+    <button class="tab-btn" data-tab="techs">Technicians</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="controls">
+      <div class="field"><label>Month</label><select id="monthSel"></select></div>
+      <div class="field"><label>Department</label><div class="chips" id="deptChips"></div></div>
+      <div class="field"><label>Technician</label><select id="techSel"><option value="">All technicians</option></select></div>
+      <div class="field"><label>Show</label><select id="flagSel"></select></div>
+      <div class="field"><label>Search</label><input class="search" id="searchBox" placeholder="Job #, customer, text in write-up…"></div>
+    </div>
+  </div>
+
+  <div id="jobsTab">
+    <div class="stats" id="stats"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr id="headRow"></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+    <div class="more" id="more"></div>
+  </div>
+
+  <div id="techsTab" style="display:none;">
+    <div class="table-wrap">
+      <table>
+        <thead><tr id="techHead"></tr></thead>
+        <tbody id="techBody"></tbody>
+      </table>
+    </div>
+    <p class="footer-note">"Opportunity visits" are service calls, system checks and estimate visits where the tech should be presenting options (sold work, installs, non-repair, warranty and recall jobs are excluded). Click a technician to see their jobs.</p>
+  </div>
+
+  <p class="footer-note" id="footNote"></p>
+</div>
+
+<script>
+(function(){
+  var ST = 'https://go.servicetitan.com/#/';
+  var FLAG_LABELS = {
+    no_options:'No options presented', one_option:'Only one option', estimate_no_summary:'Estimate missing description',
+    po_not_billed:'PO costs, $0 invoiced', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
+    negative_margin:'Negative margin', short_visit:'Very short visit', long_visit:'Long visit',
+    ai_not_billed:'Work done, not billed', ai_billed_not_described:'Billed, not described', ai_options:'Options gap',
+    ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note'
+  };
+  var NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
+
+  var state = { index:null, month:null, jobs:[], dept:'All', tech:'', flag:'attention', q:'', sort:'date', dir:'desc', open:null, limit:200, tab:'jobs' };
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function money(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
+  function money2(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function fdate(s){ if(!s) return '—'; var p=s.split('-'); return +p[1]+'/'+(+p[2]); }
+  function dept(bu){ var s=String(bu||'').toLowerCase(); if(s.indexOf('hvac')>-1) return 'HVAC'; if(s.indexOf('elec')>-1) return 'Electrical'; if(s.indexOf('sewer')>-1) return 'Sewer'; if(s.indexOf('plumb')>-1) return 'Plumbing'; return 'Other'; }
+  function hrs(h){ if(!h) return '—'; return h<1 ? Math.round(h*60)+'m' : h.toFixed(1)+'h'; }
+  function tryLS(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
+
+  function derive(j){
+    var d=j.detail||{}, m=j.materials||{};
+    j._dept = dept(j.businessUnit);
+    j._rev = m.revenue!=null ? m.revenue : (d.revenue||0);
+    j._inv = j.invoices.reduce(function(s,i){return s+(i.total||0);},0);
+    j._po = j.invoices.reduce(function(s,i){return s+(i.poCost||0)+(i.billCost||0);},0);
+    j._mat = Math.max(m.materialCost||0, j.invoices.reduce(function(s,i){return s+(i.materialCost||0);},0));
+    j._opts = Math.max(j.estimates.length, d.estimatesCount||0);
+    j._sold = j.estimates.filter(function(e){return e.status==='Sold';}).length;
+    j._hrs = d.hoursWorked||0;
+    j._warn = j.flags.filter(function(f){return f.level==='warn';}).length;
+    j._oppVisit = !NO_OPTION_EXEMPT.test(j.jobType||'') && !d.warranty && !d.recall;
+    j._text = (j.jobNumber+' '+j.customer+' '+j.primaryTech+' '+j.jobType+' '+j.invoices.map(function(i){return i.summary+' '+i.items.map(function(x){return x.name;}).join(' ');}).join(' ')+' '+j.estimates.map(function(e){return e.name+' '+(e.summary||'');}).join(' ')).toLowerCase();
+    return j;
+  }
+
+  async function load(){
+    try{
+      var r = await fetch('data/review/index.json?t='+Date.now());
+      if(!r.ok) throw new Error('index '+r.status);
+      state.index = await r.json();
+      var sel=$('monthSel');
+      sel.innerHTML = state.index.months.map(function(m){ var d=new Date(m+'-15'); return '<option value="'+m+'">'+d.toLocaleString(undefined,{month:'long',year:'numeric'})+'</option>'; }).join('');
+      state.month = state.index.months[0];
+      var ls = state.index.lastSync;
+      $('subhead').textContent = 'Last synced '+new Date(state.index.updatedAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+(ls&&ls.context?' · '+ls.context:'');
+      await loadMonth();
+    }catch(e){
+      $('subhead').textContent='No review data yet';
+      $('body').innerHTML='<tr><td colspan="10"><div class="empty">Could not load review data ('+esc(e.message)+').</div></td></tr>';
+    }
+  }
+  async function loadMonth(){
+    $('body').innerHTML='<tr><td colspan="10" class="none" style="padding:30px;text-align:center;">Loading jobs…</td></tr>';
+    var r = await fetch('data/review/'+state.month+'.json?t='+Date.now());
+    var data = await r.json();
+    state.jobs = Object.values(data.jobs).map(derive);
+    var techs = {}; state.jobs.forEach(function(j){ if(j.primaryTech) techs[j.primaryTech]=1; });
+    var tsel=$('techSel'), cur=state.tech;
+    tsel.innerHTML='<option value="">All technicians</option>'+Object.keys(techs).sort().map(function(t){return '<option'+(t===cur?' selected':'')+'>'+esc(t)+'</option>';}).join('');
+    buildFlagSel(); buildDept(); render();
+  }
+
+  function buildDept(){
+    var ds=['All','HVAC','Plumbing','Electrical','Sewer','Other'].filter(function(d){ return d==='All'||state.jobs.some(function(j){return j._dept===d;}); });
+    $('deptChips').innerHTML = ds.map(function(d){ return '<span class="chip'+(d===state.dept?' active':'')+'" data-d="'+d+'">'+d+'</span>'; }).join('');
+  }
+  function buildFlagSel(){
+    var counts={}; state.jobs.forEach(function(j){ j.flags.forEach(function(f){ counts[f.code]=(counts[f.code]||0)+1; }); });
+    var opts=[['attention','Needs attention'],['all','All jobs'],['clean','No flags'],['ai','Claude review issues']];
+    Object.keys(FLAG_LABELS).forEach(function(k){ if(counts[k]) opts.push(['f:'+k, FLAG_LABELS[k]+' ('+counts[k]+')']); });
+    $('flagSel').innerHTML = opts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===state.flag?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('');
+  }
+
+  function baseFiltered(){
+    var q=state.q.toLowerCase();
+    return state.jobs.filter(function(j){
+      if(state.dept!=='All' && j._dept!==state.dept) return false;
+      if(state.tech && j.primaryTech!==state.tech) return false;
+      if(q && j._text.indexOf(q)===-1) return false;
+      return true;
+    });
+  }
+  function flagFilter(list){
+    var f=state.flag;
+    return list.filter(function(j){
+      if(f==='all') return true;
+      if(f==='attention') return j._warn>0;
+      if(f==='clean') return j.flags.length===0;
+      if(f==='ai') return j.flags.some(function(x){return x.code.indexOf('ai_')===0;});
+      if(f.indexOf('f:')===0){ var c=f.slice(2); return j.flags.some(function(x){return x.code===c;}); }
+      return true;
+    });
+  }
+
+  var COLS = [
+    {k:'date',l:'Completed',v:function(j){return j.completionDate||'';}},
+    {k:'job',l:'Job #',v:function(j){return j.jobNumber;}},
+    {k:'cust',l:'Customer',v:function(j){return j.customer;}},
+    {k:'tech',l:'Technician',v:function(j){return j.primaryTech;}},
+    {k:'type',l:'Job type',v:function(j){return j.jobType;}},
+    {k:'rev',l:'Revenue',n:1,v:function(j){return j._rev;}},
+    {k:'hrs',l:'On site',n:1,v:function(j){return j._hrs;}},
+    {k:'opts',l:'Options',n:1,v:function(j){return j._opts;}},
+    {k:'cost',l:'Mat. / PO cost',n:1,v:function(j){return j._mat+j._po;}},
+    {k:'flags',l:'Flags',v:function(j){return j._warn*100+j.flags.length;}}
+  ];
+
+  function renderStats(list){
+    var opp = list.filter(function(j){return j._oppVisit && (j.detail);});
+    var noOpt = opp.filter(function(j){return j._opts===0;}).length;
+    var estNoSum = list.reduce(function(s,j){return s+j.estimates.filter(function(e){return e.summary!==undefined && !e.summary;}).length;},0);
+    var poNB = list.filter(function(j){return j.flags.some(function(f){return f.code==='po_not_billed'&&f.level==='warn';});});
+    var poAmt = poNB.reduce(function(s,j){return s+j._po;},0);
+    var ai = list.filter(function(j){return j.flags.some(function(f){return f.code.indexOf('ai_')===0;});}).length;
+    var reviewed = list.filter(function(j){return j.aiReview;}).length;
+    var avgOpt = opp.length ? (opp.reduce(function(s,j){return s+j._opts;},0)/opp.length) : 0;
+    var S = [
+      ['all', list.length.toLocaleString(), 'Jobs completed', ''],
+      ['attention', list.filter(function(j){return j._warn>0;}).length.toLocaleString(), 'Need attention', 'warn'],
+      ['f:no_options', opp.length? Math.round(noOpt/opp.length*100)+'%':'—', 'Opportunity visits with no options ('+noOpt+')', noOpt?'warn':''],
+      ['all', avgOpt.toFixed(1), 'Avg options per opportunity visit', ''],
+      ['f:estimate_no_summary', estNoSum.toLocaleString(), 'Estimates with no description', estNoSum?'warn':''],
+      ['f:po_not_billed', money(poAmt), 'PO costs on $0 invoices ('+poNB.length+' jobs)', poAmt?'warn':''],
+      ['ai', ai.toLocaleString(), 'Claude review issues ('+reviewed+' reviewed)', ai?'warn':'']
+    ];
+    $('stats').innerHTML = S.map(function(s){ return '<div class="stat '+s[3]+(state.flag===s[0]&&s[0]!=='all'?' active':'')+'" data-f="'+s[0]+'"><div class="num">'+s[1]+'</div><div class="lbl">'+esc(s[2])+'</div></div>'; }).join('');
+  }
+
+  function flagPills(j, max){
+    var fl=j.flags.slice().sort(function(a,b){return (a.level==='warn'?0:1)-(b.level==='warn'?0:1);});
+    var out = fl.slice(0,max||99).map(function(f){ return '<span class="pill '+f.level+(f.code.indexOf('ai_')===0?' ai':'')+'" title="'+esc(f.text)+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span>'; }).join('');
+    if(max && fl.length>max) out += '<span class="pill info">+'+(fl.length-max)+'</span>';
+    if(!fl.length) out = j.aiReview ? '<span class="pill good">Reviewed ✓</span>' : '';
+    return out;
+  }
+
+  function render(){
+    var base = baseFiltered();
+    renderStats(base);
+    var list = flagFilter(base);
+    var col = COLS.find(function(c){return c.k===state.sort;})||COLS[0];
+    list.sort(function(a,b){ var x=col.v(a), y=col.v(b); var r = (typeof x==='number'&&typeof y==='number') ? x-y : String(x).localeCompare(String(y)); return state.dir==='asc'?r:-r; });
+    $('headRow').innerHTML = COLS.map(function(c){ return '<th class="'+(c.n?'num':'')+'" data-k="'+c.k+'">'+c.l+(state.sort===c.k?(state.dir==='asc'?' ▲':' ▼'):'')+'</th>'; }).join('');
+    var rows = list.slice(0,state.limit).map(function(j){
+      var open = state.open===j.jobNumber;
+      var optCls = j._opts===0 && j._oppVisit ? 'opt zero' : 'opt';
+      var h = '<tr class="job'+(open?' open':'')+'" data-j="'+j.jobNumber+'">'+
+        '<td class="nowrap">'+fdate(j.completionDate)+'</td>'+
+        '<td class="nowrap">'+esc(j.jobNumber)+'</td>'+
+        '<td>'+esc(j.customer)+'</td>'+
+        '<td class="nowrap">'+esc(j.primaryTech)+'</td>'+
+        '<td class="type">'+esc(j.jobType)+'</td>'+
+        '<td class="num">'+money(j._rev)+'</td>'+
+        '<td class="num">'+hrs(j._hrs)+'</td>'+
+        '<td class="num"><span class="'+optCls+'">'+j._opts+'</span>'+(j._sold?' <span style="color:var(--good);font-size:12px;">('+j._sold+' sold)</span>':'')+'</td>'+
+        '<td class="num">'+(j._mat||j._po? money(j._mat)+(j._po?' / '+money(j._po):''):'—')+'</td>'+
+        '<td>'+flagPills(j,3)+'</td></tr>';
+      if(open) h += '<tr class="detail"><td colspan="10">'+detail(j)+'</td></tr>';
+      return h;
+    }).join('');
+    $('body').innerHTML = rows || '<tr><td colspan="10" class="none" style="padding:30px;text-align:center;">No jobs match these filters.</td></tr>';
+    $('more').innerHTML = list.length>state.limit ? '<button class="btn btn-line" id="moreBtn">Show more ('+(list.length-state.limit)+' more)</button>' : '<span class="footer-note">'+list.length+' job'+(list.length===1?'':'s')+'</span>';
+    if(state.tab==='techs') renderTechs(base);
+    var ls = state.index && state.index.lastSync;
+    $('footNote').textContent = ls ? 'Latest reports: '+ls.reports.map(function(r){return r.kind+(r.range?' ('+r.range+')':'');}).join(', ')+'. Photos aren’t in ServiceTitan reports — use “Open job in ServiceTitan”.' : '';
+  }
+
+  function detail(j){
+    var d=j.detail||{}, m=j.materials||{};
+    var h='';
+    if(j.aiReview){
+      var iss=j.aiReview.issues||[];
+      h+='<div class="ai-box"><b>✦ Claude review</b> — '+(iss.length?iss.length+' issue'+(iss.length>1?'s':''):'write-up and invoice match')+(j.aiReview.note?' · '+esc(j.aiReview.note):'')+
+        (iss.length?'<ul>'+iss.map(function(i){return '<li>'+(i.severity==='high'?'<b style="color:var(--warn)">High:</b> ':'')+esc(i.text)+'</li>';}).join('')+'</ul>':'')+'</div>';
+    }
+    var rule = j.flags.filter(function(f){return f.code.indexOf('ai_')!==0;});
+    if(rule.length) h+='<div style="margin-bottom:12px;">'+rule.map(function(f){return '<span class="pill '+f.level+'">'+esc(f.text)+'</span>';}).join('')+'</div>';
+
+    // write-up
+    var wu = j.invoices.filter(function(i){return i.summary;}).map(function(i){ return (j.invoices.length>1?'<div class="none" style="font-style:normal;font-weight:600;">Invoice '+esc(i.invoiceNumber)+'</div>':'')+'<div class="txt">'+esc(i.summary)+'</div>'; }).join('<hr style="border:none;border-top:1px solid var(--line-soft);">');
+    h+='<div class="dgrid">';
+    h+='<div class="card"><h4>Tech write-up</h4>'+(wu||'<div class="none">No write-up on the invoice.</div>')+'</div>';
+    // billed
+    var b='';
+    if(!j.invoices.length) b='<div class="none">No invoice in the reports yet.</div>';
+    j.invoices.forEach(function(i){
+      if(j.invoices.length>1) b+='<div class="none" style="font-style:normal;font-weight:600;margin-top:6px;">Invoice '+esc(i.invoiceNumber)+'</div>';
+      b+= i.items.length ? '<ul class="items">'+i.items.map(function(x){ return '<li><span><span class="t">'+(/material/i.test(x.type)?'MAT':/equip/i.test(x.type)?'EQP':'SVC')+'</span>'+esc(x.name)+(x.soldBy?' <span class="none">· sold by '+esc(x.soldBy)+'</span>':'')+'</span><span class="p">'+money2(x.price)+(x.pricebook?' <span class="none" title="Pricebook price">('+money2(x.pricebook)+')</span>':'')+'</span></li>'; }).join('')+'</ul>' : '<div class="none">No line items.</div>';
+      b+='<div class="totline"><span>Invoice total</span><span>'+money2(i.total)+'</span></div>';
+      if(i.materialCost) b+='<div class="costline"><span>Material cost</span><span>'+money2(i.materialCost)+'</span></div>';
+      if(i.poCost) b+='<div class="costline"><span>Purchase order cost</span><span>'+money2(i.poCost)+'</span></div>';
+      if(i.billCost) b+='<div class="costline"><span>Bill cost</span><span>'+money2(i.billCost)+'</span></div>';
+      if(i.invoiceId) b+='<div class="links"><a class="btn btn-line" target="_blank" rel="noopener" href="'+ST+'EditInvoice/'+esc(i.invoiceId)+'">Open invoice</a></div>';
+    });
+    h+='<div class="card"><h4>What was billed</h4>'+b+'</div>';
+    // estimates
+    var es = j.estimates.slice().sort(function(a,b){ var o={Sold:0,Open:1,Dismissed:2}; return (o[a.status]||3)-(o[b.status]||3) || b.subtotal-a.subtotal; });
+    var e = es.length ? es.map(function(x){ return '<div class="est"><div class="hd"><span><span class="st '+esc(x.status)+'">'+esc(x.status||'—')+'</span>'+esc(x.name||'(no name)')+(x.recommended?' <span class="pill info" style="margin:0 0 0 4px;">Recommended</span>':'')+'</span><span>'+money2(x.subtotal)+'</span></div>'+
+      '<div class="meta">'+[x.createdBy?'By '+esc(x.createdBy):'', x.created?'created '+fdate(x.created):'', x.soldOn?'sold '+fdate(x.soldOn)+(x.soldBy?' by '+esc(x.soldBy):''):''].filter(Boolean).join(' · ')+'</div>'+
+      (x.summary===undefined?'':(x.summary?'<div class="sum">'+esc(x.summary)+'</div>':'<div class="none" style="color:var(--warn);">No description</div>'))+'</div>'; }).join('')
+      : '<div class="none">'+(d.estimatesCount? d.estimatesCount+' estimate(s) on the job, not in the estimates report window.' : 'No estimates built on this job.')+'</div>';
+    h+='<div class="card"><h4><span>Options presented</span><span>'+j._opts+'</span></h4>'+e+'</div>';
+    h+='</div>';
+    // facts
+    var med = j.medianHours;
+    h+='<div class="facts">'+
+      '<div><span>Hours worked</span>'+hrs(d.hoursWorked)+(med?' <span class="none" style="display:inline;">(typical '+hrs(med)+')</span>':'')+'</div>'+
+      '<div><span>Paid time</span>'+hrs(d.paidHours)+'</div>'+
+      '<div><span>Sold hours</span>'+(d.soldHours?hrs(d.soldHours):'—')+'</div>'+
+      '<div><span>Revenue</span>'+money2(j._rev)+'</div>'+
+      '<div><span>Gross margin</span>'+(m.grossMarginPct!=null? m.grossMarginPct+'%':'—')+'</div>'+
+      '<div><span>Material / PO cost</span>'+money2(j._mat)+' / '+money2(j._po)+'</div>'+
+      '<div><span>Assigned</span>'+esc(d.assignedTechs||j.primaryTech||'—')+'</div>'+
+      '<div><span>Campaign</span>'+esc(d.campaign||'—')+'</div>'+
+      '<div><span>Member</span>'+esc(d.memberStatus||'—')+'</div>'+
+      '<div><span>Warranty / recall</span>'+(d.warranty?'Warranty':d.recall?'Recall':'No')+'</div>'+
+      '</div>';
+    if(m.bookingNotes) h+='<details><summary>Booking notes from the office</summary><div class="txt" style="margin-top:6px;">'+esc(m.bookingNotes)+'</div></details>';
+    h+='<div class="links"><a class="btn btn-line" target="_blank" rel="noopener" href="'+ST+'Job/Index/'+esc(j.jobId||j.jobNumber)+'">Open job in ServiceTitan (photos, forms)</a></div>';
+    return h;
+  }
+
+  function renderTechs(base){
+    var t={};
+    base.forEach(function(j){
+      var k=j.primaryTech||'(none)'; var r=t[k]=t[k]||{tech:k,jobs:0,opp:0,noOpt:0,optSum:0,est:0,estNoSum:0,sold:0,rev:0,hrs:0,warn:0,ai:0};
+      r.jobs++; r.rev+=j._rev; r.hrs+=j._hrs; if(j._warn) r.warn++;
+      if(j.flags.some(function(f){return f.code.indexOf('ai_')===0;})) r.ai++;
+      if(j._oppVisit && j.detail){ r.opp++; r.optSum+=j._opts; if(j._opts===0) r.noOpt++; }
+      r.est+=j.estimates.length; r.sold+=j._sold; r.estNoSum+=j.estimates.filter(function(e){return e.summary!==undefined&&!e.summary;}).length;
+    });
+    var rows=Object.values(t).sort(function(a,b){return b.jobs-a.jobs;});
+    var H=[['Technician'],['Jobs','n'],['Opportunity visits','n'],['Avg options','n'],['No options','n'],['Estimates','n'],['Sold','n'],['Close rate','n'],['No description','n'],['Revenue','n'],['Avg hrs/job','n'],['Need attention','n']];
+    $('techHead').innerHTML=H.map(function(h){return '<th class="'+(h[1]?'num':'')+'">'+h[0]+'</th>';}).join('');
+    $('techBody').innerHTML=rows.map(function(r){
+      var avg=r.opp? r.optSum/r.opp:0, np=r.opp? r.noOpt/r.opp:0;
+      return '<tr class="job" data-tech="'+esc(r.tech)+'"><td class="nowrap"><b>'+esc(r.tech)+'</b></td><td class="num">'+r.jobs+'</td><td class="num">'+r.opp+'</td>'+
+        '<td class="num">'+(r.opp?avg.toFixed(1):'—')+'</td>'+
+        '<td class="num"'+(np>0.25?' style="color:var(--warn);font-weight:700;"':'')+'>'+(r.opp?r.noOpt+' ('+Math.round(np*100)+'%)':'—')+'</td>'+
+        '<td class="num">'+r.est+'</td><td class="num">'+r.sold+'</td><td class="num">'+(r.est?Math.round(r.sold/r.est*100)+'%':'—')+'</td>'+
+        '<td class="num"'+(r.estNoSum?' style="color:var(--warn);font-weight:700;"':'')+'>'+r.estNoSum+'</td>'+
+        '<td class="num">'+money(r.rev)+'</td><td class="num">'+(r.jobs?(r.hrs/r.jobs).toFixed(1):'—')+'</td><td class="num">'+r.warn+'</td></tr>';
+    }).join('');
+  }
+
+  // events
+  document.addEventListener('click', function(e){
+    var t;
+    if((t=e.target.closest('#deptChips .chip'))){ state.dept=t.dataset.d; buildDept(); state.limit=200; render(); return; }
+    if((t=e.target.closest('.stat'))){ state.flag=t.dataset.f; buildFlagSel(); state.limit=200; render(); return; }
+    if((t=e.target.closest('#headRow th'))){ var k=t.dataset.k; if(state.sort===k) state.dir=state.dir==='asc'?'desc':'asc'; else { state.sort=k; state.dir=(k==='cust'||k==='tech'||k==='type')?'asc':'desc'; } render(); return; }
+    if(e.target.closest('#moreBtn')){ state.limit+=200; render(); return; }
+    if((t=e.target.closest('tr[data-tech]'))){ state.tech=t.dataset.tech; $('techSel').value=state.tech; state.flag='all'; buildFlagSel(); switchTab('jobs'); return; }
+    if((t=e.target.closest('.tab-btn'))){ switchTab(t.dataset.tab); return; }
+    if(e.target.closest('a,button,details')) return;
+    if((t=e.target.closest('tr.job[data-j]'))){ state.open = state.open===t.dataset.j?null:t.dataset.j; render(); return; }
+  });
+  function switchTab(tab){
+    state.tab=tab;
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===tab); });
+    $('jobsTab').style.display = tab==='jobs'?'':'none';
+    $('techsTab').style.display = tab==='techs'?'':'none';
+    render();
+  }
+  $('monthSel').addEventListener('change', function(){ state.month=this.value; state.open=null; loadMonth(); });
+  $('techSel').addEventListener('change', function(){ state.tech=this.value; state.limit=200; render(); });
+  $('flagSel').addEventListener('change', function(){ state.flag=this.value; state.limit=200; render(); });
+  var tmr; $('searchBox').addEventListener('input', function(){ var v=this.value; clearTimeout(tmr); tmr=setTimeout(function(){ state.q=v.trim(); state.limit=200; render(); },200); });
+
+  load();
+})();
+</script>
+</body>
+</html>
