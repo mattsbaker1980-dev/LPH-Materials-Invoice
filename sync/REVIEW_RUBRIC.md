@@ -73,6 +73,29 @@ Always copy `purchasedOnPO` into `materialsGapFor` for these jobs. This is a gui
 manager checking the PO, not an accusation — don't also raise it as a `not_billed` issue unless
 the write-up describes billable work that isn't priced anywhere on the invoice.
 
+## General Time (only for jobs that have a `generalTime` block)
+
+Techs sometimes bill a "General Time" / Grid Task line (`gtCode` like GT-0075-0020 = 0.75 labor hours +
+$20 material allowance, picked by the tech) instead of real pricebook tasks. For each line in
+`generalTime`, read `techDescription` and decide which pricebook task(s) from `candidates` cover the
+work described.
+- Match the same work on the same kind of equipment (a furnace gas valve is not a water-heater gas valve).
+- If the description lists several separate repairs (e.g. "replaced pressure switch, inducer and ignitor"),
+  return one task per repair in `tasks`. Use `quantity` for "2 valves" etc. (a task that already says
+  "(2)" counts as one).
+- Return no tasks when none of the candidates genuinely fits, and set `reason`:
+  - `"custom_work"` — real work that the pricebook doesn't have a task for (repipes, custom runs,
+    unusual installs). General Time is reasonable here.
+  - `"too_vague"` — the description doesn't say what was done ("Custom Solution", "per quote") —
+    a manager can't verify the charge.
+  - `"not_work"` — it's a diagnosis, note or warranty placeholder rather than work.
+- `confidence`: "high" when the task(s) clearly are the same work, "medium" when close, "low" when unsure.
+- Don't compute prices — the tool looks them up. Don't raise General Time as an `issues` entry.
+
+Return, per job: `"generalTime": [{"line": "<copied>", "tasks": [{"taskCode": "IM23870", "quantity": 1}, ...],
+"reason": null, "confidence": "high", "note": "Furnace ignitor, pressure switch and inducer"}]` — one entry
+for every line in the block (use `"tasks": []` plus a `reason` when nothing fits).
+
 ## Output
 
 Write a JSON array to `results.json`. Copy `jobNumber` and `fingerprint` exactly from the queue.

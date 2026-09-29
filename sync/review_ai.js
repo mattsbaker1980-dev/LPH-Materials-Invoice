@@ -21,6 +21,27 @@
 
 const fs = require('fs');
 const L = require('./review_sync.js');
+const PB = require('./pricebook.js');
+const GT_RE = /^GT-\d{4}-\d{4}$/i;
+const gtLinesOf = (j) => j.invoices.flatMap((i) => i.items || []).filter((x) => GT_RE.test(x.code || ''));
+const gtKey = (x) => x.code + '|' + x.price;
+// Candidates for the whole description plus each clause/sentence, so multi-part work gets a task per part.
+function gtCandidates(pb, desc, jobType) {
+  const seen = new Set(), out = [];
+  const addAll = (list) => list.forEach((c) => { if (!seen.has(c.code)) { seen.add(c.code); out.push(c); } });
+  addAll(PB.candidates(pb, desc + ' ' + jobType, 12));
+  String(desc).split(/(?<=[.;!?\n])\s*|,\s*(?=and\b)|\s+and\s+(?=(?:replace|install|repair|add|run))/i).map((x) => x.trim()).filter((x) => x.length > 12).slice(0, 6)
+    .forEach((part) => addAll(PB.candidates(pb, part + ' ' + jobType, 5)));
+  return out.slice(0, 30);
+}
+// General Time lines that haven't been matched to a real task yet
+function needsGtReview(job) {
+  const lines = gtLinesOf(job);
+  if (!lines.length) return false;
+  if (GAP_SINCE && (!job.completionDate || job.completionDate < GAP_SINCE)) return false;
+  const gm = (job.aiReview && job.aiReview.gt) || {};
+  return lines.some((x) => !gm[gtKey(x)]);
+}
 
 function parseArgs() {
   const a = process.argv.slice(2);
@@ -30,6 +51,7 @@ function parseArgs() {
     else if (a[i] === '--max') o.max = parseInt(a[++i], 10);
     else if (a[i] === '--days') o.days = parseInt(a[++i], 10);
     else if (a[i] === '--only-gap') o.onlyGap = true;
+    else if (a[i] === '--only-gt') o.onlyGt = true;
     else o.file = a[i];
   }
   return o;
@@ -48,8 +70,10 @@ function needsGapReview(job) {
   if (GAP_SINCE && (!job.completionDate || job.completionDate < GAP_SINCE)) return false;
   return !job.aiReview || job.aiReview.fingerprint !== L.reviewFingerprint(job) || job.aiReview.gapFor !== poOf(job);
 }
+let ONLY_GT = false;
 function needsReview(job) {
-  if (needsGapReview(job)) return true;
+  if (ONLY_GT) return needsGtReview(job);
+  if (needsGapReview(job) || needsGtReview(job)) return true;
   if (ONLY_GAP) return false;
   if (SINCE && (!job.completionDate || job.completionDate < SINCE)) return false;
   const hasWriteUp = job.invoices.some((i) => (i.items || []).length || i.summary);
@@ -61,15 +85,17 @@ async function queue(o) {
   SINCE = new Date(Date.now() - o.days * 86400000).toISOString().slice(0, 10);
   GAP_SINCE = new Date(Date.now() - o.gapDays * 86400000).toISOString().slice(0, 10);
   ONLY_GAP = o.onlyGap;
+  ONLY_GT = !!o.onlyGt;
   const store = L.makeStore({ local: o.local });
   const index = (await store.read(`${L.DIR}/index.json`)).data;
   if (!index) { console.log('[]'); return; }
+  const pb = (await store.read('data/pricebook.json')).data;
   const out = [];
   // newest month first, newest jobs first
   for (const mo of index.months.slice(0, 2)) {
     const data = (await store.read(`${L.DIR}/${mo}.json`)).data;
     const jobs = Object.values(data.jobs).filter(needsReview)
-      .sort((a, b) => (needsGapReview(b) - needsGapReview(a)) || String(b.completionDate).localeCompare(String(a.completionDate)));
+      .sort((a, b) => ((needsGapReview(b) || needsGtReview(b)) - (needsGapReview(a) || needsGtReview(a))) || String(b.completionDate).localeCompare(String(a.completionDate)));
     for (const j of jobs) {
       if (out.length >= o.max) break;
       out.push({
@@ -86,6 +112,13 @@ async function queue(o) {
         soldWorkBilledOn: (j.soldWork || []).filter((x) => x.jobNumber).map((x) => `"${x.estimateName}" $${x.subtotal} billed on job ${x.jobNumber} (${x.date}, invoice $${x.invoiced})`),
         fromEstimate: j.fromEstimate ? `Work sold on job ${j.fromEstimate.jobNumber}: "${j.fromEstimate.estimateName}" $${j.fromEstimate.subtotal}` : undefined,
       });
+      if (pb && needsGtReview(j)) {
+        const last = out[out.length - 1];
+        last.generalTime = gtLinesOf(j).map((x) => ({
+          line: gtKey(x), billed: x.price, gtCode: x.code, techDescription: x.desc || '',
+          candidates: gtCandidates(pb, x.desc || '', j.jobType).map((c) => `${c.code} | ${c.name} | $${c.price} | ${c.hours}h + $${c.materialCost} mat${c.desc && c.desc !== c.name ? ' | ' + c.desc.slice(0, 110) : ''}`),
+        }));
+      }
       if (needsGapReview(j)) {
         const last = out[out.length - 1];
         last.materialsGap = {
@@ -111,6 +144,8 @@ async function apply(o) {
   const list = Array.isArray(results) ? results : results.results || results.jobs;
   const store = L.makeStore({ local: o.local });
   const idx = await store.read(`${L.DIR}/index.json`);
+  const pb = (await store.read('data/pricebook.json')).data;
+  const svc = {}; (pb ? pb.services : []).forEach((x) => { svc[x.code.toLowerCase()] = x; });
   const months = {};
   let saved = 0, stale = 0, missing = 0;
   for (const r of list) {
@@ -120,12 +155,35 @@ async function apply(o) {
     const job = months[mo].data.jobs[r.jobNumber];
     if (!job) { missing++; continue; }
     if (r.fingerprint !== L.reviewFingerprint(job)) { stale++; continue; } // data changed after it was queued
+    const keepGt = job.aiReview && job.aiReview.gt;
     job.aiReview = {
+      gt: keepGt,
       fingerprint: r.fingerprint, reviewedAt: new Date().toISOString(),
       verdict: r.verdict === 'issues' && (r.issues || []).length ? 'issues' : 'ok',
       issues: (r.issues || []).slice(0, 6).map((x) => ({ type: String(x.type || 'other').replace(/[^a-z_]/gi, ''), severity: x.severity === 'high' ? 'high' : 'low', text: String(x.text || '').slice(0, 300) })),
       note: r.note ? String(r.note).slice(0, 300) : undefined,
     };
+    if (Array.isArray(r.generalTime)) {
+      const prev = (job.aiReview && job.aiReview.gt) || {};
+      const lines = gtLinesOf(job);
+      r.generalTime.forEach((g) => {
+        const x = lines.find((l) => gtKey(l) === g.line); if (!x) return;
+        const note = g.note ? String(g.note).slice(0, 200) : undefined;
+        const reason = ['custom_work', 'too_vague', 'not_work'].includes(g.reason) ? g.reason : undefined;
+        const want = Array.isArray(g.tasks) && g.tasks.length ? g.tasks : (g.taskCode ? [{ taskCode: g.taskCode, quantity: g.quantity }] : []);
+        const found = want.map((w) => ({ t: svc[String(w.taskCode || '').toLowerCase()], qty: Math.max(1, Math.round(+w.quantity || 1)) })).filter((w) => w.t && !GT_RE.test(w.t.code));
+        if (!found.length) { prev[g.line] = { taskCode: null, reason: reason || 'custom_work', note }; return; }
+        // compare at the same price tier the GT line was billed at (member pricing is 85%)
+        const gt = svc[x.code.toLowerCase()];
+        const member = !!(gt && gt.member && Math.abs(x.price - gt.member) < Math.abs(x.price - gt.price));
+        const tasks = found.map((w) => ({ code: w.t.code, name: w.t.name, qty: w.qty, price: Math.round((member && w.t.member ? w.t.member : w.t.price) * w.qty * 100) / 100, hours: w.t.hours, materials: w.t.materialCost }));
+        const taskPrice = Math.round(tasks.reduce((a, t) => a + t.price, 0) * 100) / 100;
+        prev[g.line] = { taskCode: tasks.map((t) => t.code).join(' + '), taskName: tasks.map((t) => (t.qty > 1 ? t.qty + '× ' : '') + t.name).join(' + '), tasks, taskPrice,
+          tier: member ? 'member' : 'standard', diff: Math.round((taskPrice - x.price) * 100) / 100,
+          confidence: g.confidence === 'high' ? 'high' : g.confidence === 'low' ? 'low' : 'medium', note };
+      });
+      job.aiReview.gt = prev;
+    }
     if (r.materialsGapFor != null) {
       job.aiReview.gapFor = Number(r.materialsGapFor);
       job.aiReview.likelyUnrecorded = (Array.isArray(r.likelyUnrecorded) ? r.likelyUnrecorded : []).slice(0, 15).map((x) => String(x).slice(0, 120));

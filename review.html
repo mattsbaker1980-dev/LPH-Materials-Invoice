@@ -214,7 +214,7 @@ tr.reviewed td{opacity:.72;}
   var ST = 'https://go.servicetitan.com/#/';
   var FLAG_LABELS = {
     no_options:'No options presented', one_option:'Only one option',
-    po_not_billed:'PO costs, $0 invoiced', sold_not_found:'Sold, not billed yet', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
+    po_not_billed:'PO costs, $0 invoiced', sold_not_found:'Sold, not billed yet', general_time:'General Time', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
     negative_margin:'Negative margin', short_visit:'Very short visit', long_visit:'Long visit',
     ai_not_billed:'Work done, not billed', ai_billed_not_described:'Billed, not described', ai_options:'Options gap',
     ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note'
@@ -224,6 +224,7 @@ tr.reviewed td{opacity:.72;}
     no_options:'No estimate was built on this visit. On a system check or service call the tech should almost always find something to offer. Check: were there really no recommendations?',
     one_option:'Only one estimate was built. Customers usually do better with a choice (good / better / best). Check: was a second option reasonable?',
     po_not_billed:'Money was spent on a purchase order for this job but the invoice is $0. Check: is the work billed on another job, is it warranty, or was it missed?',
+    general_time:'The tech billed a General Time (Grid Task) line, where they pick the hours and material allowance themselves, instead of a pricebook task. Where a matching pricebook task exists, it is shown with its price at the same member/standard tier so you can see whether the customer was charged more or less than your price for that work. Custom work with no task is normal; vague descriptions are not.',
     sold_not_found:'An estimate was sold on this job but it isn\u2019t billed here, and no later job for this customer has an invoice matching it (checked for 14+ days). Check: was the work scheduled, done, or cancelled?',
     po_not_recorded:'Parts were bought on a purchase order for this job, but little or nothing was entered on the invoice as materials used, so job costing and inventory are off. Check the PO in ServiceTitan (Job Costing / Purchasing) against the MAT lines under What was billed.',
     materials_not_billed:'Materials were used from stock but nothing was billed. Check: warranty, callback, or missed charge?',
@@ -402,11 +403,20 @@ tr.reviewed td{opacity:.72;}
       ['all', avgOpt.toFixed(1), 'Avg options per opportunity visit', ''],
       ['f:no_options', checksNo.toLocaleString(), 'System checks with no estimate (of '+checks.length+')', checksNo?'warn':''],
       ['f:po_not_billed', money(poAmt), 'PO costs on $0 invoices ('+poNB.length+' jobs)', poAmt?'warn':''],
+      ['f:general_time', money(gtStats(list).billed), 'General Time billed ('+gtStats(list).lines+' lines, '+gtStats(list).under+' under task price)', gtStats(list).under?'warn':''],
       ['ai', ai.toLocaleString(), 'Claude review issues ('+reviewed+' reviewed)', ai?'warn':'']
     ];
     $('stats').innerHTML = S.map(function(s){ return '<div class="stat '+s[3]+(state.flag===s[0]&&s[0]!=='all'?' active':'')+'" data-f="'+s[0]+'"><div class="num">'+s[1]+'</div><div class="lbl">'+esc(s[2])+'</div></div>'; }).join('');
   }
 
+  function gtOf(j){ var gm=(j.aiReview&&j.aiReview.gt)||{}; return j.invoices.flatMap(function(i){return i.items||[];}).filter(function(x){return /^GT-\d{4}-\d{4}$/i.test(x.code||'');}).map(function(x){ return {x:x, m:gm[x.code+'|'+x.price]}; }); }
+  var _gtc=null, _gtl=null;
+  function gtStats(list){
+    if(_gtl===list) return _gtc;
+    var r={lines:0,billed:0,matched:0,under:0,underAmt:0,over:0,overAmt:0,vague:0};
+    list.forEach(function(j){ gtOf(j).forEach(function(g){ r.lines++; r.billed+=g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'){ r.matched++; if(g.m.diff>25){r.under++; r.underAmt+=g.m.diff;} else if(g.m.diff<-25){r.over++; r.overAmt-=g.m.diff;} } if(g.m&&g.m.reason==='too_vague') r.vague++; }); });
+    _gtl=list; _gtc=r; return r;
+  }
   function flagPills(j, max){
     var fl=j.flags.slice().sort(function(a,b){return (a.level==='warn'?0:1)-(b.level==='warn'?0:1);});
     var out = fl.slice(0,max||99).map(function(f){ return '<span class="pill '+f.level+(f.code.indexOf('ai_')===0?' ai':'')+'" title="'+esc(f.text)+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span>'; }).join('');
@@ -474,7 +484,7 @@ tr.reviewed td{opacity:.72;}
     if(!j.invoices.length) b='<div class="none">No invoice in the reports yet.</div>';
     j.invoices.forEach(function(i){
       if(j.invoices.length>1) b+='<div class="none" style="font-style:normal;font-weight:600;margin-top:6px;">Invoice '+esc(i.invoiceNumber)+'</div>';
-      b+= i.items.length ? '<ul class="items">'+i.items.map(function(x){ return '<li><span><span class="t">'+(/material/i.test(x.type)?'MAT':/equip/i.test(x.type)?'EQP':'SVC')+'</span>'+esc(x.name)+(x.soldBy?' <span class="none">· sold by '+esc(x.soldBy)+'</span>':'')+'</span><span class="p">'+money2(x.price)+(x.pricebook?' <span class="none" title="Pricebook price">('+money2(x.pricebook)+')</span>':'')+'</span></li>'; }).join('')+'</ul>' : '<div class="none">No line items.</div>';
+      b+= i.items.length ? '<ul class="items">'+i.items.map(function(x){ return '<li><span><span class="t">'+(/^GT-\d{4}-\d{4}$/i.test(x.code||'')?'GT':/material/i.test(x.type)?'MAT':/equip/i.test(x.type)?'EQP':'SVC')+'</span>'+esc(x.name)+(x.desc?'<div class="none" style="font-style:normal;">'+esc(x.desc)+'</div>':'')+(x.soldBy?' <span class="none">· sold by '+esc(x.soldBy)+'</span>':'')+'</span><span class="p">'+money2(x.price)+(x.pricebook?' <span class="none" title="Pricebook price">('+money2(x.pricebook)+')</span>':'')+'</span></li>'; }).join('')+'</ul>' : '<div class="none">No line items.</div>';
       b+='<div class="totline"><span>Invoice total</span><span>'+money2(i.total)+'</span></div>';
       if(i.materialCost) b+='<div class="costline"><span>Material cost</span><span>'+money2(i.materialCost)+'</span></div>';
       if(i.poCost) b+='<div class="costline"><span>Purchase order cost</span><span>'+money2(i.poCost)+'</span></div>';
@@ -516,12 +526,13 @@ tr.reviewed td{opacity:.72;}
     base.forEach(function(j){
       var k=j.primaryTech||'(none)'; var r=t[k]=t[k]||{tech:k,jobs:0,opp:0,noOpt:0,optSum:0,est:0,estNoSum:0,sold:0,rev:0,hrs:0,warn:0,ai:0};
       r.jobs++; r.rev+=j._rev; r.hrs+=j._hrs; if(j._warn) r.warn++;
+      gtOf(j).forEach(function(g){ r.gtLines=(r.gtLines||0)+1; r.gtBilled=(r.gtBilled||0)+g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) r.gtUnder=(r.gtUnder||0)+g.m.diff; });
       if(j.flags.some(function(f){return f.code.indexOf('ai_')===0;})) r.ai++;
       if(j._oppVisit && j.detail){ r.opp++; r.optSum+=j._opts; if(j._opts===0) r.noOpt++; }
       r.est+=j.estimates.length; r.sold+=j._sold; r.estNoSum+=j.estimates.filter(function(e){return e.summary!==undefined&&!e.summary;}).length;
     });
     var rows=Object.values(t).sort(function(a,b){return b.jobs-a.jobs;});
-    var H=[['Technician'],['Jobs','n'],['Opportunity visits','n'],['Avg options','n'],['No options','n'],['Estimates','n'],['Sold','n'],['Close rate','n'],['Revenue','n'],['Avg hrs/job','n'],['Need attention','n']];
+    var H=[['Technician'],['Jobs','n'],['Opportunity visits','n'],['Avg options','n'],['No options','n'],['Estimates','n'],['Sold','n'],['Close rate','n'],['General Time','n'],['GT under task price','n'],['Revenue','n'],['Avg hrs/job','n'],['Need attention','n']];
     $('techHead').innerHTML=H.map(function(h){return '<th class="'+(h[1]?'num':'')+'">'+h[0]+'</th>';}).join('');
     $('techBody').innerHTML=rows.map(function(r){
       var avg=r.opp? r.optSum/r.opp:0, np=r.opp? r.noOpt/r.opp:0;
@@ -529,6 +540,8 @@ tr.reviewed td{opacity:.72;}
         '<td class="num">'+(r.opp?avg.toFixed(1):'—')+'</td>'+
         '<td class="num"'+(np>0.25?' style="color:var(--warn);font-weight:700;"':'')+'>'+(r.opp?r.noOpt+' ('+Math.round(np*100)+'%)':'—')+'</td>'+
         '<td class="num">'+r.est+'</td><td class="num">'+r.sold+'</td><td class="num">'+(r.est?Math.round(r.sold/r.est*100)+'%':'—')+'</td>'+
+        '<td class="num">'+(r.gtLines?r.gtLines+' · '+money(r.gtBilled):'—')+'</td>'+
+        '<td class="num"'+(r.gtUnder>0?' style="color:var(--warn);font-weight:700;"':'')+'>'+(r.gtUnder?money(r.gtUnder):'—')+'</td>'+
         '<td class="num">'+money(r.rev)+'</td><td class="num">'+(r.jobs?(r.hrs/r.jobs).toFixed(1):'—')+'</td><td class="num">'+r.warn+'</td></tr>';
     }).join('');
   }

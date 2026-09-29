@@ -194,6 +194,8 @@ function parseLineItems(rows, cols) {
     itemName: cols.find('item name', 'invoice items'),
     itemCode: cols.find('item code', 'invoice items'),
     itemType: cols.find('item type', 'invoice items'),
+    itemDesc: cols.find('item description', 'invoice items'),
+    memberPrice: cols.find('member price', 'invoice items'),
     price: cols.find('item price', 'invoice items'),
     pb: cols.find('pricebook price', 'invoice items'),
     tech: cols.find('primary technician', 'invoice items'),
@@ -230,6 +232,12 @@ function parseLineItems(rows, cols) {
       const pb = round(num(r[I.pb]));
       if (pb && pb !== it.price) it.pricebook = pb;
       if (str(r[I.soldBy])) it.soldBy = str(r[I.soldBy]);
+      // General Time (Grid Task) lines: keep the tech's custom description so it can be matched to a real task
+      if (/^GT-\d{4}-\d{4}$/i.test(it.code)) {
+        it.desc = str(r[I.itemDesc]).replace(/\s*CODE_[\d.]+\s*$/i, '').slice(0, 500);
+        const mp = round(num(r[I.memberPrice]));
+        if (mp) it.memberPricebook = mp;
+      }
       g.invoice.items.push(it);
     }
   }
@@ -373,6 +381,27 @@ function computeFlags(job, ctx) {
   const ai = job.aiReview;
   if (ai && ai.fingerprint === reviewFingerprint(job) && Array.isArray(ai.issues)) {
     ai.issues.forEach((x) => add('ai_' + (x.type || 'issue'), x.severity === 'high' ? 'warn' : 'info', x.text));
+  }
+
+  // --- General Time used instead of a real pricebook task
+  const gtLines = items.filter((x) => /^GT-\d{4}-\d{4}$/i.test(x.code || ''));
+  if (gtLines.length) {
+    const gm = (job.aiReview && job.aiReview.gt) || {};
+    gtLines.forEach((x) => {
+      const m = gm[x.code + '|' + x.price];
+      const money = (n) => '$' + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      let t = `${x.code} billed ${money(x.price)}${x.desc ? ' for "' + x.desc.slice(0, 90) + (x.desc.length > 90 ? '…' : '') + '"' : ''}`;
+      let level = 'info';
+      if (m && m.taskCode) {
+        t += ` — pricebook: ${m.taskName} = ${money(m.taskPrice)}${m.tier === 'member' ? ' (member)' : ''}; ` +
+          (Math.abs(m.diff) < 1 ? 'same price' : m.diff > 0 ? `billed ${money(m.diff)} LESS than the task` : `billed ${money(m.diff)} MORE than the task`) +
+          (m.confidence === 'low' ? ' (low-confidence match)' : '');
+        level = m.diff > 25 && m.confidence !== 'low' ? 'warn' : 'info';
+      } else if (m && m.reason === 'too_vague') { t += ' — description too vague to verify what was charged'; level = 'warn'; }
+      else if (m && m.reason === 'not_work') { t += ' — not a work description (diagnosis/note)'; level = 'warn'; }
+      else if (m) t += ' — custom work, no matching pricebook task';
+      add('general_time', level, t);
+    });
   }
 
   // --- sold work not found on any invoice yet
