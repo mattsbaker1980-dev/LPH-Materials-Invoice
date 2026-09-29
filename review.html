@@ -176,7 +176,7 @@ tr.reviewed td{opacity:.72;}
   var ST = 'https://go.servicetitan.com/#/';
   var FLAG_LABELS = {
     no_options:'No options presented', one_option:'Only one option',
-    po_not_billed:'PO costs, $0 invoiced', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
+    po_not_billed:'PO costs, $0 invoiced', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
     negative_margin:'Negative margin', short_visit:'Very short visit', long_visit:'Long visit',
     ai_not_billed:'Work done, not billed', ai_billed_not_described:'Billed, not described', ai_options:'Options gap',
     ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note'
@@ -300,6 +300,7 @@ tr.reviewed td{opacity:.72;}
   }
   function flagFilter(list){
     var f=state.flag;
+    if(state.q) return list; // a search always looks across every job, whatever "Show" is set to
     return list.filter(function(j){
       if(f==='all') return true;
       if(f==='attention') return j._warn>0;

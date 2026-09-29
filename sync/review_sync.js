@@ -380,6 +380,11 @@ function computeFlags(job, ctx) {
     const wr = d.warranty || d.recall || /warranty|recall/i.test(type);
     add('po_not_billed', wr ? 'info' : 'warn', `$${Math.round(poCost).toLocaleString()} in PO/bill costs, $0 invoiced${wr ? ' (warranty/recall)' : ''}`);
   }
+  // Purchased for the job (PO/bill) but not recorded as materials used on the invoice -> job costing is off.
+  const invMatCost = job.invoices.reduce((s, i) => s + (i.materialCost || 0), 0);
+  if (poCost >= 100 && invTotal > 0 && invMatCost < poCost * 0.25) {
+    add('po_not_recorded', 'warn', `$${Math.round(poCost).toLocaleString()} purchased on PO, only $${Math.round(invMatCost).toLocaleString()} recorded as materials used`);
+  }
   if (matCost >= 25 && job.invoices.length && materialLines.length === 0 && invTotal <= 0) {
     add('materials_not_billed', 'warn', `$${Math.round(matCost).toLocaleString()} in material cost, nothing billed`);
   }
