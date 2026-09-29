@@ -1,45 +1,5 @@
 [
   {
-    "id": "356",
-    "invoiceNumber": "356",
-    "jobSummary": "",
-    "invoiceSummary": "",
-    "servicesText": "",
-    "materialsText": "",
-    "serviceItems": [],
-    "materialItems": [],
-    "total": "",
-    "flags": [],
-    "manualOverride": null,
-    "savedAt": 1790363632276
-  },
-  {
-    "id": "454",
-    "invoiceNumber": "454",
-    "jobSummary": "",
-    "invoiceSummary": "",
-    "servicesText": "",
-    "materialsText": "",
-    "total": "",
-    "flags": [],
-    "manualOverride": null,
-    "savedAt": 1789734449779
-  },
-  {
-    "id": "2416",
-    "invoiceNumber": "2416",
-    "jobSummary": "",
-    "invoiceSummary": "2416",
-    "servicesText": "",
-    "materialsText": "",
-    "serviceItems": [],
-    "materialItems": [],
-    "total": "664447.77",
-    "flags": [],
-    "manualOverride": null,
-    "savedAt": 1789734375969
-  },
-  {
     "id": "215237324",
     "invoiceNumber": "215237324",
     "jobSummary": "",

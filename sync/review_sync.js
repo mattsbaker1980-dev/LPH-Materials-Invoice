@@ -356,14 +356,13 @@ function computeFlags(job, ctx) {
   // --- options presented
   if (job.detail || job.estimates.length) {
     if (estCount === 0 && !NO_OPTION_EXEMPT.test(type) && !d.warranty && !d.recall) {
-      add('no_options', isEstimateJob || d.zeroDollar ? 'warn' : 'info',
-        isEstimateJob ? 'Estimate job with no estimates built' : 'No estimate options presented');
+      const isCheck = /system check|maintenance|tune.?up/i.test(type);
+      add('no_options', isEstimateJob || isCheck || d.zeroDollar ? 'warn' : 'info',
+        isEstimateJob ? 'Estimate job with no estimates built' : isCheck ? 'System check with no estimate' : 'No estimate options presented');
     } else if (estCount === 1 && !NO_OPTION_EXEMPT.test(type)) {
       add('one_option', 'info', 'Only one option presented');
     }
   }
-  const noSummary = job.estimates.filter((e) => e.summary !== undefined && !e.summary);
-  if (noSummary.length) add('estimate_no_summary', 'warn', `${noSummary.length} estimate${noSummary.length > 1 ? 's' : ''} with no description`);
 
   // --- write-up vs invoice
   for (const inv of job.invoices) {

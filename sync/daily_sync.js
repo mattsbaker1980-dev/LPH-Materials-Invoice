@@ -166,7 +166,7 @@ function parseJobsReport(text) {
     const get = (key) => { const i = idx[key]; return (i === -1 || i === undefined) ? '' : row[i]; };
     const jobNumber = get('jobNumber');
     if (jobNumber === '' || jobNumber === undefined) continue;
-    if (!/^\d+$/.test(String(jobNumber).trim())) continue; // guard against corrupted/shifted rows
+    if (!/^\d{6,}$/.test(String(jobNumber).trim())) continue; // guard against corrupted/shifted rows and report totals rows
     const revenue = toNum(get('revenue'));
     const materialCostRaw = toNum(get('materialCostRaw'));
     const materialPct = toNum(get('materialCost'));
@@ -226,7 +226,7 @@ function parseLineItemsReport(text) {
     let jobNum = get('jobNumber');
     if (!jobNum && jobNum !== 0) continue;
     jobNum = String(jobNum).trim();
-    if (!/^\d+$/.test(jobNum)) continue; // guard against corrupted/shifted rows (see KNOWN ISSUE above)
+    if (!/^\d{6,}$/.test(jobNum)) continue; // guard against corrupted/shifted rows and totals rows (see KNOWN ISSUE above)
     if (!groups[jobNum]) {
       groups[jobNum] = {
         jobNumber: jobNum,
