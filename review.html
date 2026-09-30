@@ -54,7 +54,11 @@ select,.search{padding:7px 10px;border:1px solid var(--line);border-radius:6px;b
 .chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
 .table-wrap{border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:var(--paper);}
 table{width:100%;border-collapse:collapse;min-width:1100px;}
-thead th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);background:var(--steel);cursor:pointer;white-space:nowrap;position:sticky;top:0;}
+thead th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);background:var(--steel);cursor:pointer;white-space:nowrap;position:sticky;top:0;z-index:3;box-shadow:0 1px 0 var(--line);}
+/* keep the column headers visible while scrolling: on wide screens the page scrolls (no inner scroll box);
+   on narrow screens the table scrolls inside its own box */
+@media (min-width:1100px){ .table-wrap{overflow:visible;} thead tr:first-child th:first-child{border-top-left-radius:10px;} thead tr:first-child th:last-child{border-top-right-radius:10px;} }
+@media (max-width:1099px){ .table-wrap{max-height:calc(100vh - 80px);overflow:auto;} }
 thead th:hover{color:var(--ink);}
 th.num,td.num{text-align:right;}
 tbody td{padding:10px 12px;font-size:13.5px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
@@ -170,7 +174,6 @@ tr.reviewed td{opacity:.72;}
       </div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <a class="btn btn-ghost" href="./index.html">Materials vs Invoice &rarr;</a>
     </div>
   </div>
 </header>
