@@ -102,6 +102,23 @@
     "invoiceDate": "2026-09-23T00:00:00.000Z"
   },
   {
+    "jobNumber": "272125634",
+    "jobType": "Heating System Check - Gas Furnace - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Preferred Method: CALL",
+    "revenue": 58.41,
+    "materialCostRaw": 16.62,
+    "materialPct": 28.454031843862353,
+    "grossMargin": -13.943346,
+    "grossMarginPct": -23.87150487930149,
+    "totalCosts": 72.353346,
+    "technician": "Brian McG.",
+    "customer": "Bernie Wendler",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "275388051",
     "jobType": "Heating System Check - Heat Pump - Age 11+",
     "businessUnit": "HVAC System Check",
@@ -116,7 +133,7 @@
     "technician": "Andrew G.",
     "customer": "Troy & Carole Isaak",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "277174572",
@@ -236,6 +253,23 @@
     "customer": "Leslie Domby",
     "completionDate": "2026-09-15T00:00:00.000Z",
     "invoiceDate": "2026-09-15T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "282668838",
+    "jobType": "Heating System Check - Oil Boiler - Age 11+",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Preferred Method:  CALL",
+    "revenue": 259,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -381.043263,
+    "grossMarginPct": -1.4712095096525097,
+    "totalCosts": 640.043263,
+    "technician": "Brian W.",
+    "customer": "Michael & Barbara Brown",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "283139445",
@@ -422,6 +456,23 @@
     "technician": "Brian W.",
     "customer": "Tom & Beth Henry",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "292994596",
+    "jobType": "Heating System Check - Gas Furnace - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Preferred Method:",
+    "revenue": 0,
+    "materialCostRaw": 5.76,
+    "materialPct": 0,
+    "grossMargin": -290.61,
+    "grossMarginPct": 0,
+    "totalCosts": 290.61,
+    "technician": "Cayden W.",
+    "customer": "Brian  Montgomery",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -711,7 +762,7 @@
     "technician": "Cayden W.",
     "customer": "Marilyn McCord",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "298570362",
@@ -1020,6 +1071,23 @@
     "invoiceDate": "2026-09-10T04:00:00.000Z"
   },
   {
+    "jobNumber": "304187386",
+    "jobType": "Cooling System Check - Central A/C - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Preferred Method:",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -64,
+    "grossMarginPct": 0,
+    "totalCosts": 64,
+    "technician": "Brandon G.",
+    "customer": "Lora Thompson",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "304693261",
     "jobType": "Plumbing System Check",
     "businessUnit": "Plumbing System Check",
@@ -1198,13 +1266,13 @@
     "revenue": 0,
     "materialCostRaw": 3.76,
     "materialPct": 0,
-    "grossMargin": -353.893264,
+    "grossMargin": -364.293264,
     "grossMarginPct": 0,
-    "totalCosts": 353.893264,
+    "totalCosts": 364.293264,
     "technician": "Cesar R.",
     "customer": "Clark & Robin Kaufman",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "306805110",
@@ -1238,7 +1306,7 @@
     "technician": "Scott H.",
     "customer": "Michael & Mary Terry",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "307405053",
@@ -1323,7 +1391,7 @@
     "technician": "Andrew G.",
     "customer": "Cathy Walton",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "308205793",
@@ -1332,15 +1400,15 @@
     "status": "Completed",
     "summary": "---",
     "revenue": 58.41,
-    "materialCostRaw": 12.4,
-    "materialPct": 21.22924156822462,
-    "grossMargin": -52.156692,
-    "grossMarginPct": -89.29411402157164,
-    "totalCosts": 110.566692,
+    "materialCostRaw": 7.4,
+    "materialPct": 12.669063516521142,
+    "grossMargin": -47.156692,
+    "grossMarginPct": -80.73393596986817,
+    "totalCosts": 105.566692,
     "technician": "Scott H.",
     "customer": "Robert & Marita Charles",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "308293845",
@@ -1425,7 +1493,7 @@
     "technician": "Cesar R.",
     "customer": "Richard & Carol Dull",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "309114291",
@@ -1564,6 +1632,23 @@
     "invoiceDate": "2026-09-09T04:00:00.000Z"
   },
   {
+    "jobNumber": "312557845",
+    "jobType": "Electrical System Check",
+    "businessUnit": "Electrical System Check",
+    "status": "Completed",
+    "summary": "Preferred Method: C",
+    "revenue": 587.44,
+    "materialCostRaw": 29.85,
+    "materialPct": 5.0813700122565715,
+    "grossMargin": -1615.162,
+    "grossMarginPct": -2.7494927141495302,
+    "totalCosts": 2202.602,
+    "technician": "Ryan S.",
+    "customer": "Christopher Bosch",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "312597841",
     "jobType": "Heating System Check - Oil Furnace - Age 0-10",
     "businessUnit": "HVAC System Check",
@@ -1595,7 +1680,7 @@
     "technician": "Garrick B.",
     "customer": "James Knight",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "312769226",
@@ -1613,6 +1698,23 @@
     "customer": "Joseph Donell",
     "completionDate": "2026-09-16T00:00:00.000Z",
     "invoiceDate": "2026-09-16T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "312786724",
+    "jobType": "Heating System Check - Gas Furnace - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Prefers PHONE CALL",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -74.733346,
+    "grossMarginPct": 0,
+    "totalCosts": 74.733346,
+    "technician": "Scott H.",
+    "customer": "Robert & Betty Rishel",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "312787864",
@@ -1683,6 +1785,23 @@
     "invoiceDate": "2026-09-14T00:00:00.000Z"
   },
   {
+    "jobNumber": "314538194",
+    "jobType": "Cooling System Check - Central A/C - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Preferred Method: TEXT",
+    "revenue": 83.76,
+    "materialCostRaw": 163.72,
+    "materialPct": 1.954632282712512,
+    "grossMargin": -149.293344,
+    "grossMarginPct": -1.7823942693409742,
+    "totalCosts": 233.053344,
+    "technician": "Brandon G.",
+    "customer": "Ryan Missera",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "315136861",
     "jobType": "Heating System Check - Gas Furnace - Age 0-10",
     "businessUnit": "HVAC System Check",
@@ -1697,7 +1816,7 @@
     "technician": "Cesar R.",
     "customer": "Kaye Hubert",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "315190422",
@@ -1715,6 +1834,23 @@
     "customer": "Keiko Essick",
     "completionDate": "2026-09-15T00:00:00.000Z",
     "invoiceDate": "2026-09-15T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "316307854",
+    "jobType": "Cooling System Check - Heat Pump - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Preferred Method: C",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -935.416602,
+    "grossMarginPct": 0,
+    "totalCosts": 935.416602,
+    "technician": "Garrick B.",
+    "customer": "Peggy Wenger",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "316669434",
@@ -1870,6 +2006,23 @@
     "invoiceDate": "2026-09-23T00:00:00.000Z"
   },
   {
+    "jobNumber": "320125557",
+    "jobType": "Electrical System Check",
+    "businessUnit": "Electrical System Check",
+    "status": "Completed",
+    "summary": "Preferred Method: TEXT",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -794.352,
+    "grossMarginPct": 0,
+    "totalCosts": 794.352,
+    "technician": "Ryan K.",
+    "customer": "Aileen Gower",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "320414396",
     "jobType": "Cooling System Check - Central A/C - Age 0-10",
     "businessUnit": "HVAC System Check",
@@ -1889,7 +2042,7 @@
   {
     "jobNumber": "320862480",
     "jobType": "Heating System Check - Gas Furnace - Age 11+",
-    "businessUnit": "HVAC Demand",
+    "businessUnit": "HVAC System Check",
     "status": "Completed",
     "summary": "CONTACT: #9738 C",
     "revenue": 174.1,
@@ -1901,7 +2054,7 @@
     "technician": "Brandon G.",
     "customer": "Alfred & Diane Yohe",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "320870176",
@@ -1963,9 +2116,9 @@
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": -2137.98,
+    "grossMargin": -2332.96,
     "grossMarginPct": 0,
-    "totalCosts": 2137.98,
+    "totalCosts": 2332.96,
     "technician": "Garrick B.",
     "customer": "Doris Tibbetts",
     "completionDate": "2026-09-25T00:00:00.000Z",
@@ -2088,7 +2241,7 @@
     "technician": "Josh R.",
     "customer": "Leo & Joanne Grudzinski",
     "completionDate": "2026-09-24T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-24T00:00:00.000Z"
   },
   {
     "jobNumber": "322252340",
@@ -2116,9 +2269,9 @@
     "revenue": 15159,
     "materialCostRaw": 5.18,
     "materialPct": 0,
-    "grossMargin": 4534.369852,
-    "grossMarginPct": 29.912064463355104,
-    "totalCosts": 10624.630148,
+    "grossMargin": 3820.569852,
+    "grossMarginPct": 25.20331058776964,
+    "totalCosts": 11338.430148,
     "technician": "Ben L.",
     "customer": "Leo & Joanne Grudzinski",
     "completionDate": "2026-09-24T00:00:00.000Z",
@@ -2173,7 +2326,7 @@
     "technician": "Brandon G.",
     "customer": "Matt Merlino",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "322869930",
@@ -2210,6 +2363,23 @@
     "invoiceDate": "2026-09-18T00:00:00.000Z"
   },
   {
+    "jobNumber": "323145882",
+    "jobType": "Heating System Check - Heat Pump - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Contact #: 5397 T",
+    "revenue": 0,
+    "materialCostRaw": 9.32,
+    "materialPct": 0,
+    "grossMargin": -353.953263,
+    "grossMarginPct": 0,
+    "totalCosts": 353.953263,
+    "technician": "Cayden W.",
+    "customer": "John Jones",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "323344715",
     "jobType": "Cooling System Check - Central A/C - Age 11+",
     "businessUnit": "HVAC System Check",
@@ -2225,6 +2395,23 @@
     "customer": "Steve Saunders",
     "completionDate": "2026-09-09T04:00:00.000Z",
     "invoiceDate": "2026-09-09T04:00:00.000Z"
+  },
+  {
+    "jobNumber": "323406904",
+    "jobType": "Heating System Check - Gas Furnace - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "---",
+    "revenue": 295,
+    "materialCostRaw": 3.76,
+    "materialPct": 1.2745762711864406,
+    "grossMargin": -501.86,
+    "grossMarginPct": -1.701220338983051,
+    "totalCosts": 796.86,
+    "technician": "Shane H.",
+    "customer": "Dr. Eileen Colligan",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "323413170",
@@ -2312,6 +2499,23 @@
     "invoiceDate": "2026-09-21T00:00:00.000Z"
   },
   {
+    "jobNumber": "324122602",
+    "jobType": "Cooling System Check - Central A/C - Age 11+",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Contact #: 0592 TXT",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -575.466736,
+    "grossMarginPct": 0,
+    "totalCosts": 575.466736,
+    "technician": "Cesar R.",
+    "customer": "James & Deborah Martin",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "324146263",
     "jobType": "Cooling System Check - Central A/C - Age 0-10",
     "businessUnit": "HVAC System Check",
@@ -2327,6 +2531,23 @@
     "customer": "Fred & Mary Lou Kocher",
     "completionDate": "2026-09-23T00:00:00.000Z",
     "invoiceDate": "2026-09-23T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "324428634",
+    "jobType": "Heating System Check - Gas Furnace - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "---",
+    "revenue": 159,
+    "materialCostRaw": 82.77,
+    "materialPct": 52.05660377358491,
+    "grossMargin": -271.92,
+    "grossMarginPct": -1.710188679245283,
+    "totalCosts": 430.92,
+    "technician": "Brian W.",
+    "customer": "Robert Boudreau",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "324630331",
@@ -2913,15 +3134,15 @@
     "status": "Completed",
     "summary": "---",
     "revenue": 279.85,
-    "materialCostRaw": 30,
-    "materialPct": 10.720028586742899,
-    "grossMargin": -1786.4831297,
-    "grossMarginPct": -6.383716740039307,
-    "totalCosts": 2066.3331297,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -1789.4831297,
+    "grossMarginPct": -6.39443676862605,
+    "totalCosts": 2069.3331297,
     "technician": "Tylor H.",
     "customer": "James Waters",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "328919313",
@@ -2973,6 +3194,23 @@
     "customer": "Robert Larson",
     "completionDate": "2026-09-16T00:00:00.000Z",
     "invoiceDate": "2026-09-16T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "329062994",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "Contact #: 1398 C",
+    "revenue": 234.64,
+    "materialCostRaw": 29.6,
+    "materialPct": 12.615069894306172,
+    "grossMargin": -392.7468733,
+    "grossMarginPct": -1.6738274518411183,
+    "totalCosts": 627.3868733,
+    "technician": "Nick E.",
+    "customer": "Robert & Donna Geiger",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "329108658",
@@ -3332,6 +3570,23 @@
     "invoiceDate": "2026-09-24T00:00:00.000Z"
   },
   {
+    "jobNumber": "331282007",
+    "jobType": "Heating System Check - Gas Furnace - Age 11+",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Contact #: 9024 C",
+    "revenue": 0,
+    "materialCostRaw": 5.76,
+    "materialPct": 0,
+    "grossMargin": -326.61,
+    "grossMarginPct": 0,
+    "totalCosts": 326.61,
+    "technician": "Andrew G.",
+    "customer": "Connie Schoelkoph",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "331387729",
     "jobType": "Cooling System Check - Heat Pump - Age 11+",
     "businessUnit": "HVAC System Check",
@@ -3567,7 +3822,7 @@
     "technician": "Cesar R.",
     "customer": "Elizabeth Johnson",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "332633290",
@@ -3652,7 +3907,7 @@
     "technician": "Layne B.",
     "customer": "Gozde Hazar",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "333340977",
@@ -4095,6 +4350,23 @@
     "customer": "Edward Tobin, Jr.",
     "completionDate": "2026-09-18T00:00:00.000Z",
     "invoiceDate": "2026-09-18T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "334063793",
+    "jobType": "Heating System Check - Gas Furnace - Age 11+",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Customer Availability Notes: AM only",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -540.8,
+    "grossMarginPct": 0,
+    "totalCosts": 540.8,
+    "technician": "Cesar R.",
+    "customer": "Wanda Torres",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "334064583",
@@ -5473,6 +5745,23 @@
     "invoiceDate": "2026-09-09T04:00:00.000Z"
   },
   {
+    "jobNumber": "335165120",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "Contact #: 2444 TXT",
+    "revenue": 796.45,
+    "materialCostRaw": 155.91,
+    "materialPct": 19.575616799547994,
+    "grossMargin": -1384.9481277,
+    "grossMarginPct": -1.738901535187394,
+    "totalCosts": 2181.3981277,
+    "technician": "Derrick B.",
+    "customer": "Emily Woodhouse",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "335171094",
     "jobType": "Warranty Repair - Plumbing",
     "businessUnit": "Plumbing Demand",
@@ -5538,7 +5827,7 @@
     "technician": "Ryan S.",
     "customer": "Angie Wendler",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "335198148",
@@ -5560,7 +5849,7 @@
   {
     "jobNumber": "335199354",
     "jobType": "Cooling System Check - Geothermal - Age 11+",
-    "businessUnit": "HVAC Demand",
+    "businessUnit": "HVAC System Check",
     "status": "Completed",
     "summary": "Contact #: 0693 TXT",
     "revenue": 0,
@@ -5572,7 +5861,7 @@
     "technician": "Brian W.",
     "customer": "George Tomlinson, III",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "335237193",
@@ -5742,7 +6031,7 @@
     "technician": "Brian W.",
     "customer": "Dew Eng",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "335312951",
@@ -6182,7 +6471,7 @@
     "technician": "Nick E.",
     "customer": "Donna Cullen",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "336016018",
@@ -6284,7 +6573,7 @@
     "technician": "Ryan S.",
     "customer": "Donna Cullen",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "336174510",
@@ -6635,13 +6924,13 @@
     "revenue": 14071.64,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": 8573.3135443,
-    "grossMarginPct": 60.9261858909125,
-    "totalCosts": 5498.3264557,
+    "grossMargin": 6609.4741572,
+    "grossMarginPct": 46.97017659064615,
+    "totalCosts": 7462.1658428,
     "technician": "Robert R.",
     "customer": "Ed & Christine  Healy",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "336364719",
@@ -6862,7 +7151,7 @@
     "technician": "Eric V.",
     "customer": "John Philip Raezer",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "336457846",
@@ -9225,7 +9514,7 @@
     "technician": "Brian McG.",
     "customer": "Joe & Deborah Yearm",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "337292091",
@@ -9481,6 +9770,23 @@
     "customer": "Edwin Lentz, Jr.",
     "completionDate": "2026-09-15T00:00:00.000Z",
     "invoiceDate": "2026-09-15T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "337409501",
+    "jobType": "Estimate - HVAC Install",
+    "businessUnit": "HVAC Install Sales",
+    "status": "Completed",
+    "summary": "Preferred Method: TEXT",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": 0,
+    "grossMarginPct": 0,
+    "totalCosts": 0,
+    "technician": "Jeff W.",
+    "customer": "Alex & Caitlin Southard",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "337409568",
@@ -9797,13 +10103,13 @@
     "revenue": 1377.21,
     "materialCostRaw": 461.34,
     "materialPct": 21.438130820275468,
-    "grossMargin": 19.110211,
-    "grossMarginPct": 1.3876032703799712,
-    "totalCosts": 1358.099789,
+    "grossMargin": 0.12,
+    "grossMarginPct": 0.008713268129043501,
+    "totalCosts": 1377.09,
     "technician": "Cayden W.",
     "customer": "John & Catherine Chapis",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "337469560",
@@ -10817,12 +11123,29 @@
     "revenue": 9776,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": 5417.6218853,
-    "grossMarginPct": 55.417572476473,
-    "totalCosts": 4358.3781147,
+    "grossMargin": 4979.7018853,
+    "grossMarginPct": 50.9380307416121,
+    "totalCosts": 4796.2981147,
     "technician": "Mason K.",
     "customer": "Spenser James",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "337705803",
+    "jobType": "Heating System Check - Gas Furnace - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Contact #: 8184",
+    "revenue": 99,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -521.633256,
+    "grossMarginPct": -5.269022787878788,
+    "totalCosts": 620.633256,
+    "technician": "Garrick B.",
+    "customer": "John & Mary Welker",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -10868,13 +11191,13 @@
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": 0,
+    "grossMargin": -50,
     "grossMarginPct": 0,
-    "totalCosts": 0,
+    "totalCosts": 50,
     "technician": "Ian W.",
     "customer": "Larry Williams & Sara Bobeck",
     "completionDate": "2026-09-25T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-25T00:00:00.000Z"
   },
   {
     "jobNumber": "337707337",
@@ -11115,6 +11438,23 @@
     "invoiceDate": "2026-09-15T00:00:00.000Z"
   },
   {
+    "jobNumber": "337751473",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "Preferred Method:",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -1221.8985353,
+    "grossMarginPct": 0,
+    "totalCosts": 1221.8985353,
+    "technician": "Ethan J.",
+    "customer": "Steven & Carol Arbutina",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "337770342",
     "jobType": "Non-Repair - Plumbing",
     "businessUnit": "Plumbing Demand",
@@ -11163,6 +11503,23 @@
     "technician": "Ethan J.",
     "customer": "Kimberly Sheppard",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "337806279",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "Contact #: 6689 T",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -360.7331277,
+    "grossMarginPct": 0,
+    "totalCosts": 360.7331277,
+    "technician": "Nick E.",
+    "customer": "Kristian Fletcher",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -11351,6 +11708,23 @@
     "customer": "Nils Ohlson",
     "completionDate": "2026-09-23T00:00:00.000Z",
     "invoiceDate": "2026-09-23T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "337979190",
+    "jobType": "Sold Work - Sewer Line Replacement - Partial",
+    "businessUnit": "Sewer Installs",
+    "status": "Completed",
+    "summary": "Balance Amount: TBD",
+    "revenue": 0,
+    "materialCostRaw": 14.9,
+    "materialPct": 0,
+    "grossMargin": -1469.0385403,
+    "grossMarginPct": 0,
+    "totalCosts": 1469.0385403,
+    "technician": "Josh R.",
+    "customer": "Spenser James",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "337979480",
@@ -11846,6 +12220,23 @@
     "invoiceDate": "2026-09-22T00:00:00.000Z"
   },
   {
+    "jobNumber": "338135881",
+    "jobType": "Sold Work - Electrical",
+    "businessUnit": "Electrical Demand",
+    "status": "Completed",
+    "summary": "Balance Amount:",
+    "revenue": 6857.6,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": 1471.57646532,
+    "grossMarginPct": 21.459059515282313,
+    "totalCosts": 5386.02353468,
+    "technician": "Brian McN.",
+    "customer": "George Follett",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "338135932",
     "jobType": "Non-Repair - Sewer Install",
     "businessUnit": "Sewer Installs",
@@ -12065,6 +12456,23 @@
     "customer": "Patricia Graham",
     "completionDate": "2026-09-21T00:00:00.000Z",
     "invoiceDate": "2026-09-21T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "338253901",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "Contact #: 3240 TXT",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -505.0268733,
+    "grossMarginPct": 0,
+    "totalCosts": 505.0268733,
+    "technician": "Nick E.",
+    "customer": "Dan & Carolyn Daneker",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "338255531",
@@ -12305,6 +12713,23 @@
     "invoiceDate": "2026-09-24T00:00:00.000Z"
   },
   {
+    "jobNumber": "338424823",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "Contact #: 8198 TXT",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -1107.9845934,
+    "grossMarginPct": 0,
+    "totalCosts": 1107.9845934,
+    "technician": "Mason K.",
+    "customer": "Xiu Chen",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "338424919",
     "jobType": "Cooling System Check - Central A/C - Age 0-10",
     "businessUnit": "HVAC System Check",
@@ -12319,7 +12744,7 @@
     "technician": "Cayden W.",
     "customer": "Joe & Mary Ann Puleo",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "338425541",
@@ -12421,7 +12846,7 @@
     "technician": "Brian McN.",
     "customer": "Roger & Robin Howard",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "338443450",
@@ -12439,6 +12864,40 @@
     "customer": "Danielle Watts",
     "completionDate": "2026-09-16T00:00:00.000Z",
     "invoiceDate": "2026-09-16T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "338443597",
+    "jobType": "Cooling System Check - Central A/C - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "---",
+    "revenue": 356.86,
+    "materialCostRaw": 59.01,
+    "materialPct": 16.53589642997254,
+    "grossMargin": 168.783344,
+    "grossMarginPct": 47.296795381942495,
+    "totalCosts": 188.076656,
+    "technician": "Brandon G.",
+    "customer": "Tom & Mary Ellen Heisey",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "338444202",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "---",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -956.195,
+    "grossMarginPct": 0,
+    "totalCosts": 956.195,
+    "technician": "Derrick B.",
+    "customer": "Erin Checchia",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "338445141",
@@ -12609,6 +13068,23 @@
     "customer": "Alyssa Riley",
     "completionDate": "2026-09-18T00:00:00.000Z",
     "invoiceDate": "2026-09-18T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "338464218",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "---",
+    "revenue": 49,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -688.1785353,
+    "grossMarginPct": -14.044459904081632,
+    "totalCosts": 737.1785353,
+    "technician": "Ethan J.",
+    "customer": "Julio Cintron",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "338464440",
@@ -12883,6 +13359,23 @@
     "invoiceDate": "2026-09-21T00:00:00.000Z"
   },
   {
+    "jobNumber": "338672078",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "Customer Availability Notes:",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -655.8929234,
+    "grossMarginPct": 0,
+    "totalCosts": 655.8929234,
+    "technician": "Layne B.",
+    "customer": "William Mattar & Felisa Miller",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "338672243",
     "jobType": "Non-Repair - Sewer Service",
     "businessUnit": "Sewer Service",
@@ -12898,6 +13391,23 @@
     "customer": "Mary Flory",
     "completionDate": "2026-09-18T00:00:00.000Z",
     "invoiceDate": "2026-09-18T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "338672859",
+    "jobType": "Electrical System Check",
+    "businessUnit": "Electrical System Check",
+    "status": "Completed",
+    "summary": "Customer Availability Notes:",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -631.40779632,
+    "grossMarginPct": 0,
+    "totalCosts": 631.40779632,
+    "technician": "Ryan K.",
+    "customer": "William Mattar & Felisa Miller",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "338674884",
@@ -12965,6 +13475,23 @@
     "technician": "Brian McN.",
     "customer": "Clark & Robin Kaufman",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "338675312",
+    "jobType": "Heating System Check - Gas Furnace - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Preferred Method:",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -637.866736,
+    "grossMarginPct": 0,
+    "totalCosts": 637.866736,
+    "technician": "Cesar R.",
+    "customer": "William Mattar & Felisa Miller",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -12983,6 +13510,23 @@
     "customer": "David & Micke Trussell",
     "completionDate": "2026-09-17T00:00:00.000Z",
     "invoiceDate": "2026-09-17T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "338675576",
+    "jobType": "Electrical System Check",
+    "businessUnit": "Electrical System Check",
+    "status": "Completed",
+    "summary": "Preferred Method:",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -733.248,
+    "grossMarginPct": 0,
+    "totalCosts": 733.248,
+    "technician": "Ryan K.",
+    "customer": "William Mattar & Felisa Miller",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "338675914",
@@ -13017,6 +13561,23 @@
     "customer": "Khareh Moses & Khristina Ngae",
     "completionDate": "2026-09-18T00:00:00.000Z",
     "invoiceDate": "2026-09-18T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "338676101",
+    "jobType": "Cooling System Check - Central A/C - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Date/Time:",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -24.066673,
+    "grossMarginPct": 0,
+    "totalCosts": 24.066673,
+    "technician": "Brian McG.",
+    "customer": "William Renninger",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "338676346",
@@ -13163,13 +13724,13 @@
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": -1218.14753468,
+    "grossMargin": -1218.14693064,
     "grossMarginPct": 0,
-    "totalCosts": 1218.14753468,
+    "totalCosts": 1218.14693064,
     "technician": "Brian McN.",
     "customer": "Janice Wall",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "338718642",
@@ -13425,6 +13986,23 @@
     "customer": "Raymond  Plassio",
     "completionDate": "2026-09-18T00:00:00.000Z",
     "invoiceDate": "2026-09-18T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "338788782",
+    "jobType": "Heating & Cooling System Installation",
+    "businessUnit": "HVAC Installs",
+    "status": "Completed",
+    "summary": "Balance Amount: $13,043.82",
+    "revenue": 18543.82,
+    "materialCostRaw": 1639.15,
+    "materialPct": 0,
+    "grossMargin": 8205.359774,
+    "grossMarginPct": 44.24848695684061,
+    "totalCosts": 10338.460226,
+    "technician": "Ben L.",
+    "customer": "Kyle Shirk & Laura Sabatini",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "338795740",
@@ -13784,6 +14362,23 @@
     "invoiceDate": "2026-09-21T00:00:00.000Z"
   },
   {
+    "jobNumber": "338886220",
+    "jobType": "Electrical System Check",
+    "businessUnit": "Electrical System Check",
+    "status": "Completed",
+    "summary": "Contact #: 7546 C",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -611.04,
+    "grossMarginPct": 0,
+    "totalCosts": 611.04,
+    "technician": "Ryan K.",
+    "customer": "Leroy & Shirley Oberholtzer",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "338886492",
     "jobType": "Estimate - Tank Water Heater - Non-Functional",
     "businessUnit": "Plumbing Demand",
@@ -14002,7 +14597,7 @@
     "technician": "Ryan S.",
     "customer": "Roberta Spalding",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "339031118",
@@ -14088,6 +14683,23 @@
     "customer": "Peirce Dever",
     "completionDate": "2026-09-21T00:00:00.000Z",
     "invoiceDate": "2026-09-21T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "339035077",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "Customer Availability Notes:  all day   ESC and HSC on same day",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -1127.3164617,
+    "grossMarginPct": 0,
+    "totalCosts": 1127.3164617,
+    "technician": "Layne B.",
+    "customer": "William Mattar & Felisa Miller",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "339035195",
@@ -14532,6 +15144,23 @@
     "invoiceDate": "2026-09-21T00:00:00.000Z"
   },
   {
+    "jobNumber": "339199579",
+    "jobType": "Sold Work - HVAC Service",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Balance Amount: $688.15",
+    "revenue": 860.15,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": 532.289869,
+    "grossMarginPct": 61.88337720165088,
+    "totalCosts": 327.860131,
+    "technician": "Brian McG.",
+    "customer": "Tom Caskey",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "339201208",
     "jobType": "Appliance Hook-Up - Water",
     "businessUnit": "Plumbing Demand",
@@ -14753,6 +15382,23 @@
     "invoiceDate": "2026-09-22T00:00:00.000Z"
   },
   {
+    "jobNumber": "339280324",
+    "jobType": "Faucet Concern",
+    "businessUnit": "Plumbing Demand",
+    "status": "Completed",
+    "summary": "Customer Availability Notes:  morning",
+    "revenue": 49,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -560.9,
+    "grossMarginPct": -11.446938775510205,
+    "totalCosts": 609.9,
+    "technician": "Mason K.",
+    "customer": "Roger & Patricia Bruszewski",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "339280396",
     "jobType": "Sold Work - HVAC Service",
     "businessUnit": "HVAC Demand",
@@ -14778,9 +15424,9 @@
     "revenue": 10585.67,
     "materialCostRaw": 58.07,
     "materialPct": 0,
-    "grossMargin": 7167.7631377,
-    "grossMarginPct": 67.7119458447127,
-    "totalCosts": 3417.9068623,
+    "grossMargin": 5593.1231377,
+    "grossMarginPct": 52.83674191336023,
+    "totalCosts": 4992.5468623,
     "technician": "Nick E.",
     "customer": "Roy & Sherry Specht",
     "completionDate": "2026-09-24T00:00:00.000Z",
@@ -14974,6 +15620,23 @@
     "invoiceDate": "2026-09-23T04:00:00.000Z"
   },
   {
+    "jobNumber": "339421551",
+    "jobType": "Cooling System Check - Central A/C - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Contact #: 9894 TXT",
+    "revenue": 0,
+    "materialCostRaw": 7.32,
+    "materialPct": 1.7300874497754668,
+    "grossMargin": -81.986688,
+    "grossMarginPct": 0,
+    "totalCosts": 81.986688,
+    "technician": "Brandon G.",
+    "customer": "Jessica Roberts",
+    "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
     "jobNumber": "339421743",
     "jobType": "Heating System Check - Gas Furnace - Age 0-10",
     "businessUnit": "HVAC System Check",
@@ -15093,6 +15756,23 @@
     "invoiceDate": "2026-09-22T00:00:00.000Z"
   },
   {
+    "jobNumber": "339455163",
+    "jobType": "Estimate - HVAC Install",
+    "businessUnit": "HVAC Install Sales",
+    "status": "Completed",
+    "summary": "Customer Availability Notes:  Morning",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": 0,
+    "grossMarginPct": 0,
+    "totalCosts": 0,
+    "technician": "Drew H.",
+    "customer": "Herbert & Gloria Nixdorf",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "339455192",
     "jobType": "Estimate - Electrical",
     "businessUnit": "Electrical Demand",
@@ -15195,6 +15875,23 @@
     "invoiceDate": "2026-09-24T00:00:00.000Z"
   },
   {
+    "jobNumber": "339457724",
+    "jobType": "Sold Work - Plumbing",
+    "businessUnit": "Plumbing Demand",
+    "status": "Completed",
+    "summary": "Balance Amount: invoice balance",
+    "revenue": 0,
+    "materialCostRaw": 15.22,
+    "materialPct": 0,
+    "grossMargin": -5713.3085553,
+    "grossMarginPct": 0,
+    "totalCosts": 5713.3085553,
+    "technician": "Robert R.",
+    "customer": "Ed & Christine  Healy",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "339458313",
     "jobType": "Non-Repair - Electrical",
     "businessUnit": "Electrical Demand",
@@ -15216,7 +15913,7 @@
     "jobType": "Estimate - Plumbing - Kitchen/Bath Remodel",
     "businessUnit": "Plumbing Demand",
     "status": "Completed",
-    "summary": "Estimate For: has 2 apartments in the building and he needs a new water meter put in so each apartment has there own water bill . He is a ex plumber and very cost conscience.  \nDate/Time: 9/23   9-4  AM before noon \nDisp Chg: N/A\nContact #: 5172\nPreferred Method: call \nCustomer Req Drive Time:  he needs 45 mins lead time \nCustomer Availability Notes:  Am before noon",
+    "summary": "Customer Availability Notes:  Am before noon",
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
@@ -15225,8 +15922,8 @@
     "totalCosts": 1229.8,
     "technician": "Layne B.",
     "customer": "Jay Jackson",
-    "completionDate": "2026-09-23T04:00:00.000Z",
-    "invoiceDate": "2026-09-23T04:00:00.000Z"
+    "completionDate": "2026-09-23T00:00:00.000Z",
+    "invoiceDate": "2026-09-23T00:00:00.000Z"
   },
   {
     "jobNumber": "339473704",
@@ -15267,7 +15964,7 @@
     "jobType": "Plumbing System Check",
     "businessUnit": "Plumbing System Check",
     "status": "Completed",
-    "summary": "Call Description: Plumbing System Check - Member\nWH Age: GAS \nNotes: age unknown just moved in\nIncluded in SPP Plan? Yes\nDate/Time: 9/24 -- 9-4 -- BEFORE 12 NOON --30mins\nContact #: 9894 TXT",
+    "summary": "Contact #: 9894 TXT",
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
@@ -15276,8 +15973,8 @@
     "totalCosts": 1524.75,
     "technician": "Mason K.",
     "customer": "Jessica Roberts",
-    "completionDate": "2026-09-24T04:00:00.000Z",
-    "invoiceDate": "2026-09-24T04:00:00.000Z"
+    "completionDate": "2026-09-24T00:00:00.000Z",
+    "invoiceDate": "2026-09-24T00:00:00.000Z"
   },
   {
     "jobNumber": "339474862",
@@ -15318,7 +16015,7 @@
     "jobType": "Plumbing System Check",
     "businessUnit": "Plumbing COD System Ck",
     "status": "Completed",
-    "summary": "Call Description: Plumbing System Check - Complimentary \nWH Age:  Gas tankless 6 yrs, Kevin wants an estimated on maintenance on the WH\nNotes: \nIncluded in SPP Plan? Yes\nDate/Time: 09/24---9-4---Before 12pm \nContact #: 1511\nPreferred Method: CAll \nCustomer Req Drive Time: 30 mins \nCustomer Availability Notes: Before 12pm",
+    "summary": "Customer Availability Notes: Before 12pm",
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
@@ -15326,16 +16023,16 @@
     "grossMarginPct": 0,
     "totalCosts": 1878.29,
     "technician": "Ethan J.",
-    "customer": "Kevin Albert ",
-    "completionDate": "2026-09-24T04:00:00.000Z",
-    "invoiceDate": "2026-09-24T04:00:00.000Z"
+    "customer": "Kevin Albert",
+    "completionDate": "2026-09-24T00:00:00.000Z",
+    "invoiceDate": "2026-09-24T00:00:00.000Z"
   },
   {
     "jobNumber": "339494576",
     "jobType": "Plumbing System Check",
     "businessUnit": "Plumbing COD System Ck",
     "status": "Completed",
-    "summary": "Plumbing System Check --- Complimentary \n Gas Tankless WH  6 yrs -- He wants the estimated to get it Maintenance on his tankless \nDATE/TIME: 9/23  AM . was told 9 am  Contact 7759   TEXT         Before 2pm",
+    "summary": "DATE/TIME: 9/23  AM . was told 9 am  Contact 7759   TEXT         Before 2pm",
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
@@ -15344,8 +16041,25 @@
     "totalCosts": 871.1085383,
     "technician": "Layne B.",
     "customer": "Nilesh Patel",
-    "completionDate": "2026-09-23T04:00:00.000Z",
-    "invoiceDate": "2026-09-23T04:00:00.000Z"
+    "completionDate": "2026-09-23T00:00:00.000Z",
+    "invoiceDate": "2026-09-23T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "339518914",
+    "jobType": "Estimate - HVAC Install",
+    "businessUnit": "HVAC Install Sales",
+    "status": "Completed",
+    "summary": "*** note , this is a tenant property and they are moving slowly .  ***",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": 0,
+    "grossMarginPct": 0,
+    "totalCosts": 0,
+    "technician": "Jeff W.",
+    "customer": "Diane Schaefer",
+    "completionDate": "2026-09-25T00:00:00.000Z",
+    "invoiceDate": "2026-09-25T00:00:00.000Z"
   },
   {
     "jobNumber": "339542440",
@@ -15441,9 +16155,9 @@
     "revenue": 962.68,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": -371.6902043,
-    "grossMarginPct": -38.60994352225038,
-    "totalCosts": 1334.3702043,
+    "grossMargin": -459.8902043,
+    "grossMarginPct": -47.77186648730627,
+    "totalCosts": 1422.5702043,
     "technician": "Robert R.",
     "customer": "Peter Rustico",
     "completionDate": "2026-09-24T00:00:00.000Z",
@@ -15770,7 +16484,7 @@
     "technician": "Kevin J.",
     "customer": "Jesse Wiley",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "339796904",
@@ -15872,7 +16586,7 @@
     "technician": "Scott H.",
     "customer": "Andrew & Tina Loose",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "339810987",
@@ -15976,6 +16690,23 @@
     "invoiceDate": "2026-09-23T00:00:00.000Z"
   },
   {
+    "jobNumber": "339902081",
+    "jobType": "Sold Work - Water Heater - Tank Install",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "Balance Amount: invoice balance",
+    "revenue": 12904.38,
+    "materialCostRaw": 119.66,
+    "materialPct": 12.710046098612793,
+    "grossMargin": 1339.7018703,
+    "grossMarginPct": 10.381760846317297,
+    "totalCosts": 11564.6781297,
+    "technician": "Tylor H.",
+    "customer": "Joshua Erhardt",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "339902270",
     "jobType": "Non-Repair - HVAC Service",
     "businessUnit": "HVAC Demand",
@@ -15993,6 +16724,23 @@
     "invoiceDate": "2026-09-23T00:00:00.000Z"
   },
   {
+    "jobNumber": "339910317",
+    "jobType": "Heating System Check - Gas Furnace - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Contact #: 5909 C",
+    "revenue": 0,
+    "materialCostRaw": 6.64,
+    "materialPct": 0,
+    "grossMargin": -317.14,
+    "grossMarginPct": 0,
+    "totalCosts": 317.14,
+    "technician": "Andrew G.",
+    "customer": "Robert & Linda Himes",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "339912647",
     "jobType": "Non-Repair - Electrical",
     "businessUnit": "Electrical Demand",
@@ -16007,7 +16755,7 @@
     "technician": "Cole P.",
     "customer": "Claire McCormick",
     "completionDate": "2026-09-23T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-23T00:00:00.000Z"
   },
   {
     "jobNumber": "339914572",
@@ -16052,13 +16800,13 @@
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": 0,
+    "grossMargin": -50,
     "grossMarginPct": 0,
-    "totalCosts": 0,
+    "totalCosts": 50,
     "technician": "Jeff W.",
     "customer": "Janice Hutchison",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "339936433",
@@ -16075,7 +16823,7 @@
     "technician": "Tylor H.",
     "customer": "John & Catherine Chapis",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340007848",
@@ -16262,7 +17010,7 @@
     "technician": "Jeff W.",
     "customer": "Jose Mota",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340018402",
@@ -16364,7 +17112,7 @@
     "technician": "Nick E.",
     "customer": "Thomas Dodge",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340049714",
@@ -16382,6 +17130,23 @@
     "customer": "Ryan & Lorrie Moyer",
     "completionDate": "2026-09-24T00:00:00.000Z",
     "invoiceDate": "2026-09-24T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340050165",
+    "jobType": "Warranty Repair - HVAC Install",
+    "businessUnit": "HVAC Installs",
+    "status": "Completed",
+    "summary": "Warranty: Call Description: Warranty under 10 yr P&L replace inducer assembly, re route fresh air tank, will perform HSC while on site. Duration: 4 hoursDate: 9/29 730-8AMContact: 4456Preferred Method: Call",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -696.900069,
+    "grossMarginPct": 0,
+    "totalCosts": 696.900069,
+    "technician": "Andrew G.",
+    "customer": "Edward & Lynn Yancavage",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "340050393",
@@ -16458,15 +17223,15 @@
     "status": "Completed",
     "summary": "Contact #: 9238 TXT",
     "revenue": 842.79,
-    "materialCostRaw": 270.83,
-    "materialPct": 32.134932782781,
-    "grossMargin": -1058.948,
-    "grossMarginPct": -1.2564790754517732,
-    "totalCosts": 1901.738,
+    "materialCostRaw": 195.83,
+    "materialPct": 23.23591879353101,
+    "grossMargin": -983.948,
+    "grossMarginPct": -1.1674889355592735,
+    "totalCosts": 1826.738,
     "technician": "Brian McN.",
     "customer": "Paul & Nancy Kaufman",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340064022",
@@ -16636,7 +17401,7 @@
     "technician": "Jeff W.",
     "customer": "Robert Tragesser",
     "completionDate": "2026-09-25T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-25T00:00:00.000Z"
   },
   {
     "jobNumber": "340115300",
@@ -16654,6 +17419,23 @@
     "customer": "Fran & Susan Ganse",
     "completionDate": "2026-09-25T00:00:00.000Z",
     "invoiceDate": "2026-09-25T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340122547",
+    "jobType": "Heating & Cooling System Installation",
+    "businessUnit": "HVAC Installs",
+    "status": "Completed",
+    "summary": "Balance Amount:",
+    "revenue": 3262.1,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": 1723.383341,
+    "grossMarginPct": 52.830487753287755,
+    "totalCosts": 1538.716659,
+    "technician": "Eric V.",
+    "customer": "Anthony & Mary Anne Russo",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
   },
   {
     "jobNumber": "340185715",
@@ -16687,7 +17469,7 @@
     "technician": "Mike D.",
     "customer": "Dega Gautam",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340226600",
@@ -16726,7 +17508,7 @@
   {
     "jobNumber": "340234280",
     "jobType": "Heating System Check - Gas Furnace - Age 0-10",
-    "businessUnit": "HVAC System Check",
+    "businessUnit": "HVAC COD System Check",
     "status": "Completed",
     "summary": "Dispatch fee: $99Contact : 3038TEXT",
     "revenue": 309.95,
@@ -16738,7 +17520,7 @@
     "technician": "Eric V.",
     "customer": "Erin Hoxie",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340234305",
@@ -16747,15 +17529,15 @@
     "status": "Completed",
     "summary": "Before 12pm",
     "revenue": 337.22,
-    "materialCostRaw": 143.78,
-    "materialPct": 42.63685427910563,
-    "grossMargin": -1155.248,
-    "grossMarginPct": -3.4257991815432063,
-    "totalCosts": 1492.468,
+    "materialCostRaw": 93.78,
+    "materialPct": 27.809738449676768,
+    "grossMargin": -1161.178,
+    "grossMarginPct": -3.443384140916909,
+    "totalCosts": 1498.398,
     "technician": "Cole P.",
     "customer": "Daniel & Kathryn Missildine",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340236190",
@@ -16809,6 +17591,40 @@
     "invoiceDate": "2026-09-25T00:00:00.000Z"
   },
   {
+    "jobNumber": "340237506",
+    "jobType": "Faucet Concern",
+    "businessUnit": "Plumbing Demand",
+    "status": "Completed",
+    "summary": "Customer Availability Notes:  Before 12pm",
+    "revenue": 118.64,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -355.4662554,
+    "grossMarginPct": -2.996175450101146,
+    "totalCosts": 474.1062554,
+    "technician": "Nick E.",
+    "customer": "Dennis & Joanne Tierney",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340237590",
+    "jobType": "Toilet Concern",
+    "businessUnit": "Plumbing Demand",
+    "status": "Completed",
+    "summary": "Contact : : 7179170169 TXT",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -430.43,
+    "grossMarginPct": 0,
+    "totalCosts": 430.43,
+    "technician": "Layne B.",
+    "customer": "Cathy McMinn",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "340238092",
     "jobType": "Faucet Concern",
     "businessUnit": "Plumbing Demand",
@@ -16857,7 +17673,7 @@
     "technician": "Ian W.",
     "customer": "Gina Witman",
     "completionDate": "2026-09-25T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-25T00:00:00.000Z"
   },
   {
     "jobNumber": "340239032",
@@ -16868,13 +17684,13 @@
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": 0,
+    "grossMargin": -50,
     "grossMarginPct": 0,
-    "totalCosts": 0,
+    "totalCosts": 50,
     "technician": "Ian W.",
     "customer": "Shirley Gorman",
     "completionDate": "2026-09-25T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-25T00:00:00.000Z"
   },
   {
     "jobNumber": "340239438",
@@ -16891,7 +17707,7 @@
     "technician": "Jeff W.",
     "customer": "Kassidy Kreitz",
     "completionDate": "2026-09-25T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-25T00:00:00.000Z"
   },
   {
     "jobNumber": "340252417",
@@ -16911,6 +17727,23 @@
     "invoiceDate": "2026-09-25T00:00:00.000Z"
   },
   {
+    "jobNumber": "340253073",
+    "jobType": "Non-Repair - Electrical",
+    "businessUnit": "Electrical Demand",
+    "status": "Completed",
+    "summary": "6.) Close out",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -112.02379632,
+    "grossMarginPct": 0,
+    "totalCosts": 112.02379632,
+    "technician": "Ryan K.",
+    "customer": "Charisse Booc",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
     "jobNumber": "340253286",
     "jobType": "Sold Work - Water Heater - Tank Install",
     "businessUnit": "HVAC Demand",
@@ -16919,13 +17752,13 @@
     "revenue": 2450.98,
     "materialCostRaw": 58.29,
     "materialPct": 0,
-    "grossMargin": 1451.940142,
-    "grossMarginPct": 59.23916727186677,
-    "totalCosts": 999.039858,
+    "grossMargin": 736.169929,
+    "grossMarginPct": 30.035737908918065,
+    "totalCosts": 1714.810071,
     "technician": "Garrick B.",
     "customer": "Gary & Crystal Rowe",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340253342",
@@ -16959,7 +17792,7 @@
     "technician": "Ian W.",
     "customer": "Derric & Laura Krout",
     "completionDate": "2026-09-25T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-25T00:00:00.000Z"
   },
   {
     "jobNumber": "340256555",
@@ -17044,7 +17877,7 @@
     "technician": "Ian W.",
     "customer": "Shirley Gorman",
     "completionDate": "2026-09-25T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-25T00:00:00.000Z"
   },
   {
     "jobNumber": "340282736",
@@ -17112,6 +17945,57 @@
     "technician": "Kevin J.",
     "customer": "Kim Hall",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340347107",
+    "jobType": "Warranty Repair - Electrical",
+    "businessUnit": "Electrical Demand",
+    "status": "Completed",
+    "summary": "Time: 9-4 1230 or after w/ 1 hour noticeContact: 8441CALL",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -1122.07312932,
+    "grossMarginPct": 0,
+    "totalCosts": 1122.07312932,
+    "technician": "Ryan S.",
+    "customer": "Derric & Laura Krout",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340374696",
+    "jobType": "Estimate - HVAC Install",
+    "businessUnit": "HVAC Install Sales",
+    "status": "Completed",
+    "summary": "Contact : 1717-598-2868Call",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": 0,
+    "grossMarginPct": 0,
+    "totalCosts": 0,
+    "technician": "Jeff W.",
+    "customer": "William White",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340379979",
+    "jobType": "Non-Repair - Electrical",
+    "businessUnit": "Electrical Demand",
+    "status": "Completed",
+    "summary": "6.) Close out",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -224.04820368,
+    "grossMarginPct": 0,
+    "totalCosts": 224.04820368,
+    "technician": "Ryan K.",
+    "customer": "Paut Sa",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -17146,6 +18030,23 @@
     "technician": "Brian McG.",
     "customer": "Greg & Mary Souders",
     "completionDate": "2026-09-25T00:00:00.000Z",
+    "invoiceDate": "2026-09-25T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340420665",
+    "jobType": "Central A/C Cooling Concern - Age 0-10",
+    "businessUnit": "HVAC Demand",
+    "status": "Completed",
+    "summary": "Customer Availability Notes: Before 12pm",
+    "revenue": 118.64,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -208.41,
+    "grossMarginPct": -1.7566587997302765,
+    "totalCosts": 327.05,
+    "technician": "Brian W.",
+    "customer": "Nathan Havrilak",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -17155,15 +18056,15 @@
     "status": "Completed",
     "summary": "TEXT",
     "revenue": 1089.26,
-    "materialCostRaw": 129.85,
-    "materialPct": 13.858057630736392,
-    "grossMargin": -2555.35307536,
-    "grossMarginPct": -2.345953285129354,
-    "totalCosts": 3644.61307536,
+    "materialCostRaw": 29.85,
+    "materialPct": 3.1856990394877265,
+    "grossMargin": -2455.35307536,
+    "grossMarginPct": -2.254147839230303,
+    "totalCosts": 3544.61307536,
     "technician": "Cole P.",
     "customer": "Theresa Borders",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340435533",
@@ -17172,14 +18073,31 @@
     "status": "Completed",
     "summary": "TEXT",
     "revenue": 226.82,
-    "materialCostRaw": 10,
-    "materialPct": 4.408782294330306,
-    "grossMargin": -348.6718723,
-    "grossMarginPct": -1.5372183771272374,
-    "totalCosts": 575.4918723,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -338.6718723,
+    "grossMarginPct": -1.4931305541839344,
+    "totalCosts": 565.4918723,
     "technician": "Derrick B.",
     "customer": "Dennis & Susan Shank",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340437442",
+    "jobType": "Heating System Check - Heat Pump - Age 0-10",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "Contact : TEXT",
+    "revenue": 246.01,
+    "materialCostRaw": 3.56,
+    "materialPct": 1.4470956465184344,
+    "grossMargin": -207.316598,
+    "grossMarginPct": -84.27161416202593,
+    "totalCosts": 453.326598,
+    "technician": "Shane H.",
+    "customer": "Jessica VanGiesen",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -17197,12 +18115,12 @@
     "technician": "Mason K.",
     "customer": "Chip & Carol Miller",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340438599",
-    "jobType": "Sewage Pump Concern - External",
-    "businessUnit": "Plumbing Demand",
+    "jobType": "Drain Stoppage - Main Line",
+    "businessUnit": "Sewer Service",
     "status": "Completed",
     "summary": "a dispatch fee of $79 contact : 717-799-7802Call",
     "revenue": 1280.13,
@@ -17214,7 +18132,7 @@
     "technician": "Mike D.",
     "customer": "Galen & Debra Kraybill",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340442536",
@@ -17231,7 +18149,7 @@
     "technician": "Mike D.",
     "customer": "Victoria Johnson",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340442557",
@@ -17242,13 +18160,13 @@
     "revenue": 79,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": -589.3081277,
-    "grossMarginPct": -7.459596553164557,
-    "totalCosts": 668.3081277,
+    "grossMargin": -589.3087446,
+    "grossMarginPct": -7.459604362025316,
+    "totalCosts": 668.3087446,
     "technician": "Derrick B.",
     "customer": "Kaleb & Rebekah Lopez",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340443050",
@@ -17265,6 +18183,40 @@
     "technician": "Nick E.",
     "customer": "William Kyle",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340454595",
+    "jobType": "Electrical System Check",
+    "businessUnit": "Electrical System Check",
+    "status": "Completed",
+    "summary": "Contact #: 5301 C",
+    "revenue": 107.3,
+    "materialCostRaw": 2.27,
+    "materialPct": 2.1155638397017706,
+    "grossMargin": -966.04,
+    "grossMarginPct": -9.003168685927307,
+    "totalCosts": 1073.34,
+    "technician": "Ryan S.",
+    "customer": "Beulah Stillman",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340457000",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing Demand",
+    "status": "Completed",
+    "summary": "Call",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -1545.045,
+    "grossMarginPct": 0,
+    "totalCosts": 1545.045,
+    "technician": "Ethan J.",
+    "customer": "George Cradic",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -17282,6 +18234,23 @@
     "technician": "Nick E.",
     "customer": "Barbara Hartman",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340457280",
+    "jobType": "Outlet/Switch Concern",
+    "businessUnit": "Electrical Demand",
+    "status": "Completed",
+    "summary": "CONTACT#  5290 C",
+    "revenue": 883.4,
+    "materialCostRaw": 20.2,
+    "materialPct": 2.1641311334904647,
+    "grossMargin": -1170.04953768,
+    "grossMarginPct": -1.3244844211908535,
+    "totalCosts": 2053.44953768,
+    "technician": "Cole P.",
+    "customer": "Thomas & Mary Koller",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -17299,7 +18268,7 @@
     "technician": "Robert R.",
     "customer": "Amish Experience",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340461992",
@@ -17316,7 +18285,7 @@
     "technician": "Layne B.",
     "customer": "Megan Rebuck",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340471988",
@@ -17333,7 +18302,7 @@
     "technician": "Nick E.",
     "customer": "Austin Dagen",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340472012",
@@ -17344,13 +18313,13 @@
     "revenue": 0,
     "materialCostRaw": 0,
     "materialPct": 0,
-    "grossMargin": -58.943472,
+    "grossMargin": -58.943264,
     "grossMarginPct": 0,
-    "totalCosts": 58.943472,
+    "totalCosts": 58.943264,
     "technician": "Cesar R.",
     "customer": "Dennis & Susan Ammerman",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340477224",
@@ -17359,15 +18328,15 @@
     "status": "Completed",
     "summary": "- Phone number they called from (caller id): +17178472661",
     "revenue": 1165.5,
-    "materialCostRaw": 650.47,
-    "materialPct": 55.81038181038181,
-    "grossMargin": -1407.6418723,
-    "grossMarginPct": -1.2077579341913343,
-    "totalCosts": 2573.1418723,
+    "materialCostRaw": 630.47,
+    "materialPct": 54.09438009438009,
+    "grossMargin": -1387.6418723,
+    "grossMarginPct": -1.190597917031317,
+    "totalCosts": 2553.1418723,
     "technician": "Derrick B.",
     "customer": "Kathryn Black",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340477524",
@@ -17384,6 +18353,23 @@
     "technician": "Brian W.",
     "customer": "Ann Salmon",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340477622",
+    "jobType": "Plumbing System Check",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "Contact #: 1073 C",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -424.13,
+    "grossMarginPct": 0,
+    "totalCosts": 424.13,
+    "technician": "Ethan J.",
+    "customer": "Mary Lowe",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -17392,15 +18378,32 @@
     "businessUnit": "HVAC Demand",
     "status": "Completed",
     "summary": "Balance Amount: invoice balance",
-    "revenue": 1052.73,
-    "materialCostRaw": 50,
-    "materialPct": 4.749555916521805,
-    "grossMargin": -32.27,
-    "grossMarginPct": -3.0653633885231732,
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -1085,
+    "grossMarginPct": 0,
     "totalCosts": 1085,
     "technician": "Andrew G.",
     "customer": "Ed & Christine  Healy",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340483127",
+    "jobType": "Non-Repair - HVAC Service",
+    "businessUnit": "HVAC Demand",
+    "status": "Completed",
+    "summary": "6.) Close out",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -10.3,
+    "grossMarginPct": 0,
+    "totalCosts": 10.3,
+    "technician": "Shane H.",
+    "customer": "Jewel Greenberg",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -17410,15 +18413,15 @@
     "status": "Completed",
     "summary": "CONTACT#  8028 C",
     "revenue": 5387,
-    "materialCostRaw": 651.67,
-    "materialPct": 12.097085576387599,
-    "grossMargin": 483.9320706,
-    "grossMarginPct": 8.983331550027845,
-    "totalCosts": 4903.0679294,
+    "materialCostRaw": 550.05,
+    "materialPct": 10.210692407648041,
+    "grossMargin": -629.3679294,
+    "grossMarginPct": -11.683087607202525,
+    "totalCosts": 6016.3679294,
     "technician": "Ethan J.",
     "customer": "John Balint",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340576086",
@@ -17435,7 +18438,7 @@
     "technician": "Mason K.",
     "customer": "Mary Malloy",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340576243",
@@ -17452,6 +18455,23 @@
     "technician": "Brandon G.",
     "customer": "Alfred & Diane Yohe",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340583660",
+    "jobType": "No Power - Partial Home",
+    "businessUnit": "Electrical Demand",
+    "status": "Completed",
+    "summary": "- Phone number they called from (caller id): +17173410160",
+    "revenue": 283.6,
+    "materialCostRaw": 50,
+    "materialPct": 17.63046544428773,
+    "grossMargin": -815.35220368,
+    "grossMarginPct": -2.875007770380818,
+    "totalCosts": 1098.95220368,
+    "technician": "Ryan K.",
+    "customer": "Daniel & Karen Fetzer",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -17469,7 +18489,7 @@
     "technician": "Layne B.",
     "customer": "Matt Hill",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340585815",
@@ -17480,13 +18500,13 @@
     "revenue": 4750.64,
     "materialCostRaw": 148.46,
     "materialPct": 3.12505262448849,
-    "grossMargin": 733.1468703,
-    "grossMarginPct": 15.432591615024501,
-    "totalCosts": 4017.4931297,
+    "grossMargin": -1326.3418703,
+    "grossMarginPct": -27.91922499494805,
+    "totalCosts": 6076.9818703,
     "technician": "Tylor H.",
     "customer": "John & Theresa Fiorill",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340586539",
@@ -17495,15 +18515,15 @@
     "status": "Completed",
     "summary": "a dispatch fee of $79 contact : 717-799-7802Call",
     "revenue": 661,
-    "materialCostRaw": 98.67,
-    "materialPct": 14.927382753403935,
-    "grossMargin": -1195.835,
-    "grossMarginPct": -1.8091301059001512,
-    "totalCosts": 1856.835,
+    "materialCostRaw": 48.67,
+    "materialPct": 7.363086232980333,
+    "grossMargin": -1145.835,
+    "grossMarginPct": -1.7334871406959154,
+    "totalCosts": 1806.835,
     "technician": "Derrick B.",
     "customer": "Galen & Debra Kraybill",
     "completionDate": "2026-09-28T00:00:00.000Z",
-    "invoiceDate": ""
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
   },
   {
     "jobNumber": "340595255",
@@ -17520,6 +18540,23 @@
     "technician": "Ryan S.",
     "customer": "Terry Leskow",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340596820",
+    "jobType": "Non-Repair - Plumbing",
+    "businessUnit": "Plumbing Demand",
+    "status": "Completed",
+    "summary": "6.) Close out",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -123.38,
+    "grossMarginPct": 0,
+    "totalCosts": 123.38,
+    "technician": "Derrick B.",
+    "customer": "Michael Werbowyj",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   },
   {
@@ -17537,6 +18574,176 @@
     "technician": "Mike D.",
     "customer": "Candis Heege",
     "completionDate": "2026-09-28T00:00:00.000Z",
+    "invoiceDate": "2026-09-28T00:00:00.000Z"
+  },
+  {
+    "jobNumber": "340689627",
+    "jobType": "Non-Repair - HVAC Service",
+    "businessUnit": "HVAC System Check",
+    "status": "Completed",
+    "summary": "6.) Close out",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -49.243263,
+    "grossMarginPct": 0,
+    "totalCosts": 49.243263,
+    "technician": "Cayden W.",
+    "customer": "Janet London",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340711614",
+    "jobType": "Sold Work - HVAC Service",
+    "businessUnit": "HVAC Demand",
+    "status": "Completed",
+    "summary": "Collect: $1052.73",
+    "revenue": 1052.73,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": 279.063263,
+    "grossMarginPct": 26.508531437310612,
+    "totalCosts": 773.666737,
+    "technician": "Cayden W.",
+    "customer": "Ed & Christine  Healy",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340769320",
+    "jobType": "Water Heater Concern - Tank - Age 7+",
+    "businessUnit": "Plumbing System Check",
+    "status": "Completed",
+    "summary": "- Phone number they called from (caller id): +16102919981",
+    "revenue": 158.66,
+    "materialCostRaw": 33.68,
+    "materialPct": 21.227782679944536,
+    "grossMargin": -1544.71,
+    "grossMarginPct": -9.735976301525275,
+    "totalCosts": 1703.37,
+    "technician": "Nick E.",
+    "customer": "William Kyle",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340776747",
+    "jobType": "No Power - Partial Home",
+    "businessUnit": "Electrical Demand",
+    "status": "Completed",
+    "summary": "Customer Availability Notes: home until 10:00, he needs to catch a train at 10:30 and is heading to NY for a trip to Europe",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -2043.46646232,
+    "grossMarginPct": 0,
+    "totalCosts": 2043.46646232,
+    "technician": "Cole P.",
+    "customer": "Kevin Hoogenboom",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340788326",
+    "jobType": "Gas Furnace Concern - Age 0-10",
+    "businessUnit": "HVAC Demand",
+    "status": "Completed",
+    "summary": "DATE: 9/29 --9-4 -- Home all day --30minsDISPATCH CHARGE: $49 tbd by tech if waivedCONTACT# 3232 C",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -72.2,
+    "grossMarginPct": 0,
+    "totalCosts": 72.2,
+    "technician": "Scott H.",
+    "customer": "Isabelle Stanley",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340788922",
+    "jobType": "Leak - Plumbing - Under Cabinet",
+    "businessUnit": "Plumbing Demand",
+    "status": "Completed",
+    "summary": "Customer Availability Notes: 12:30-4",
+    "revenue": 49,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -1010.0112554,
+    "grossMarginPct": -20.6124746,
+    "totalCosts": 1059.0112554,
+    "technician": "Derrick B.",
+    "customer": "TA & Carolyn Alhashimi",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340790092",
+    "jobType": "Non-Repair - HVAC Service",
+    "businessUnit": "HVAC Demand",
+    "status": "Completed",
+    "summary": "6.) Close out",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -6.866804,
+    "grossMarginPct": 0,
+    "totalCosts": 6.866804,
+    "technician": "Shane H.",
+    "customer": "James Waters",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340825512",
+    "jobType": "Geothermal Concern - Age 11+",
+    "businessUnit": "HVAC Demand",
+    "status": "Completed",
+    "summary": "- Phone number they called from (caller id): +17178233583",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -330.566737,
+    "grossMarginPct": 0,
+    "totalCosts": 330.566737,
+    "technician": "Brian W.",
+    "customer": "Gary & Lisa Witmer",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340932143",
+    "jobType": "Non-Repair - HVAC Service",
+    "businessUnit": "HVAC Demand",
+    "status": "Completed",
+    "summary": "6.) Close out",
+    "revenue": 0,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -17.250138,
+    "grossMarginPct": 0,
+    "totalCosts": 17.250138,
+    "technician": "Andrew G.",
+    "customer": "Troy & Carole Isaak",
+    "completionDate": "2026-09-29T00:00:00.000Z",
+    "invoiceDate": ""
+  },
+  {
+    "jobNumber": "340947118",
+    "jobType": "Scheduling Pro Plumbing Misc (Choose Alternate Job Type)",
+    "businessUnit": "Plumbing Demand",
+    "status": "Completed",
+    "summary": "SMS Communications Opt-In: Yes",
+    "revenue": 49,
+    "materialCostRaw": 0,
+    "materialPct": 0,
+    "grossMargin": -1051.7185353,
+    "grossMarginPct": -21.46364357755102,
+    "totalCosts": 1100.7185353,
+    "technician": "Ethan J.",
+    "customer": "Stuart Bullington",
+    "completionDate": "2026-09-29T00:00:00.000Z",
     "invoiceDate": ""
   }
 ]
