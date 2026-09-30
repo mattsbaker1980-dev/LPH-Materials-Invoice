@@ -401,10 +401,12 @@ async function processFile(filePath, runContext) {
   const headers = rows[0];
   const jobsIdx = buildColumnIndex(headers, COLUMN_MAP);
   const bulkIdx = buildColumnIndex(headers, BULK_COLUMN_MAP);
-  if (looksLikeJobsReport(jobsIdx)) {
-    return { label, kind: 'jobs', result: await processJobsReport(text, label, runContext) };
-  } else if (looksLikeLineItemsReport(bulkIdx)) {
+  // Check line items FIRST: that report now also carries a "Material Costs" column, which made it
+  // look like a Jobs report too (2026-09-30 it was mis-read as jobs and overwrote 122 job records).
+  if (looksLikeLineItemsReport(bulkIdx)) {
     return { label, kind: 'lineItems', result: await processLineItemsReport(text, label, runContext) };
+  } else if (looksLikeJobsReport(jobsIdx)) {
+    return { label, kind: 'jobs', result: await processJobsReport(text, label, runContext) };
   } else {
     console.log(`${label}: header row did not match either known report shape, skipping.`);
     return { label, result: null };
