@@ -608,17 +608,19 @@ tr.reviewed td{opacity:.72;}
     base.forEach(function(j){
       var k=j.primaryTech||'(none)'; var r=t[k]=t[k]||{tech:k,jobs:0,opp:0,noOpt:0,optSum:0,est:0,estNoSum:0,sold:0,rev:0,hrs:0,warn:0,ai:0};
       r.jobs++; r.rev+=j._rev; r.hrs+=j._hrs; if(j._warn) r.warn++;
+      if(j._dept!=='Other'){ r.depts=r.depts||{}; r.depts[j._dept]=(r.depts[j._dept]||0)+1; }
       gtOf(j).forEach(function(g){ r.gtLines=(r.gtLines||0)+1; r.gtBilled=(r.gtBilled||0)+g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) r.gtUnder=(r.gtUnder||0)+g.m.diff; });
       if(j.flags.some(function(f){return f.code.indexOf('ai_')===0;})) r.ai++;
       if(j._oppVisit && j.detail){ r.opp++; r.optSum+=j._opts; if(j._opts===0) r.noOpt++; }
       r.est+=j.estimates.length; r.sold+=j._sold; r.estNoSum+=j.estimates.filter(function(e){return e.summary!==undefined&&!e.summary;}).length;
     });
-    var rows=Object.values(t).sort(function(a,b){return b.jobs-a.jobs;});
-    var H=[['Technician'],['Jobs','n'],['Opportunity visits','n'],['Avg options','n'],['No options','n'],['Estimates','n'],['Sold','n'],['Close rate','n'],['General Time','n'],['GT under task price','n'],['Revenue','n'],['Avg hrs/job','n'],['Need attention','n']];
+    Object.values(t).forEach(function(r){ var d=r.depts||{}; r.dept=Object.keys(d).sort(function(a,b){return d[b]-d[a];})[0]||'Other'; });
+    var rows=Object.values(t).sort(function(a,b){return a.dept.localeCompare(b.dept) || b.jobs-a.jobs;});
+    var H=[['Technician'],['Dept'],['Jobs','n'],['Opportunity visits','n'],['Avg options','n'],['No options','n'],['Estimates','n'],['Sold','n'],['Close rate','n'],['General Time','n'],['GT under task price','n'],['Revenue','n'],['Avg hrs/job','n'],['Need attention','n']];
     $('techHead').innerHTML=H.map(function(h){return '<th class="'+(h[1]?'num':'')+'">'+h[0]+'</th>';}).join('');
     $('techBody').innerHTML=rows.map(function(r){
       var avg=r.opp? r.optSum/r.opp:0, np=r.opp? r.noOpt/r.opp:0;
-      return '<tr class="job" data-tech="'+esc(r.tech)+'"><td class="nowrap"><b>'+esc(r.tech)+'</b></td><td class="num">'+r.jobs+'</td><td class="num">'+r.opp+'</td>'+
+      return '<tr class="job" data-tech="'+esc(r.tech)+'"><td class="nowrap"><b>'+esc(r.tech)+'</b></td><td class="nowrap">'+esc(r.dept)+'</td><td class="num">'+r.jobs+'</td><td class="num">'+r.opp+'</td>'+
         '<td class="num">'+(r.opp?avg.toFixed(1):'—')+'</td>'+
         '<td class="num"'+(np>0.25?' style="color:var(--warn);font-weight:700;"':'')+'>'+(r.opp?r.noOpt+' ('+Math.round(np*100)+'%)':'—')+'</td>'+
         '<td class="num">'+r.est+'</td><td class="num">'+r.sold+'</td><td class="num">'+(r.est?Math.round(r.sold/r.est*100)+'%':'—')+'</td>'+
