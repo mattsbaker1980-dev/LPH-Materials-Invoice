@@ -1073,7 +1073,7 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
       });
       var invRes = await fetch('data/invoice_checks.json' + bust, {cache:'no-store'});
       var invData = invRes.ok ? await invRes.json() : [];
-      pastedInvoices = invData.map(function(r){ if(!r.flags) r.flags = []; return r; });
+      pastedInvoices = invData.filter(function(r){ return r && String(r.id).indexOf('note:')!==0; }).map(function(r){ if(!r.flags) r.flags = []; return r; });
       if(rawJobs.length){ initBUChips(); showMain(); } else { showEmpty(); }
       render();
       renderPasteTab();

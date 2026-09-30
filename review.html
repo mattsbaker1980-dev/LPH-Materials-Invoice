@@ -127,6 +127,16 @@ details summary{cursor:pointer;font-size:12.5px;color:var(--muted);margin-top:12
 .tgl input:focus-visible + .trk{outline:2px solid var(--accent);outline-offset:2px;}
 .tgl.needs .tl{color:var(--needs);} .tgl.pass .tl{color:var(--good);} .tgl.fail .tl{color:var(--warn);}
 .tgl.busy{opacity:.55;pointer-events:none;}
+.notes{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-top:14px;}
+.notes h4{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px;}
+.notes .ng{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.notes label{font-size:12.5px;font-weight:600;display:block;margin-bottom:4px;}
+.notes textarea{width:100%;min-height:70px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-family:inherit;font-size:13px;resize:vertical;}
+.notes .c textarea{border-color:#F1C3B9;} .notes .p textarea{border-color:#BFDCC9;}
+.notes .nb{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12px;color:var(--muted);}
+.btn-accent{background:var(--accent);color:#fff;} .btn-accent:hover{background:var(--accent-dark);}
+.pill.note{background:#EEE8FB;color:#5B3FA6;}
+@media (max-width:700px){ .notes .ng{grid-template-columns:1fr;} }
 .linkbox{background:var(--good-bg);border:1px solid #BFDCC9;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;}
 .linkbox.none{background:var(--needs-bg);border-color:#EED9B3;font-style:normal;color:var(--ink);}
 .linkbox a{font-weight:600;cursor:pointer;}
@@ -165,13 +175,17 @@ tr.reviewed td{opacity:.72;}
 <div class="wrap">
   <div class="panel">
     <div class="controls">
-      <div class="field"><label>Month</label><select id="monthSel"></select></div>
+      <div class="field"><label>Date range (completed)</label><div class="chips" id="rangeChips">
+        <span class="chip" data-r="1w">1 week</span><span class="chip" data-r="1m">1 month</span><span class="chip" data-r="6m">6 months</span><span class="chip" data-r="1y">1 year</span><span class="chip" data-r="custom">Custom</span></div></div>
+      <div class="field" id="customWrap" style="display:none;"><label>From – To</label><div class="row" style="display:flex;gap:6px;align-items:center;"><input type="date" id="fromD" class="search" style="min-width:0;"><span>–</span><input type="date" id="toD" class="search" style="min-width:0;"></div></div>
       <div class="field"><label>Department</label><div class="chips" id="deptChips"></div></div>
       <div class="field"><label>Technician</label><select id="techSel"><option value="">All technicians</option></select></div>
       <div class="field"><label>Show</label><select id="flagSel"></select></div>
       <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="hideZero"> Hide $0 jobs</label></div>
       <div class="field"><label>Search</label><input class="search" id="searchBox" placeholder="Job #, customer, text in write-up…"></div>
+      <div class="field"><label>&nbsp;</label><button class="btn btn-accent" id="reportBtn" type="button">Technician report (PDF)</button></div>
     </div>
+    <div class="footer-note" id="rangeNote" style="margin-top:10px;"></div>
   </div>
 
   <details class="panel guide" id="guide">
@@ -238,7 +252,9 @@ tr.reviewed td{opacity:.72;}
   var WORKER_URL = 'https://lph-materials-invoice.mattsbaker1980.workers.dev';
   var statuses = {}; // jobNumber -> 'pass' | 'fail' (shared with the Materials vs Invoice page)
   var hideZero = tryLS('jr_hideZero')==='1';
-  var state = { index:null, month:null, jobs:[], dept:'All', tech:'', flag:'attention-open', q:'', sort:'date', dir:'desc', open:null, limit:200, tab:'jobs' };
+  var notes = {}; // jobNumber -> {concern, positive, at}
+  var monthCache = {}, textCache = {};
+  var state = { index:null, range:{key:tryLS('jr_range')||'1m'}, jobs:[], dept:'All', tech:'', flag:'attention-open', q:'', sort:'date', dir:'desc', open:null, limit:200, tab:'jobs' };
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function money(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
@@ -260,45 +276,102 @@ tr.reviewed td{opacity:.72;}
     j._hrs = d.hoursWorked||0;
     j._warn = j.flags.filter(function(f){return f.level==='warn';}).length;
     j._oppVisit = !NO_OPTION_EXEMPT.test(j.jobType||'') && !d.warranty && !d.recall;
-    j._text = (j.jobNumber+' '+j.customer+' '+j.primaryTech+' '+j.jobType+' '+j.invoices.map(function(i){return i.summary+' '+i.items.map(function(x){return x.name;}).join(' ');}).join(' ')+' '+j.estimates.map(function(e){return e.name+' '+(e.summary||'');}).join(' ')).toLowerCase();
+    j._text = searchText(j);
     return j;
   }
+
+  function iso(d){ return d.toISOString().slice(0,10); }
+  function computeRange(){
+    var r=state.range, t=new Date(), f=new Date();
+    if(r.key==='custom'){ r.from=$('fromD').value||r.from; r.to=$('toD').value||r.to; if(!r.from||!r.to){ f.setMonth(f.getMonth()-1); r.from=iso(f); r.to=iso(t);} return r; }
+    if(r.key==='1w') f.setDate(f.getDate()-7); else if(r.key==='6m') f.setMonth(f.getMonth()-6); else if(r.key==='1y') f.setFullYear(f.getFullYear()-1); else f.setMonth(f.getMonth()-1);
+    r.from=iso(f); r.to=iso(t); return r;
+  }
+  function monthsIn(from,to){ return (state.index.months||[]).filter(function(m){ return m>=from.slice(0,7) && m<=to.slice(0,7); }); }
+  async function fetchMonth(m){
+    if(monthCache[m]) return monthCache[m];
+    var r = await fetch('data/review/'+m+'.slim.json?t='+Date.now());
+    var full=false; if(!r.ok){ r = await fetch('data/review/'+m+'.json?t='+Date.now()); full=true; }
+    var data = await r.json(); data._full=full; monthCache[m]=data; if(full) textCache[m]={full:true};
+    return data;
+  }
+  async function fetchText(m){
+    if(textCache[m]) return textCache[m];
+    var r = await fetch('data/review/'+m+'.text.json?t='+Date.now());
+    textCache[m] = r.ok ? await r.json() : {jobs:{}};
+    return textCache[m];
+  }
+  function applyText(j, t){
+    if(!t || j._textLoaded) return; j._textLoaded=true;
+    if(t.full) { j._text=searchText(j); return; }
+    var x=(t.jobs||{})[j.jobNumber]; if(!x){ j._text=searchText(j); return; }
+    if(j.materials) j.materials.bookingNotes = x.b||'';
+    j.invoices.forEach(function(i){ i.summary = (x.i||{})[i.invoiceNumber]||''; (i.items||[]).forEach(function(it){ var g=(x.g||{})[it.code+'|'+it.price]; if(g) it.desc=g; }); });
+    j.estimates.forEach(function(e){ if(e.hasSummary!==undefined) e.summary=(x.e||{})[e.id]||''; });
+    j._text=searchText(j);
+  }
+  function searchText(j){ return (j.jobNumber+' '+j.customer+' '+j.primaryTech+' '+j.jobType+' '+j.invoices.map(function(i){return (i.summary||'')+' '+(i.items||[]).map(function(x){return x.name+' '+(x.desc||'');}).join(' ');}).join(' ')+' '+j.estimates.map(function(e){return e.name+' '+(e.summary||'');}).join(' ')).toLowerCase(); }
+  async function ensureText(ms){ var ts = await Promise.all(ms.map(fetchText)); ms.forEach(function(m,i){ state.jobs.filter(function(j){return j._month===m;}).forEach(function(j){ applyText(j, ts[i]); }); }); }
 
   async function load(){
     try{
       var r = await fetch('data/review/index.json?t='+Date.now());
       if(!r.ok) throw new Error('index '+r.status);
       state.index = await r.json();
-      var sel=$('monthSel');
-      sel.innerHTML = state.index.months.map(function(m){ var d=new Date(m+'-15'); return '<option value="'+m+'">'+d.toLocaleString(undefined,{month:'long',year:'numeric'})+'</option>'; }).join('');
-      state.month = state.index.months[0];
       var ls = state.index.lastSync;
       $('subhead').textContent = 'Last synced '+new Date(state.index.updatedAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+(ls&&ls.context?' · '+ls.context:'');
-      await loadMonth();
+      try{ var cr=JSON.parse(tryLS('jr_custom')||'null'); if(cr){ state.range.from=cr.from; state.range.to=cr.to; $('fromD').value=cr.from; $('toD').value=cr.to; } }catch(e){}
+      await loadRange();
     }catch(e){
       $('subhead').textContent='No review data yet';
       $('body').innerHTML='<tr><td colspan="11"><div class="empty">Could not load review data ('+esc(e.message)+').</div></td></tr>';
     }
   }
-  async function loadMonth(){
+  var loadSeq=0;
+  async function loadRange(){
+    var seq=++loadSeq, r=computeRange();
+    document.querySelectorAll('#rangeChips .chip').forEach(function(c){ c.classList.toggle('active', c.dataset.r===r.key); });
+    $('customWrap').style.display = r.key==='custom' ? '' : 'none';
+    if(r.key==='custom'){ $('fromD').value=r.from; $('toD').value=r.to; }
     $('body').innerHTML='<tr><td colspan="11" class="none" style="padding:30px;text-align:center;">Loading jobs…</td></tr>';
     loadStatuses();
-    var r = await fetch('data/review/'+state.month+'.json?t='+Date.now());
-    var data = await r.json();
-    state.jobs = Object.values(data.jobs).map(derive);
+    var ms = monthsIn(r.from, r.to);
+    var datas = await Promise.all(ms.map(fetchMonth));
+    if(seq!==loadSeq) return;
+    var jobs=[];
+    datas.forEach(function(d,i){ Object.values(d.jobs).forEach(function(j){ var c=j.completionDate||''; if(c>=r.from && c<=r.to){ j._month=ms[i]; if(!j._derived){ derive(j); j._derived=true; } jobs.push(j); } }); });
+    state.jobs = jobs;
+    $('rangeNote').textContent = 'Showing jobs completed '+fdate(r.from)+'/'+r.from.slice(2,4)+' – '+fdate(r.to)+'/'+r.to.slice(2,4)+' ('+jobs.length.toLocaleString()+' jobs). Data available from '+((state.index.months||[]).slice(-1)[0]||'—')+'.';
     var techs = {}; state.jobs.forEach(function(j){ if(j.primaryTech) techs[j.primaryTech]=1; });
     var tsel=$('techSel'), cur=state.tech;
     tsel.innerHTML='<option value="">All technicians</option>'+Object.keys(techs).sort().map(function(t){return '<option'+(t===cur?' selected':'')+'>'+esc(t)+'</option>';}).join('');
     buildFlagSel(); buildDept(); render();
+    ensureText(ms).then(function(){ if(seq===loadSeq) render(); });
   }
 
   async function loadStatuses(){
     try{
       var r = await fetch('data/invoice_checks.json?t='+Date.now());
       var list = await r.json(); var s={};
-      (Array.isArray(list)?list:[]).forEach(function(x){ if(x && (x.manualOverride==='pass'||x.manualOverride==='fail')) s[String(x.id)]=x.manualOverride; });
-      statuses = s; if(state.jobs.length) render();
+      var n={};
+      (Array.isArray(list)?list:[]).forEach(function(x){
+        if(!x) return; var id=String(x.id);
+        if(id.indexOf('note:')===0){ if(x.concern||x.positive) n[id.slice(5)]={concern:x.concern||'', positive:x.positive||'', at:x.noteAt||x.savedAt}; return; }
+        if(x.manualOverride==='pass'||x.manualOverride==='fail') s[id]=x.manualOverride;
+      });
+      statuses = s; notes = n; if(state.jobs.length) render();
     }catch(e){}
+  }
+  async function saveNote(jobNo, concern, positive, el){
+    el.textContent='Saving…';
+    try{
+      var rec={ id:'note:'+jobNo, noteFor:jobNo, concern:concern, positive:positive, noteAt:Date.now(), flags:[], savedAt:Date.now() };
+      var res = await fetch(WORKER_URL+'/api/materials-invoice-checks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({records:[rec]})});
+      if(!res.ok) throw new Error(res.status);
+      if(concern||positive) notes[jobNo]={concern:concern, positive:positive, at:Date.now()}; else delete notes[jobNo];
+      el.textContent='Saved '+new Date().toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+' \u2014 it will appear in this tech\u2019s report.';
+      var row=document.querySelector('tr.job[data-j="'+jobNo+'"] td:nth-child(10)'); if(row){ var j=state.jobs.find(function(x){return x.jobNumber===jobNo;}); if(j) row.innerHTML=flagPills(j,3); }
+    }catch(e){ el.textContent='Could not save ('+e.message+'). Try again.'; }
   }
   function statusOf(j){ return statuses[j.jobNumber] || 'needs'; }
   // Saves through the same Worker the Materials vs Invoice page uses, so both pages share one status per job.
@@ -340,7 +413,7 @@ tr.reviewed td{opacity:.72;}
   }
   function buildFlagSel(){
     var counts={}; state.jobs.forEach(function(j){ j.flags.forEach(function(f){ counts[f.code]=(counts[f.code]||0)+1; }); });
-    var opts=[['attention','Needs attention'],['attention-open','Needs attention, not yet reviewed'],['reviewed','Reviewed'],['all','All jobs'],['clean','No flags'],['ai','Claude review issues']];
+    var opts=[['attention','Needs attention'],['attention-open','Needs attention, not yet reviewed'],['reviewed','Reviewed'],['all','All jobs'],['clean','No flags'],['ai','Claude review issues'],['notes','Has my notes']];
     Object.keys(FLAG_LABELS).forEach(function(k){ if(counts[k]) opts.push(['f:'+k, FLAG_LABELS[k]+' ('+counts[k]+')']); });
     $('flagSel').innerHTML = opts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===state.flag?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('');
   }
@@ -363,6 +436,7 @@ tr.reviewed td{opacity:.72;}
       if(f==='attention') return j._warn>0;
       if(f==='attention-open') return j._warn>0 && statusOf(j)==='needs';
       if(f==='reviewed') return statusOf(j)!=='needs';
+      if(f==='notes') return !!notes[j.jobNumber];
       if(f==='clean') return j.flags.length===0;
       if(f==='ai') return j.flags.some(function(x){return x.code.indexOf('ai_')===0;});
       if(f.indexOf('f:')===0){ var c=f.slice(2); return j.flags.some(function(x){return x.code===c;}); }
@@ -422,6 +496,7 @@ tr.reviewed td{opacity:.72;}
     var out = fl.slice(0,max||99).map(function(f){ return '<span class="pill '+f.level+(f.code.indexOf('ai_')===0?' ai':'')+'" title="'+esc(f.text)+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span>'; }).join('');
     if(max && fl.length>max) out += '<span class="pill info">+'+(fl.length-max)+'</span>';
     if(!fl.length) out = j.aiReview ? '<span class="pill good">Reviewed ✓</span>' : '';
+    var nt=notes[j.jobNumber]; if(nt) out = '<span class="pill note" title="'+esc((nt.concern?'Concern: '+nt.concern+' ':'')+(nt.positive?'Done well: '+nt.positive:''))+'">\u270e My note</span>'+out;
     return out;
   }
 
@@ -460,6 +535,7 @@ tr.reviewed td{opacity:.72;}
   function detail(j){
     var d=j.detail||{}, m=j.materials||{};
     var h='';
+    if(!j._textLoaded){ fetchText(j._month).then(function(t){ applyText(j,t); render(); }); }
     if(j.aiReview){
       var iss=j.aiReview.issues||[];
       h+='<div class="ai-box"><b>✦ Claude review</b> — '+(iss.length?iss.length+' issue'+(iss.length>1?'s':''):'no billing issues found between the write-up and the invoice')+(j.aiReview.note?' · '+esc(j.aiReview.note):'')+
@@ -518,6 +594,11 @@ tr.reviewed td{opacity:.72;}
       '</div>';
     if(m.bookingNotes) h+='<details><summary>Booking notes from the office</summary><div class="txt" style="margin-top:6px;">'+esc(m.bookingNotes)+'</div></details>';
     h+='<div class="links"><a class="btn btn-line" target="_blank" rel="noopener" href="'+ST+'Job/Index/'+esc(j.jobId||j.jobNumber)+'">Open job in ServiceTitan (photos, forms)</a></div>';
+    var nt=notes[j.jobNumber]||{concern:'',positive:''};
+    h+='<div class="notes" data-note="'+esc(j.jobNumber)+'"><h4>My notes for '+esc(j.primaryTech||'the tech')+' \u2014 included in their technician report</h4><div class="ng">'+
+      '<div class="c"><label style="color:var(--warn);">What I didn\u2019t like</label><textarea class="note-c" placeholder="e.g. Didn\u2019t record the PO parts as materials used; write-up doesn\u2019t say what was replaced.">'+esc(nt.concern)+'</textarea></div>'+
+      '<div class="p"><label style="color:var(--good);">What was done well</label><textarea class="note-p" placeholder="e.g. Great write-up, three clear options, sold the upgrade.">'+esc(nt.positive)+'</textarea></div>'+
+      '</div><div class="nb"><button class="btn btn-line note-save" type="button">Save notes</button><span class="note-msg">'+(nt.at?'Last saved '+new Date(nt.at).toLocaleDateString():'')+'</span></div></div>';
     return h;
   }
 
@@ -549,6 +630,10 @@ tr.reviewed td{opacity:.72;}
   // events
   document.addEventListener('click', function(e){
     var t;
+    if((t=e.target.closest('#rangeChips .chip'))){ state.range.key=t.dataset.r; tryLS('jr_range',t.dataset.r); state.open=null; state.limit=200; loadRange(); return; }
+    if((t=e.target.closest('.note-save'))){ var box=t.closest('.notes'); saveNote(box.dataset.note, box.querySelector('.note-c').value.trim(), box.querySelector('.note-p').value.trim(), box.querySelector('.note-msg')); return; }
+    if(e.target.closest('#reportBtn')){ openReport(); return; }
+    if(e.target.closest('.notes')) return;
     if((t=e.target.closest('#deptChips .chip'))){ state.dept=t.dataset.d; buildDept(); state.limit=200; render(); return; }
     if((t=e.target.closest('.stat'))){ state.flag=t.dataset.f; buildFlagSel(); state.limit=200; render(); return; }
     if((t=e.target.closest('#headRow th'))){ var k=t.dataset.k; if(state.sort===k) state.dir=state.dir==='asc'?'desc':'asc'; else { state.sort=k; state.dir=(k==='cust'||k==='tech'||k==='type')?'asc':'desc'; } render(); return; }
@@ -577,7 +662,12 @@ tr.reviewed td{opacity:.72;}
   function fallbackCopy(text){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); }
   $('hideZero').checked = hideZero;
   $('hideZero').addEventListener('change', function(){ hideZero=this.checked; tryLS('jr_hideZero', hideZero?'1':'0'); state.limit=200; render(); });
-  $('monthSel').addEventListener('change', function(){ state.month=this.value; state.open=null; loadMonth(); });
+  ['fromD','toD'].forEach(function(id){ $(id).addEventListener('change', function(){ state.range.key='custom'; state.range.from=$('fromD').value; state.range.to=$('toD').value; tryLS('jr_range','custom'); tryLS('jr_custom', JSON.stringify({from:state.range.from,to:state.range.to})); if(state.range.from&&state.range.to) loadRange(); }); });
+  function openReport(){
+    var r=computeRange();
+    if(!state.tech){ alert('Pick a technician first (Technician menu), then click Technician report.'); $('techSel').focus(); return; }
+    window.open('report.html?tech='+encodeURIComponent(state.tech)+'&from='+r.from+'&to='+r.to, '_blank');
+  }
   $('techSel').addEventListener('change', function(){ state.tech=this.value; state.limit=200; render(); });
   $('flagSel').addEventListener('change', function(){ state.flag=this.value; state.limit=200; render(); });
   var tmr; $('searchBox').addEventListener('input', function(){ var v=this.value; clearTimeout(tmr); tmr=setTimeout(function(){ state.q=v.trim(); state.limit=200; render(); },200); });

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Technician Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{ --ink:#1B2430; --paper:#FFFFFF; --steel:#EEF2F5; --line:#D7DEE4; --soft:#E6EAED; --accent:#E2620E;
+  --good:#2E7D4F; --good-bg:#E7F3EC; --warn:#C6432D; --warn-bg:#FBEAE6; --muted:#667085; --muted-2:#8C93A0; --ai:#5B3FA6; --ai-bg:#F4F1FB; }
+*{box-sizing:border-box;}
+body{margin:0;background:var(--steel);color:var(--ink);font-family:'Inter',system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;font-size:13px;line-height:1.5;}
+.bar{position:sticky;top:0;background:var(--ink);color:#fff;padding:12px 24px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;z-index:5;}
+.bar .btn{font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:6px;border:none;cursor:pointer;background:var(--accent);color:#fff;}
+.bar .hint{font-size:12px;color:#AEB6C2;}
+.page{max-width:900px;margin:24px auto;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:40px 48px;}
+h1{font-size:22px;margin:0 0 2px;letter-spacing:-0.01em;}
+.sub{color:var(--muted);font-size:13px;margin-bottom:22px;}
+h2{font-size:15px;margin:28px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--ink);display:flex;justify-content:space-between;align-items:baseline;}
+h2 small{font-size:11.5px;color:var(--muted);font-weight:500;}
+h2.good{border-color:var(--good);color:var(--good);} h2.bad{border-color:var(--warn);color:var(--warn);}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.kpi{background:var(--paper);padding:10px 12px;}
+.kpi .n{font-size:18px;font-weight:700;}
+.kpi .l{font-size:11.5px;color:var(--muted);}
+.kpi .c{font-size:11px;color:var(--muted-2);margin-top:2px;}
+.kpi .c.up{color:var(--good);} .kpi .c.down{color:var(--warn);}
+ul.pts{margin:0;padding-left:18px;} ul.pts li{margin:4px 0;}
+.note{border-left:3px solid var(--line);padding:6px 10px;margin:8px 0;background:#FAFBFC;border-radius:0 6px 6px 0;page-break-inside:avoid;}
+.note.good{border-color:var(--good);} .note.bad{border-color:var(--warn);}
+.note .meta{font-size:11.5px;color:var(--muted);}
+.note .txt{font-size:13px;margin-top:2px;white-space:pre-wrap;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{text-align:left;font-size:11px;color:var(--muted);font-weight:600;padding:6px 6px;border-bottom:1px solid var(--line);background:var(--steel);}
+td{padding:7px 6px;border-bottom:1px solid var(--soft);vertical-align:top;}
+td.num,th.num{text-align:right;white-space:nowrap;}
+tr{page-break-inside:avoid;}
+.fl{display:block;margin:1px 0;}
+.fl.warn{color:var(--warn);} .fl.info{color:var(--muted);} .fl.ai::before{content:"✦ ";color:var(--ai);}
+.mynote{display:block;margin-top:3px;padding:3px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn);font-weight:600;}
+.mynote.good{background:var(--good-bg);color:var(--good);}
+.cat{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--soft);}
+.cat b{font-weight:600;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.lines{margin-top:8px;}
+.lines div{border-bottom:1px solid var(--line);height:26px;}
+.sig{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:26px;font-size:12px;color:var(--muted);}
+.sig div{border-top:1px solid var(--ink);padding-top:4px;}
+.muted{color:var(--muted);}
+.loading{padding:60px;text-align:center;color:var(--muted);}
+@media print{
+  body{background:#fff;font-size:11.5px;}
+  .bar{display:none;}
+  .page{border:none;margin:0;padding:0;max-width:none;border-radius:0;}
+  h2{page-break-after:avoid;}
+  @page{margin:14mm 12mm;}
+}
+@media (max-width:700px){ .page{padding:20px 16px;margin:0;border-radius:0;} .kpis{grid-template-columns:repeat(2,1fr);} .two{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="bar"><div><b>Technician review</b> <span class="hint" id="barInfo"></span></div>
+  <div style="display:flex;gap:10px;align-items:center;"><span class="hint">In the print window choose “Save as PDF”.</span><button class="btn" id="pdfBtn">Download PDF</button></div></div>
+<div class="page" id="page"><div class="loading">Building report…</div></div>
+
+<script>
+(function(){
+  var NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
+  var LABEL = { no_options:'No options presented', one_option:'Only one option', po_not_billed:'PO costs on a $0 invoice', sold_not_found:'Sold work not billed yet',
+    general_time:'General Time used', po_not_recorded:'PO parts not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
+    negative_margin:'Negative margin', short_visit:'Very short visit', long_visit:'Long visit', ai_not_billed:'Work described but not billed',
+    ai_billed_not_described:'Billed but not described', ai_options:'Options gap', ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note' };
+  var q = new URLSearchParams(location.search), tech=q.get('tech')||'', from=q.get('from')||'', to=q.get('to')||'';
+  var $=function(id){return document.getElementById(id);};
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function money(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
+  function pct(n){ return Math.round(n*100)+'%'; }
+  function dLong(s){ if(!s) return '—'; var p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }
+  function dShort(s){ if(!s) return '—'; var p=s.split('-'); return +p[1]+'/'+(+p[2]); }
+  $('pdfBtn').addEventListener('click', function(){ window.print(); });
+
+  async function getJSON(u){ var r=await fetch(u+(u.indexOf('?')>-1?'&':'?')+'t='+Date.now()); if(!r.ok) throw new Error(u+' '+r.status); return r.json(); }
+
+  async function main(){
+    if(!tech||!from||!to){ $('page').innerHTML='<div class="loading">Open this report from the Job Review page (pick a technician and date range, then click Technician report).</div>'; return; }
+    document.title = 'Technician Review — '+tech+' — '+from+' to '+to;
+    $('barInfo').textContent = tech+' · '+dLong(from)+' – '+dLong(to);
+    var index = await getJSON('data/review/index.json');
+    var months = (index.months||[]).filter(function(m){ return m>=from.slice(0,7) && m<=to.slice(0,7); });
+    var all=[];
+    for(const m of months){
+      var d; try{ d=await getJSON('data/review/'+m+'.slim.json'); }catch(e){ d=await getJSON('data/review/'+m+'.json'); d._full=true; }
+      var t = d._full ? null : await getJSON('data/review/'+m+'.text.json').catch(function(){return null;});
+      Object.values(d.jobs).forEach(function(j){ var c=j.completionDate||''; if(c<from||c>to) return; if(t) applyText(j,(t.jobs||{})[j.jobNumber]); all.push(j); });
+    }
+    var checks = await getJSON('data/invoice_checks.json').catch(function(){return [];});
+    var notes={}, status={};
+    (Array.isArray(checks)?checks:[]).forEach(function(x){ if(!x) return; var id=String(x.id); if(id.indexOf('note:')===0){ if(x.concern||x.positive) notes[id.slice(5)]=x; } else if(x.manualOverride) status[id]=x.manualOverride; });
+    all.forEach(derive);
+    render(all.filter(function(j){return j.primaryTech===tech;}), all, notes, status);
+  }
+  function applyText(j,x){ if(!x) return; if(j.materials) j.materials.bookingNotes=x.b||''; j.invoices.forEach(function(i){ i.summary=(x.i||{})[i.invoiceNumber]||''; (i.items||[]).forEach(function(it){ var g=(x.g||{})[it.code+'|'+it.price]; if(g) it.desc=g; }); }); j.estimates.forEach(function(e){ e.summary=(x.e||{})[e.id]||''; }); }
+  function derive(j){
+    var d=j.detail||{}, m=j.materials||{};
+    j._rev = m.revenue!=null ? m.revenue : (d.revenue||0);
+    j._opts = Math.max(j.estimates.length, d.estimatesCount||0);
+    j._opp = !NO_OPTION_EXEMPT.test(j.jobType||'') && !d.warranty && !d.recall && !!j.detail;
+    j._check = /system check|maintenance|tune.?up/i.test(j.jobType||'') && !!j.detail;
+    j._soldAmt = j.estimates.filter(function(e){return e.status==='Sold';}).reduce(function(s,e){return s+(e.subtotal||0);},0);
+    j._hrs = d.hoursWorked||0;
+    var gm=(j.aiReview&&j.aiReview.gt)||{};
+    j._gt = j.invoices.flatMap(function(i){return i.items||[];}).filter(function(x){return /^GT-\d{4}-\d{4}$/i.test(x.code||'');}).map(function(x){return {x:x,m:gm[x.code+'|'+x.price]};});
+    j._warn = j.flags.filter(function(f){return f.level==='warn';});
+  }
+  function stats(list){
+    var s={jobs:list.length, rev:0, opp:0, optSum:0, noOpt:0, checks:0, checksNo:0, est:0, sold:0, soldAmt:0, hrs:0, flagged:0, reviewed:0, aiIssues:0,
+      gtLines:0, gtBilled:0, gtUnder:0, gtVague:0, poIssues:0, writeupIssues:0, notBilled:0};
+    list.forEach(function(j){
+      s.rev+=j._rev; s.hrs+=j._hrs; if(j._warn.length) s.flagged++;
+      if(j._opp){ s.opp++; s.optSum+=j._opts; if(j._opts===0) s.noOpt++; }
+      if(j._check){ s.checks++; if(j._opts===0) s.checksNo++; }
+      s.est+=j.estimates.length; s.sold+=j.estimates.filter(function(e){return e.status==='Sold';}).length; s.soldAmt+=j._soldAmt;
+      if(j.aiReview){ s.reviewed++; if((j.aiReview.issues||[]).length) s.aiIssues++; }
+      j._gt.forEach(function(g){ s.gtLines++; s.gtBilled+=g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) s.gtUnder+=g.m.diff; if(g.m&&g.m.reason==='too_vague') s.gtVague++; });
+      j.flags.forEach(function(f){ if(/^po_/.test(f.code)||f.code==='materials_not_billed') s.poIssues++; if(f.code==='no_writeup'||f.code==='ai_writeup') s.writeupIssues++; if(f.code==='ai_not_billed') s.notBilled++; });
+    });
+    s.avgOpt = s.opp? s.optSum/s.opp : 0; s.noOptRate = s.opp? s.noOpt/s.opp : 0; s.close = s.est? s.sold/s.est : 0;
+    s.checkNoRate = s.checks? s.checksNo/s.checks : 0; s.cleanRate = s.reviewed? 1-s.aiIssues/s.reviewed : 0; s.flagRate = s.jobs? s.flagged/s.jobs : 0;
+    s.revPerJob = s.jobs? s.rev/s.jobs : 0; s.gtPerJob = s.jobs? s.gtLines/s.jobs : 0;
+    return s;
+  }
+  function cmp(v, co, better){ // better: 'high' | 'low'
+    if(!isFinite(co)||co===0) return {cls:'',txt:''};
+    var d=(v-co)/Math.abs(co), good = better==='high' ? d>0.1 : d<-0.1, bad = better==='high' ? d<-0.1 : d>0.1;
+    return {cls: good?'up':bad?'down':'', good:good, bad:bad};
+  }
+
+  function render(mine, all, notes, status){
+    var S=stats(mine), C=stats(all.filter(function(j){return j.primaryTech;}));
+    var techCount = new Set(all.map(function(j){return j.primaryTech;}).filter(Boolean)).size;
+    // company comparisons are per-tech averages for counts, and company-wide rates for rates
+    var k = function(n,l,c){ return '<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div>'+(c?'<div class="c '+(c.cls||'')+'">'+c.txt+'</div>':'')+'</div>'; };
+    var co = function(txt, v, cv, better){ var r=cmp(v,cv,better); r.txt='Company: '+txt; return r; };
+    var h='';
+    h+='<h1>Technician Review — '+esc(tech)+'</h1>';
+    h+='<div class="sub">Jobs completed '+dLong(from)+' – '+dLong(to)+' · Prepared '+new Date().toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' · Compared with all '+techCount+' technicians over the same period</div>';
+
+    h+='<div class="kpis">'+
+      k(S.jobs.toLocaleString(),'Jobs completed', {txt:'Company avg per tech: '+Math.round(C.jobs/Math.max(1,techCount))}) +
+      k(money(S.rev),'Revenue', {txt:'Per job '+money(S.revPerJob)+' (co. '+money(C.revPerJob)+')', cls:cmp(S.revPerJob,C.revPerJob,'high').cls}) +
+      k(S.avgOpt.toFixed(1),'Options per opportunity visit', co(C.avgOpt.toFixed(1), S.avgOpt, C.avgOpt, 'high')) +
+      k(pct(S.close),'Estimate close rate', co(pct(C.close), S.close, C.close, 'high')) +
+      k(money(S.soldAmt),'Estimates sold ($)', {txt:S.sold+' sold of '+S.est+' built'}) +
+      k(pct(S.noOptRate),'Visits with no options', co(pct(C.noOptRate), S.noOptRate, C.noOptRate, 'low')) +
+      k(S.gtLines+' · '+money(S.gtBilled),'General Time lines', co(C.gtPerJob.toFixed(2)+'/job', S.gtPerJob, C.gtPerJob, 'low')) +
+      k(S.reviewed? pct(S.cleanRate):'—','Claude-reviewed jobs with no issues', S.reviewed? co(pct(C.cleanRate), S.cleanRate, C.cleanRate, 'high'):null)+
+      '</div>';
+
+    // ----- positives
+    var pos=[], neg=[];
+    var c1=cmp(S.avgOpt,C.avgOpt,'high'); if(S.opp>=5){ if(c1.good) pos.push('Presents more options than average: '+S.avgOpt.toFixed(1)+' per opportunity visit vs. '+C.avgOpt.toFixed(1)+' company-wide.'); if(c1.bad) neg.push('Presents fewer options than average: '+S.avgOpt.toFixed(1)+' per opportunity visit vs. '+C.avgOpt.toFixed(1)+' company-wide.'); }
+    var c2=cmp(S.noOptRate,C.noOptRate,'low'); if(S.opp>=5){ if(S.noOpt===0) pos.push('Built at least one option on every opportunity visit ('+S.opp+' visits).'); else if(c2.good) pos.push('Fewer visits without options than average ('+pct(S.noOptRate)+' vs. '+pct(C.noOptRate)+').'); else if(c2.bad) neg.push(S.noOpt+' of '+S.opp+' opportunity visits had no options presented ('+pct(S.noOptRate)+' vs. '+pct(C.noOptRate)+' company-wide).'); }
+    if(S.checks>=3 && S.checksNo>0 && cmp(S.checkNoRate,C.checkNoRate,'low').bad) neg.push(S.checksNo+' of '+S.checks+' system checks ended with no estimate built.');
+    var c3=cmp(S.close,C.close,'high'); if(S.est>=5){ if(c3.good) pos.push('Closes estimates above average: '+pct(S.close)+' vs. '+pct(C.close)+' ('+money(S.soldAmt)+' sold).'); if(c3.bad) neg.push('Estimate close rate below average: '+pct(S.close)+' vs. '+pct(C.close)+'.'); }
+    var c4=cmp(S.revPerJob,C.revPerJob,'high'); if(S.jobs>=5){ if(c4.good) pos.push('Revenue per job above average: '+money(S.revPerJob)+' vs. '+money(C.revPerJob)+'.'); if(c4.bad) neg.push('Revenue per job below average: '+money(S.revPerJob)+' vs. '+money(C.revPerJob)+'.'); }
+    if(S.reviewed>=5){ var c5=cmp(S.cleanRate,C.cleanRate,'high'); if(c5.good||S.aiIssues===0) pos.push('Write-ups and invoices line up well: '+pct(S.cleanRate)+' of reviewed jobs had no billing/write-up issues (company '+pct(C.cleanRate)+').'); else if(c5.bad) neg.push('More write-up/billing mismatches than average: '+S.aiIssues+' of '+S.reviewed+' reviewed jobs had an issue ('+pct(1-S.cleanRate)+' vs. '+pct(1-C.cleanRate)+').'); }
+    if(S.jobs>=5){ if(S.gtLines===0) pos.push('Used pricebook tasks throughout — no General Time lines.'); else if(cmp(S.gtPerJob,C.gtPerJob,'low').bad) neg.push('Uses General Time more than average: '+S.gtLines+' lines ('+money(S.gtBilled)+').'); }
+    if(S.gtUnder>0) neg.push('General Time billed '+money(S.gtUnder)+' below the matching pricebook tasks.');
+    if(S.gtVague>0) neg.push(S.gtVague+' General Time line'+(S.gtVague>1?'s':'')+' with a description too vague to verify.');
+    if(S.notBilled>0) neg.push(S.notBilled+' job'+(S.notBilled>1?'s':'')+' where the write-up describes work that isn’t on the invoice.');
+    if(S.poIssues>0) neg.push(S.poIssues+' job'+(S.poIssues>1?'s':'')+' with purchase-order / materials recording problems.');
+    if(S.writeupIssues>0) neg.push(S.writeupIssues+' job'+(S.writeupIssues>1?'s':'')+' with a missing or unclear write-up.');
+    var big = mine.filter(function(j){return j._soldAmt>0;}).sort(function(a,b){return b._soldAmt-a._soldAmt;}).slice(0,3);
+    if(big.length) pos.push('Largest sales: '+big.map(function(j){ return money(j._soldAmt)+' ('+esc(j.customer)+', '+dShort(j.completionDate)+')'; }).join('; ')+'.');
+
+    var myNotes = mine.filter(function(j){return notes[j.jobNumber];}).sort(function(a,b){return String(a.completionDate).localeCompare(b.completionDate);});
+    var posNotes = myNotes.filter(function(j){return notes[j.jobNumber].positive;}), negNotes = myNotes.filter(function(j){return notes[j.jobNumber].concern;});
+    var noteHtml = function(j, good){ var n=notes[j.jobNumber]; return '<div class="note '+(good?'good':'bad')+'"><div class="meta">'+dShort(j.completionDate)+' · Job '+esc(j.jobNumber)+' · '+esc(j.customer)+' · '+esc(j.jobType)+' · '+money(j._rev)+'</div><div class="txt">'+esc(good?n.positive:n.concern)+'</div></div>'; };
+
+    h+='<h2 class="good">What’s going well <small>'+(pos.length+posNotes.length)+' item'+((pos.length+posNotes.length)===1?'':'s')+'</small></h2>';
+    h+= pos.length ? '<ul class="pts">'+pos.map(function(p){return '<li>'+p+'</li>';}).join('')+'</ul>' : '<div class="muted">No standout metrics this period.</div>';
+    if(posNotes.length) h+='<div style="margin-top:10px;font-weight:600;">Manager notes</div>'+posNotes.map(function(j){return noteHtml(j,true);}).join('');
+
+    h+='<h2 class="bad">What needs work <small>'+(neg.length+negNotes.length)+' item'+((neg.length+negNotes.length)===1?'':'s')+'</small></h2>';
+    h+= neg.length ? '<ul class="pts">'+neg.map(function(p){return '<li>'+p+'</li>';}).join('')+'</ul>' : '<div class="muted">No problem areas from the numbers this period.</div>';
+    if(negNotes.length) h+='<div style="margin-top:10px;font-weight:600;">Manager notes</div>'+negNotes.map(function(j){return noteHtml(j,false);}).join('');
+
+    // ----- issue summary by type
+    var byType={};
+    mine.forEach(function(j){ var seen={}; j.flags.forEach(function(f){ if(f.level!=='warn'||seen[f.code]) return; seen[f.code]=1; byType[f.code]=(byType[f.code]||0)+1; }); });
+    var types=Object.keys(byType).sort(function(a,b){return byType[b]-byType[a];});
+    h+='<h2>Issues found by type <small>jobs with each flag</small></h2>';
+    h+= types.length ? types.map(function(t){ return '<div class="cat"><span>'+esc(LABEL[t]||t)+'</span><b>'+byType[t]+'</b></div>'; }).join('') : '<div class="muted">No flagged issues this period.</div>';
+
+    // ----- job detail
+    var jobs = mine.filter(function(j){ return j._warn.length || (notes[j.jobNumber]&&notes[j.jobNumber].concern); }).sort(function(a,b){return String(a.completionDate).localeCompare(b.completionDate);});
+    h+='<h2>Jobs to discuss <small>'+jobs.length+' job'+(jobs.length===1?'':'s')+' with issues or manager concerns</small></h2>';
+    if(jobs.length){
+      h+='<table><thead><tr><th>Date</th><th>Job / customer</th><th>Type</th><th class="num">Revenue</th><th>What was found</th></tr></thead><tbody>';
+      jobs.forEach(function(j){
+        var fl = j.flags.filter(function(f){return f.level==='warn';}).map(function(f){ return '<span class="fl warn'+(f.code.indexOf('ai_')===0?' ai':'')+'"><b>'+esc(LABEL[f.code]||f.code)+':</b> '+esc(f.text)+'</span>'; }).join('');
+        var n=notes[j.jobNumber];
+        if(n&&n.concern) fl+='<span class="mynote">Manager: '+esc(n.concern)+'</span>';
+        if(n&&n.positive) fl+='<span class="mynote good">Done well: '+esc(n.positive)+'</span>';
+        h+='<tr><td>'+dShort(j.completionDate)+'</td><td><b>'+esc(j.jobNumber)+'</b><br>'+esc(j.customer)+'</td><td>'+esc(j.jobType)+'</td><td class="num">'+money(j._rev)+'</td><td>'+(fl||'<span class="muted">—</span>')+'</td></tr>';
+      });
+      h+='</tbody></table>';
+    } else h+='<div class="muted">Nothing to discuss this period.</div>';
+
+    // ----- meeting section
+    h+='<h2>Discussion &amp; goals for next month</h2><div class="two"><div><div class="muted">Discussion notes</div><div class="lines">'+'<div></div>'.repeat(6)+'</div></div><div><div class="muted">Goals / commitments</div><div class="lines">'+'<div></div>'.repeat(6)+'</div></div></div>';
+    h+='<div class="sig"><div>Technician — '+esc(tech)+' &nbsp; / &nbsp; Date</div><div>Manager &nbsp; / &nbsp; Date</div></div>';
+    h+='<p class="muted" style="margin-top:22px;font-size:11px;">Flags come from ServiceTitan report data (rules) and from Claude reading each write-up against its invoice (✦). They point to things worth discussing and should be confirmed in ServiceTitan. "Opportunity visits" exclude sold work, installs, non-repair, warranty and recall jobs.</p>';
+    $('page').innerHTML = h;
+  }
+
+  main().catch(function(e){ $('page').innerHTML='<div class="loading">Could not build the report: '+esc(e.message)+'</div>'; });
+})();
+</script>
+</body>
+</html>
