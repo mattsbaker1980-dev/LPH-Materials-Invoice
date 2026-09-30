@@ -20,6 +20,10 @@ a{color:var(--info);}
 .wrap{max-width:1800px;margin:0 auto;padding:0 32px 60px;}
 header.top{background:var(--ink);color:var(--paper);padding:22px 0;}
 header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:0 !important;}
+header.top .brand{display:flex;align-items:center;gap:16px;}
+header.top .logo{background:#fff;border-radius:8px;padding:6px 10px;display:flex;align-items:center;}
+header.top .logo img{height:44px;width:auto;display:block;}
+@media (max-width:700px){ header.top .logo img{height:34px;} }
 header.top h1{font-size:19px;font-weight:600;margin:0;letter-spacing:-0.01em;}
 header.top p{font-size:13px;color:#AEB6C2;margin:4px 0 0;}
 .btn{font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:6px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
@@ -158,9 +162,12 @@ tr.reviewed td{opacity:.72;}
 <body>
 <header class="top">
   <div class="wrap">
-    <div>
+    <div class="brand">
+      <span class="logo"><img src="assets/logo.png" alt="Lancaster Plumbing Heating Cooling"></span>
+      <div>
       <h1>Job Review</h1>
       <p id="subhead">Loading&hellip;</p>
+      </div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <a class="btn btn-ghost" href="./index.html">Materials vs Invoice &rarr;</a>
