@@ -444,6 +444,10 @@ function computeFlags(job, ctx) {
   if (matCost >= 25 && job.invoices.length && materialLines.length === 0 && invTotal <= 0) {
     add('materials_not_billed', 'warn', `$${Math.round(matCost).toLocaleString()} in material cost, nothing billed`);
   }
+  // carried over from the old Materials vs Invoice tool: material cost above 30% of revenue
+  if (revenue >= 100 && (m.materialCost || 0) > revenue * 0.30) {
+    add('high_material_cost', 'warn', `Material cost $${Math.round(m.materialCost).toLocaleString()} is ${Math.round(m.materialCost / revenue * 100)}% of revenue ($${Math.round(revenue).toLocaleString()})`);
+  }
   if (revenue >= 100 && m.grossMarginPct != null && m.grossMarginPct < 0) add('negative_margin', 'info', `Negative margin (${m.grossMarginPct}%)`);
 
   // --- time on site

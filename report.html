@@ -18,7 +18,7 @@ body{margin:0;background:var(--steel);color:var(--ink);font-family:'Inter',syste
 .page{max-width:900px;margin:24px auto;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:40px 48px;}
 h1{font-size:22px;margin:0 0 2px;letter-spacing:-0.01em;}
 .rhead{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:6px;}
-.rhead img{height:56px;width:auto;}
+.rhead img{height:112px;width:auto;}
 .sub{color:var(--muted);font-size:13px;margin-bottom:22px;}
 h2{font-size:15px;margin:28px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--ink);display:flex;justify-content:space-between;align-items:baseline;}
   .deptsub{font-weight:700;font-size:12.5px;margin:10px 0 2px;color:var(--ink,#1f2937);}
@@ -73,7 +73,7 @@ tr{page-break-inside:avoid;}
   var NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
   var LABEL = { no_options:'No options presented', one_option:'Only one option', po_not_billed:'PO costs on a $0 invoice', sold_not_found:'Sold work not billed yet',
     general_time:'General Time used', gt_option:'Option built from General Time', po_not_recorded:'PO parts not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
-    negative_margin:'Negative margin', short_visit:'Very short visit', long_visit:'Long visit', ai_not_billed:'Work described but not billed',
+    negative_margin:'Negative margin', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit', ai_not_billed:'Work described but not billed',
     ai_billed_not_described:'Billed but not described', ai_options:'Options gap', ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note' };
   var q = new URLSearchParams(location.search), tech=q.get('tech')||'', from=q.get('from')||'', to=q.get('to')||'';
   var $=function(id){return document.getElementById(id);};
@@ -151,7 +151,7 @@ tr{page-break-inside:avoid;}
       if(j.aiReview){ s.reviewed++; if(j.flags.some(function(f){return f.code.indexOf('ai_')===0;})) s.aiIssues++; }
       j._gt.forEach(function(g){ s.gtLines++; s.gtBilled+=g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) s.gtUnder+=g.m.diff; if(g.m&&g.m.reason==='too_vague') s.gtVague++; });
       j.estimates.forEach(function(e){ if(e.gt) s.gtOptions++; });
-      j.flags.forEach(function(f){ if(/^po_/.test(f.code)||f.code==='materials_not_billed') s.poIssues++; if(f.code==='no_writeup'||f.code==='ai_writeup') s.writeupIssues++; if(f.code==='ai_not_billed') s.notBilled++; });
+      j.flags.forEach(function(f){ if(/^po_/.test(f.code)||f.code==='materials_not_billed'||f.code==='high_material_cost') s.poIssues++; if(f.code==='no_writeup'||f.code==='ai_writeup') s.writeupIssues++; if(f.code==='ai_not_billed') s.notBilled++; });
     });
     s.avgOpt = s.opp? s.optSum/s.opp : 0; s.noOptRate = s.opp? s.noOpt/s.opp : 0; s.close = s.est? s.sold/s.est : 0;
     s.checkNoRate = s.checks? s.checksNo/s.checks : 0; s.cleanRate = s.reviewed? 1-s.aiIssues/s.reviewed : 0; s.flagRate = s.jobs? s.flagged/s.jobs : 0;

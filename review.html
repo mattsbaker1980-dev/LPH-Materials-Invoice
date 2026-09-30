@@ -22,8 +22,8 @@ header.top{background:var(--ink);color:var(--paper);padding:22px 0;}
 header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:0 !important;}
 header.top .brand{display:flex;align-items:center;gap:16px;}
 header.top .logo{background:#fff;border-radius:8px;padding:6px 10px;display:flex;align-items:center;}
-header.top .logo img{height:44px;width:auto;display:block;}
-@media (max-width:700px){ header.top .logo img{height:34px;} }
+header.top .logo img{height:88px;width:auto;display:block;}
+@media (max-width:700px){ header.top .logo img{height:60px;} }
 header.top h1{font-size:19px;font-weight:600;margin:0;letter-spacing:-0.01em;}
 header.top p{font-size:13px;color:#AEB6C2;margin:4px 0 0;}
 .btn{font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:6px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
@@ -239,7 +239,7 @@ tr.reviewed td{opacity:.72;}
   var FLAG_LABELS = {
     no_options:'No options presented', one_option:'Only one option',
     po_not_billed:'PO costs, $0 invoiced', sold_not_found:'Sold, not billed yet', general_time:'General Time', gt_option:'General Time option', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
-    negative_margin:'Negative margin', short_visit:'Very short visit', long_visit:'Long visit',
+    negative_margin:'Negative margin', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit',
     ai_not_billed:'Work done, not billed', ai_billed_not_described:'Billed, not described', ai_options:'Options gap',
     ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note'
   };
@@ -254,6 +254,7 @@ tr.reviewed td{opacity:.72;}
     po_not_recorded:'Parts were bought on a purchase order for this job, but little or nothing was entered on the invoice as materials used, so job costing and inventory are off. Check the PO in ServiceTitan (Job Costing / Purchasing) against the MAT lines under What was billed.',
     materials_not_billed:'Materials were used from stock but nothing was billed. Check: warranty, callback, or missed charge?',
     no_writeup:'Something was billed but the tech left no invoice summary. Ask the tech for a write-up.',
+    high_material_cost:'Materials used on this job cost more than 30% of what the customer paid (the same check the old Materials vs Invoice page did). Usually means a part was under-priced, not billed, or materials were recorded on the wrong job.',
     negative_margin:'Costs are higher than revenue on this job. Usually fine on memberships and warranty; worth a look on sold work.',
     short_visit:'Very little time on site for a billed job. Check the timesheet.',
     long_visit:'Much more time on site than is typical for this job type. Check the timesheet and whether it was sold/billed accordingly.'
