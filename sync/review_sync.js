@@ -493,6 +493,33 @@ function recomputeMonth(monthData) {
   monthData.flaggedCount = jobs.filter((j) => j.flags.some((x) => x.level === 'warn')).length;
 }
 
+// The page loads a light "slim" copy of each month for lists/ranges, and the long text
+// (write-ups, estimate descriptions, booking notes, General Time descriptions) separately on demand.
+function splitMonth(data) {
+  const slim = { month: data.month, updatedAt: data.updatedAt, jobCount: data.jobCount, flaggedCount: data.flaggedCount, jobs: {} };
+  const text = { month: data.month, updatedAt: data.updatedAt, jobs: {} };
+  for (const [k, j] of Object.entries(data.jobs)) {
+    const t = { b: (j.materials && j.materials.bookingNotes) || '', i: {}, e: {}, g: {} };
+    const c = JSON.parse(JSON.stringify(j));
+    if (c.materials) delete c.materials.bookingNotes;
+    c.invoices.forEach((inv) => {
+      if (inv.summary) { t.i[inv.invoiceNumber] = inv.summary; inv.hasSummary = true; }
+      delete inv.summary;
+      (inv.items || []).forEach((x) => { if (x.desc) { t.g[x.code + '|' + x.price] = x.desc; } delete x.desc; });
+    });
+    c.estimates.forEach((e) => { if (e.summary !== undefined) { if (e.summary) t.e[e.id] = e.summary; e.hasSummary = !!e.summary; } delete e.summary; });
+    slim.jobs[k] = c;
+    text.jobs[k] = t;
+  }
+  return { slim, text };
+}
+async function writeMonth(store, mo, sha, data, msg) {
+  await store.write(`${DIR}/${mo}.json`, sha, data, msg);
+  const { slim, text } = splitMonth(data);
+  await store.write(`${DIR}/${mo}.slim.json`, await store.sha(`${DIR}/${mo}.slim.json`), slim, msg + ' (slim)');
+  await store.write(`${DIR}/${mo}.text.json`, await store.sha(`${DIR}/${mo}.text.json`), text, msg + ' (text)');
+}
+
 function median(a) { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; }
 
 // ---------------------------------------------------------------- storage
@@ -506,6 +533,7 @@ function makeStore(opts) {
         if (!fs.existsSync(fp)) return { sha: null, data: null };
         return { sha: 'local', data: JSON.parse(fs.readFileSync(fp, 'utf8')) };
       },
+      async sha(p) { return fs.existsSync(path.join(root, p)) ? 'local' : null; },
       async write(p, sha, data) {
         const fp = path.join(root, p);
         fs.mkdirSync(path.dirname(fp), { recursive: true });
@@ -531,6 +559,12 @@ function makeStore(opts) {
         text = await raw.text();
       }
       return { sha: j.sha, data: JSON.parse(text) };
+    },
+    async sha(p) {
+      const meta = await fetch(api + p + `?ref=${BRANCH}`, { headers: H });
+      if (meta.status === 404) return null;
+      if (!meta.ok) throw new Error(`GET ${p}: ${meta.status}`);
+      return (await meta.json()).sha;
     },
     async write(p, sha, data, message) {
       const body = { message, branch: BRANCH, content: Buffer.from(JSON.stringify(data)).toString('base64') };
@@ -656,7 +690,7 @@ async function main() {
   // 5. write
   const msg = `Review sync (${opts.context}): ${Object.keys(byJob).length} job(s) (+${added}/~${updated})`;
   for (const [mo, b] of Object.entries(monthCache)) {
-    if (b.dirty) await store.write(`${DIR}/${mo}.json`, b.sha, b.data, `${msg} [${mo}]`);
+    if (b.dirty) await writeMonth(store, mo, b.sha, b.data, `${msg} [${mo}]`);
   }
   await store.write(`${DIR}/pending.json`, pendRes.sha, { jobs: pending, updatedAt: new Date().toISOString() }, `${msg} [pending]`);
   index.updatedAt = new Date().toISOString();
@@ -681,4 +715,4 @@ async function writeLog(store, log) {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e.stack || e.message); process.exit(1); });
 
-module.exports = { linkSoldWork, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
+module.exports = { writeMonth, splitMonth, linkSoldWork, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };

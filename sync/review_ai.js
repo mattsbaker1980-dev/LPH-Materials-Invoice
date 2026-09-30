@@ -196,7 +196,7 @@ async function apply(o) {
   }
   for (const [mo, m] of Object.entries(months)) {
     L.recomputeMonth(m.data);
-    await store.write(`${L.DIR}/${mo}.json`, m.sha, m.data, `Claude review: ${saved} job(s) [${mo}]`);
+    await L.writeMonth(store, mo, m.sha, m.data, `Claude review: ${saved} job(s) [${mo}]`);
   }
   console.log(`Claude review saved for ${saved} job(s)${stale ? `, ${stale} skipped (data changed since queued)` : ''}${missing ? `, ${missing} not found` : ''}.`);
 }
