@@ -99,8 +99,18 @@ tr{page-break-inside:avoid;}
     var notes={}, status={};
     (Array.isArray(checks)?checks:[]).forEach(function(x){ if(!x) return; var id=String(x.id); if(id.indexOf('note:')===0){ if(x.concern||x.positive) notes[id.slice(5)]=x; } else if(x.manualOverride) status[id]=x.manualOverride; });
     all.forEach(derive);
-    render(all.filter(function(j){return j.primaryTech===tech;}), all, notes, status);
+    // Compare each tech with the other techs in their own department (Plumbing vs. HVAC etc. are very different businesses).
+    // A tech's department = the department most of their jobs fall in.
+    var byTech={};
+    all.forEach(function(j){ if(!j.primaryTech) return; var d=dept(j.businessUnit); if(d==='Other') return; var t=byTech[j.primaryTech]=byTech[j.primaryTech]||{}; t[d]=(t[d]||0)+1; });
+    var home={}; Object.keys(byTech).forEach(function(t){ var c=byTech[t]; home[t]=Object.keys(c).sort(function(a,b){return c[b]-c[a];})[0]; });
+    var myDept = home[tech] || 'Other';
+    var peers = all.filter(function(j){ return j.primaryTech && home[j.primaryTech]===myDept; });
+    var mine = all.filter(function(j){return j.primaryTech===tech;});
+    var inDept = mine.filter(function(j){ return dept(j.businessUnit)===myDept; }).length;
+    render(mine, peers, notes, status, myDept, inDept);
   }
+  function dept(bu){ var s=String(bu||'').toLowerCase(); if(s.indexOf('hvac')>-1) return 'HVAC'; if(s.indexOf('elec')>-1) return 'Electrical'; if(s.indexOf('sewer')>-1) return 'Sewer'; if(s.indexOf('plumb')>-1) return 'Plumbing'; return 'Other'; }
   function applyText(j,x){ if(!x) return; if(j.materials) j.materials.bookingNotes=x.b||''; j.invoices.forEach(function(i){ i.summary=(x.i||{})[i.invoiceNumber]||''; (i.items||[]).forEach(function(it){ var g=(x.g||{})[it.code+'|'+it.price]; if(g) it.desc=g; }); }); j.estimates.forEach(function(e){ e.summary=(x.e||{})[e.id]||''; }); }
   function derive(j){
     var d=j.detail||{}, m=j.materials||{};
@@ -138,19 +148,20 @@ tr{page-break-inside:avoid;}
     return {cls: good?'up':bad?'down':'', good:good, bad:bad};
   }
 
-  function render(mine, all, notes, status){
-    var S=stats(mine), C=stats(all.filter(function(j){return j.primaryTech;}));
+  function render(mine, all, notes, status, myDept, inDept){
+    var S=stats(mine), C=stats(all);
     var techCount = new Set(all.map(function(j){return j.primaryTech;}).filter(Boolean)).size;
-    // company comparisons are per-tech averages for counts, and company-wide rates for rates
+    var DL = myDept+' dept';
+    // department comparisons: per-tech averages for counts, department-wide rates for rates
     var k = function(n,l,c){ return '<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div>'+(c?'<div class="c '+(c.cls||'')+'">'+c.txt+'</div>':'')+'</div>'; };
-    var co = function(txt, v, cv, better){ var r=cmp(v,cv,better); r.txt='Company: '+txt; return r; };
+    var co = function(txt, v, cv, better){ var r=cmp(v,cv,better); r.txt=DL+': '+txt; return r; };
     var h='';
     h+='<h1>Technician Review — '+esc(tech)+'</h1>';
-    h+='<div class="sub">Jobs completed '+dLong(from)+' – '+dLong(to)+' · Prepared '+new Date().toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' · Compared with all '+techCount+' technicians over the same period</div>';
+    h+='<div class="sub">Jobs completed '+dLong(from)+' – '+dLong(to)+' · Prepared '+new Date().toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' · Compared with the '+techCount+' technicians in the <b>'+esc(myDept)+'</b> department over the same period ('+inDept+' of '+mine.length+' of their jobs were '+esc(myDept)+')</div>';
 
     h+='<div class="kpis">'+
-      k(S.jobs.toLocaleString(),'Jobs completed', {txt:'Company avg per tech: '+Math.round(C.jobs/Math.max(1,techCount))}) +
-      k(money(S.rev),'Revenue', {txt:'Per job '+money(S.revPerJob)+' (co. '+money(C.revPerJob)+')', cls:cmp(S.revPerJob,C.revPerJob,'high').cls}) +
+      k(S.jobs.toLocaleString(),'Jobs completed', {txt:DL+' avg per tech: '+Math.round(C.jobs/Math.max(1,techCount))}) +
+      k(money(S.rev),'Revenue', {txt:'Per job '+money(S.revPerJob)+' ('+DL+' '+money(C.revPerJob)+')', cls:cmp(S.revPerJob,C.revPerJob,'high').cls}) +
       k(S.avgOpt.toFixed(1),'Options per opportunity visit', co(C.avgOpt.toFixed(1), S.avgOpt, C.avgOpt, 'high')) +
       k(pct(S.close),'Estimate close rate', co(pct(C.close), S.close, C.close, 'high')) +
       k(money(S.soldAmt),'Estimates sold ($)', {txt:S.sold+' sold of '+S.est+' built'}) +
@@ -161,14 +172,14 @@ tr{page-break-inside:avoid;}
 
     // ----- positives
     var pos=[], neg=[];
-    var c1=cmp(S.avgOpt,C.avgOpt,'high'); if(S.opp>=5){ if(c1.good) pos.push('Presents more options than average: '+S.avgOpt.toFixed(1)+' per opportunity visit vs. '+C.avgOpt.toFixed(1)+' company-wide.'); if(c1.bad) neg.push('Presents fewer options than average: '+S.avgOpt.toFixed(1)+' per opportunity visit vs. '+C.avgOpt.toFixed(1)+' company-wide.'); }
-    var c2=cmp(S.noOptRate,C.noOptRate,'low'); if(S.opp>=5){ if(S.noOpt===0) pos.push('Built at least one option on every opportunity visit ('+S.opp+' visits).'); else if(c2.good) pos.push('Fewer visits without options than average ('+pct(S.noOptRate)+' vs. '+pct(C.noOptRate)+').'); else if(c2.bad) neg.push(S.noOpt+' of '+S.opp+' opportunity visits had no options presented ('+pct(S.noOptRate)+' vs. '+pct(C.noOptRate)+' company-wide).'); }
+    var c1=cmp(S.avgOpt,C.avgOpt,'high'); if(S.opp>=5){ if(c1.good) pos.push('Presents more options than average: '+S.avgOpt.toFixed(1)+' per opportunity visit vs. '+C.avgOpt.toFixed(1)+' in '+DL+'.'); if(c1.bad) neg.push('Presents fewer options than average: '+S.avgOpt.toFixed(1)+' per opportunity visit vs. '+C.avgOpt.toFixed(1)+' in '+DL+'.'); }
+    var c2=cmp(S.noOptRate,C.noOptRate,'low'); if(S.opp>=5){ if(S.noOpt===0) pos.push('Built at least one option on every opportunity visit ('+S.opp+' visits).'); else if(c2.good) pos.push('Fewer visits without options than average ('+pct(S.noOptRate)+' vs. '+pct(C.noOptRate)+').'); else if(c2.bad) neg.push(S.noOpt+' of '+S.opp+' opportunity visits had no options presented ('+pct(S.noOptRate)+' vs. '+pct(C.noOptRate)+' in '+DL+').'); }
     if(S.checks>=3 && S.checksNo>0 && cmp(S.checkNoRate,C.checkNoRate,'low').bad) neg.push(S.checksNo+' of '+S.checks+' system checks ended with no estimate built.');
     var c3=cmp(S.close,C.close,'high'); if(S.est>=5){ if(c3.good) pos.push('Closes estimates above average: '+pct(S.close)+' vs. '+pct(C.close)+' ('+money(S.soldAmt)+' sold).'); if(c3.bad) neg.push('Estimate close rate below average: '+pct(S.close)+' vs. '+pct(C.close)+'.'); }
     var c4=cmp(S.revPerJob,C.revPerJob,'high'); if(S.jobs>=5){ if(c4.good) pos.push('Revenue per job above average: '+money(S.revPerJob)+' vs. '+money(C.revPerJob)+'.'); if(c4.bad) neg.push('Revenue per job below average: '+money(S.revPerJob)+' vs. '+money(C.revPerJob)+'.'); }
-    if(S.reviewed>=5){ var c5=cmp(S.cleanRate,C.cleanRate,'high'); if(c5.good||S.aiIssues===0) pos.push('Write-ups and invoices line up well: '+pct(S.cleanRate)+' of reviewed jobs had no billing/write-up issues (company '+pct(C.cleanRate)+').'); else if(c5.bad) neg.push('More write-up/billing mismatches than average: '+S.aiIssues+' of '+S.reviewed+' reviewed jobs had an issue ('+pct(1-S.cleanRate)+' vs. '+pct(1-C.cleanRate)+').'); }
+    if(S.reviewed>=5){ var c5=cmp(S.cleanRate,C.cleanRate,'high'); if(c5.good||S.aiIssues===0) pos.push('Write-ups and invoices line up well: '+pct(S.cleanRate)+' of reviewed jobs had no billing/write-up issues ('+DL+' '+pct(C.cleanRate)+').'); else if(c5.bad) neg.push('More write-up/billing mismatches than average: '+S.aiIssues+' of '+S.reviewed+' reviewed jobs had an issue ('+pct(1-S.cleanRate)+' vs. '+pct(1-C.cleanRate)+').'); }
     if(S.jobs>=5){ if(S.gtLines===0) pos.push('Used pricebook tasks throughout — no General Time lines.'); else if(cmp(S.gtPerJob,C.gtPerJob,'low').bad) neg.push('Uses General Time more than average: '+S.gtLines+' lines ('+money(S.gtBilled)+').'); }
-    if(S.est>=5){ var gor=S.gtOptions/S.est, cor=C.est?C.gtOptions/C.est:0; if(S.gtOptions===0) pos.push('Built every estimate option from pricebook tasks — no General Time options.'); else if(gor>cor*1.1) neg.push(S.gtOptions+' of '+S.est+' estimate options were built from General Time ('+pct(gor)+' vs. '+pct(cor)+' company-wide).'); }
+    if(S.est>=5){ var gor=S.gtOptions/S.est, cor=C.est?C.gtOptions/C.est:0; if(S.gtOptions===0) pos.push('Built every estimate option from pricebook tasks — no General Time options.'); else if(gor>cor*1.1) neg.push(S.gtOptions+' of '+S.est+' estimate options were built from General Time ('+pct(gor)+' vs. '+pct(cor)+' in '+DL+').'); }
     if(S.gtUnder>0) neg.push('General Time billed '+money(S.gtUnder)+' below the matching pricebook tasks.');
     if(S.gtVague>0) neg.push(S.gtVague+' General Time line'+(S.gtVague>1?'s':'')+' with a description too vague to verify.');
     if(S.notBilled>0) neg.push(S.notBilled+' job'+(S.notBilled>1?'s':'')+' where the write-up describes work that isn’t on the invoice.');
@@ -214,7 +225,7 @@ tr{page-break-inside:avoid;}
     // ----- meeting section
     h+='<h2>Discussion &amp; goals for next month</h2><div class="two"><div><div class="muted">Discussion notes</div><div class="lines">'+'<div></div>'.repeat(6)+'</div></div><div><div class="muted">Goals / commitments</div><div class="lines">'+'<div></div>'.repeat(6)+'</div></div></div>';
     h+='<div class="sig"><div>Technician — '+esc(tech)+' &nbsp; / &nbsp; Date</div><div>Manager &nbsp; / &nbsp; Date</div></div>';
-    h+='<p class="muted" style="margin-top:22px;font-size:11px;">Flags come from ServiceTitan report data (rules) and from Claude reading each write-up against its invoice (✦). They point to things worth discussing and should be confirmed in ServiceTitan. "Opportunity visits" exclude sold work, installs, non-repair, warranty and recall jobs.</p>';
+    h+='<p class="muted" style="margin-top:22px;font-size:11px;">Flags come from ServiceTitan report data (rules) and from Claude reading each write-up against its invoice (✦). Comparisons are against technicians whose jobs are mostly in the same department. They point to things worth discussing and should be confirmed in ServiceTitan. "Opportunity visits" exclude sold work, installs, non-repair, warranty and recall jobs.</p>';
     $('page').innerHTML = h;
   }
 
