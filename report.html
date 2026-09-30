@@ -112,7 +112,7 @@ tr{page-break-inside:avoid;}
     var inDept = mine.filter(function(j){ return dept(j.businessUnit)===myDept; }).length;
     render(mine, peers, notes, status, myDept, inDept);
   }
-  function dept(bu){ var s=String(bu||'').toLowerCase(); if(s.indexOf('hvac')>-1) return 'HVAC'; if(s.indexOf('elec')>-1) return 'Electrical'; if(s.indexOf('sewer')>-1) return 'Sewer'; if(s.indexOf('plumb')>-1) return 'Plumbing'; return 'Other'; }
+  function dept(bu){ var s=String(bu||'').toLowerCase(); if(s.indexOf('hvac')>-1) return s.indexOf('install')>-1 ? 'HVAC Install' : 'HVAC Service'; if(s.indexOf('elec')>-1) return 'Electrical'; if(s.indexOf('sewer')>-1) return s.indexOf('install')>-1 ? 'Sewer Install' : 'Sewer Service'; if(s.indexOf('plumb')>-1) return 'Plumbing'; return 'Other'; }
   function applyText(j,x){ if(!x) return; if(j.materials) j.materials.bookingNotes=x.b||''; j.invoices.forEach(function(i){ i.summary=(x.i||{})[i.invoiceNumber]||''; (i.items||[]).forEach(function(it){ var g=(x.g||{})[it.code+'|'+it.price]; if(g) it.desc=g; }); }); j.estimates.forEach(function(e){ e.summary=(x.e||{})[e.id]||''; }); }
   function derive(j){
     var d=j.detail||{}, m=j.materials||{};

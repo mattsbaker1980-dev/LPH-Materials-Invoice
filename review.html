@@ -179,8 +179,8 @@ tr.reviewed td{opacity:.72;}
   <div class="panel">
     <div class="controls">
       <div class="field"><label>Date range (completed)</label><div class="chips" id="rangeChips">
-        <span class="chip" data-r="1w">1 week</span><span class="chip" data-r="1m">1 month</span><span class="chip" data-r="6m">6 months</span><span class="chip" data-r="1y">1 year</span><span class="chip" data-r="custom">Custom</span></div></div>
-      <div class="field" id="customWrap" style="display:none;"><label>From – To</label><div class="row" style="display:flex;gap:6px;align-items:center;"><input type="date" id="fromD" class="search" style="min-width:0;"><span>–</span><input type="date" id="toD" class="search" style="min-width:0;"></div></div>
+        <span class="chip" data-r="yday">Yesterday</span><span class="chip" data-r="1w">One Week</span><span class="chip" data-r="1m">One Month</span></div></div>
+      <div class="field" id="customWrap"><label>From – To</label><div class="row" style="display:flex;gap:6px;align-items:center;"><input type="date" id="fromD" class="search" style="min-width:0;"><span>–</span><input type="date" id="toD" class="search" style="min-width:0;"></div></div>
       <div class="field"><label>Department</label><div class="chips" id="deptChips"></div></div>
       <div class="field"><label>Technician</label><select id="techSel"><option value="">All technicians</option></select></div>
       <div class="field"><label>Show</label><select id="flagSel"></select></div>
@@ -265,7 +265,7 @@ tr.reviewed td{opacity:.72;}
   function money(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
   function money2(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function fdate(s){ if(!s) return '—'; var p=s.split('-'); return +p[1]+'/'+(+p[2]); }
-  function dept(bu){ var s=String(bu||'').toLowerCase(); if(s.indexOf('hvac')>-1) return 'HVAC'; if(s.indexOf('elec')>-1) return 'Electrical'; if(s.indexOf('sewer')>-1) return 'Sewer'; if(s.indexOf('plumb')>-1) return 'Plumbing'; return 'Other'; }
+  function dept(bu){ var s=String(bu||'').toLowerCase(); if(s.indexOf('hvac')>-1) return s.indexOf('install')>-1 ? 'HVAC Install' : 'HVAC Service'; if(s.indexOf('elec')>-1) return 'Electrical'; if(s.indexOf('sewer')>-1) return s.indexOf('install')>-1 ? 'Sewer Install' : 'Sewer Service'; if(s.indexOf('plumb')>-1) return 'Plumbing'; return 'Other'; }
   function hrs(h){ if(!h) return '—'; return h<1 ? Math.round(h*60)+'m' : h.toFixed(1)+'h'; }
   function tryLS(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
 
@@ -285,11 +285,12 @@ tr.reviewed td{opacity:.72;}
     return j;
   }
 
-  function iso(d){ return d.toISOString().slice(0,10); }
+  function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function computeRange(){
     var r=state.range, t=new Date(), f=new Date();
     if(r.key==='custom'){ r.from=$('fromD').value||r.from; r.to=$('toD').value||r.to; if(!r.from||!r.to){ f.setMonth(f.getMonth()-1); r.from=iso(f); r.to=iso(t);} return r; }
-    if(r.key==='1w') f.setDate(f.getDate()-7); else if(r.key==='6m') f.setMonth(f.getMonth()-6); else if(r.key==='1y') f.setFullYear(f.getFullYear()-1); else f.setMonth(f.getMonth()-1);
+    if(r.key==='yday'){ f.setDate(f.getDate()-1); r.from=iso(f); r.to=iso(f); return r; }
+    if(r.key==='1w') f.setDate(f.getDate()-7); else { r.key='1m'; f.setMonth(f.getMonth()-1); }
     r.from=iso(f); r.to=iso(t); return r;
   }
   function monthsIn(from,to){ return (state.index.months||[]).filter(function(m){ return m>=from.slice(0,7) && m<=to.slice(0,7); }); }
@@ -336,8 +337,7 @@ tr.reviewed td{opacity:.72;}
   async function loadRange(){
     var seq=++loadSeq, r=computeRange();
     document.querySelectorAll('#rangeChips .chip').forEach(function(c){ c.classList.toggle('active', c.dataset.r===r.key); });
-    $('customWrap').style.display = r.key==='custom' ? '' : 'none';
-    if(r.key==='custom'){ $('fromD').value=r.from; $('toD').value=r.to; }
+    $('fromD').value=r.from; $('toD').value=r.to;
     $('body').innerHTML='<tr><td colspan="11" class="none" style="padding:30px;text-align:center;">Loading jobs…</td></tr>';
     loadStatuses();
     var ms = monthsIn(r.from, r.to);
@@ -438,7 +438,7 @@ tr.reviewed td{opacity:.72;}
     $('techSel').innerHTML='<option value="">'+(state.dept==='All'?'All technicians':'All '+esc(state.dept)+' technicians')+'</option>'+list.map(function(t){return '<option'+(t===state.tech?' selected':'')+'>'+esc(t)+'</option>';}).join('');
   }
   function buildDept(){
-    var ds=['All','HVAC','Plumbing','Electrical','Sewer','Other'].filter(function(d){ return d==='All'||state.jobs.some(function(j){return j._dept===d;}); });
+    var ds=['All','HVAC Service','HVAC Install','Plumbing','Electrical','Sewer Service','Sewer Install','Other'].filter(function(d){ return d==='All'||state.jobs.some(function(j){return j._dept===d;}); });
     $('deptChips').innerHTML = ds.map(function(d){ return '<span class="chip'+(d===state.dept?' active':'')+'" data-d="'+d+'">'+d+'</span>'; }).join('');
   }
   function buildFlagSel(){
