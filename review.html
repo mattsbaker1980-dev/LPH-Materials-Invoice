@@ -228,7 +228,7 @@ tr.reviewed td{opacity:.72;}
   var ST = 'https://go.servicetitan.com/#/';
   var FLAG_LABELS = {
     no_options:'No options presented', one_option:'Only one option',
-    po_not_billed:'PO costs, $0 invoiced', sold_not_found:'Sold, not billed yet', general_time:'General Time', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
+    po_not_billed:'PO costs, $0 invoiced', sold_not_found:'Sold, not billed yet', general_time:'General Time', gt_option:'General Time option', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
     negative_margin:'Negative margin', short_visit:'Very short visit', long_visit:'Long visit',
     ai_not_billed:'Work done, not billed', ai_billed_not_described:'Billed, not described', ai_options:'Options gap',
     ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note'
@@ -239,6 +239,7 @@ tr.reviewed td{opacity:.72;}
     one_option:'Only one estimate was built. Customers usually do better with a choice (good / better / best). Check: was a second option reasonable?',
     po_not_billed:'Money was spent on a purchase order for this job but the invoice is $0. Check: is the work billed on another job, is it warranty, or was it missed?',
     general_time:'The tech billed a General Time (Grid Task) line, where they pick the hours and material allowance themselves, instead of a pricebook task. Where a matching pricebook task exists, it is shown with its price at the same member/standard tier so you can see whether the customer was charged more or less than your price for that work. Custom work with no task is normal; vague descriptions are not.',
+    gt_option:'This estimate option costs exactly what a General Time (Grid Task) line costs, so it was almost certainly built from General Time instead of pricebook tasks (the estimates report has no line items, so this is detected by price). Where a matching pricebook task exists, its price is shown so you can see whether the option was priced below or above your pricebook.',
     sold_not_found:'An estimate was sold on this job but it isn\u2019t billed here, and no later job for this customer has an invoice matching it (checked for 14+ days). Check: was the work scheduled, done, or cancelled?',
     po_not_recorded:'Parts were bought on a purchase order for this job, but little or nothing was entered on the invoice as materials used, so job costing and inventory are off. Check the PO in ServiceTitan (Job Costing / Purchasing) against the MAT lines under What was billed.',
     materials_not_billed:'Materials were used from stock but nothing was billed. Check: warranty, callback, or missed charge?',
@@ -570,7 +571,7 @@ tr.reviewed td{opacity:.72;}
     h+='<div class="card"><h4>What was billed</h4>'+b+'</div>';
     // estimates
     var es = j.estimates.slice().sort(function(a,b){ var o={Sold:0,Open:1,Dismissed:2}; return (o[a.status]||3)-(o[b.status]||3) || b.subtotal-a.subtotal; });
-    var e = es.length ? es.map(function(x){ return '<div class="est"><div class="hd"><span><span class="st '+esc(x.status)+'">'+esc(x.status||'—')+'</span>'+esc(x.name||'(no name)')+(x.recommended?' <span class="pill info" style="margin:0 0 0 4px;">Recommended</span>':'')+'</span><span>'+money2(x.subtotal)+'</span></div>'+
+    var e = es.length ? es.map(function(x){ return '<div class="est"><div class="hd"><span><span class="st '+esc(x.status)+'">'+esc(x.status||'—')+'</span>'+esc(x.name||'(no name)')+(x.recommended?' <span class="pill info" style="margin:0 0 0 4px;">Recommended</span>':'')+(x.gt?' <span class="pill warn" style="margin:0 0 0 4px;" title="Priced exactly at '+esc(x.gt)+'">General Time</span>':'')+'</span><span>'+money2(x.subtotal)+'</span></div>'+
       '<div class="meta">'+[x.createdBy?'By '+esc(x.createdBy):'', x.created?'created '+fdate(x.created):'', x.soldOn?'sold '+fdate(x.soldOn)+(x.soldBy?' by '+esc(x.soldBy):''):''].filter(Boolean).join(' · ')+'</div>'+
       soldWorkLine(j,x)+(x.summary?'<div class="sum">'+esc(x.summary)+'</div>':'')+'</div>'; }).join('')
       : '<div class="none">'+(d.estimatesCount? d.estimatesCount+' estimate(s) on the job, not in the estimates report window.' : 'No estimates built on this job.')+'</div>';

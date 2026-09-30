@@ -404,6 +404,26 @@ function computeFlags(job, ctx) {
     });
   }
 
+  // --- estimate options built from General Time
+  if (ctx.gtPrice) {
+    const gm = (job.aiReview && job.aiReview.gt) || {};
+    const money = (n) => '$' + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    job.estimates.forEach((e) => {
+      const code = e.subtotal > 0 ? ctx.gtPrice.get(Math.round(e.subtotal * 100)) : null;
+      if (!code) { delete e.gt; return; }
+      e.gt = code;
+      const m = gm['est:' + e.id];
+      let t = `Option "${e.name || '(no name)'}" (${e.status || '—'}) is priced exactly at General Time ${code} (${money(e.subtotal)})`;
+      let level = 'info';
+      if (m && m.taskCode) {
+        t += ` — pricebook: ${m.taskName} = ${money(m.taskPrice)}; ` + (Math.abs(m.diff) < 1 ? 'same price' : m.diff > 0 ? `offered ${money(m.diff)} BELOW the task price` : `offered ${money(m.diff)} ABOVE the task price`) + (m.confidence === 'low' ? ' (low-confidence match)' : '');
+        level = m.diff > 25 && m.confidence !== 'low' ? 'warn' : 'info';
+      } else if (m && m.reason === 'too_vague') { t += ' — option description too vague to verify'; level = 'warn'; }
+      else if (m) t += ' — custom work, no matching pricebook task';
+      add('gt_option', level, t);
+    });
+  }
+
   // --- sold work not found on any invoice yet
   const today = new Date().toISOString().slice(0, 10);
   const cutoff = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
@@ -481,11 +501,24 @@ function linkSoldWork(jobs) {
   }
 }
 
-function recomputeMonth(monthData) {
+// Estimate options priced exactly at a General Time (Grid Task) price were almost certainly built
+// from a single GT line (the estimates report has no line items, so this is detected by price).
+let _gtPriceCache = null;
+function gtPriceMap(pb) {
+  if (!pb) return null;
+  if (_gtPriceCache && _gtPriceCache.pb === pb) return _gtPriceCache.map;
+  const map = new Map();
+  pb.services.filter((x) => /^GT-\d{4}-\d{4}$/i.test(x.code)).forEach((x) => {
+    [x.price, x.member, x.addOn, x.addOnMember].forEach((v) => { if (v > 0 && !map.has(Math.round(v * 100))) map.set(Math.round(v * 100), x.code); });
+  });
+  _gtPriceCache = { pb, map };
+  return map;
+}
+function recomputeMonth(monthData, pb) {
   const jobs = Object.values(monthData.jobs);
   const byType = {};
   jobs.forEach((j) => { if (j.detail && j.detail.hoursWorked > 0) (byType[j.jobType] = byType[j.jobType] || []).push(j.detail.hoursWorked); });
-  const ctx = { medianHoursByType: {} };
+  const ctx = { medianHoursByType: {}, gtPrice: gtPriceMap(pb) };
   for (const [t, a] of Object.entries(byType)) if (a.length >= 5) ctx.medianHoursByType[t] = median(a);
   jobs.forEach((j) => { j.flags = computeFlags(j, ctx); j.medianHours = ctx.medianHoursByType[j.jobType] || null; });
   monthData.updatedAt = new Date().toISOString();
@@ -669,6 +702,7 @@ async function main() {
     }
   }
 
+  const pbData = (await store.read('data/pricebook.json')).data;
   // 4a. link sold estimates to follow-up jobs across the touched months and their neighbours
   const touched = Object.keys(monthCache).filter((m) => monthCache[m].dirty);
   const near = (m, d) => { const [y, mm] = m.split('-').map(Number); const t = new Date(Date.UTC(y, mm - 1 + d, 1)); return t.toISOString().slice(0, 7); };
@@ -678,7 +712,7 @@ async function main() {
   // 4. recompute flags for every touched month (medians are per month)
   for (const [mo, b] of Object.entries(monthCache)) {
     if (!b.dirty) continue;
-    recomputeMonth(b.data);
+    recomputeMonth(b.data, pbData);
     if (!index.months.includes(mo)) index.months.push(mo);
   }
   index.months.sort().reverse();

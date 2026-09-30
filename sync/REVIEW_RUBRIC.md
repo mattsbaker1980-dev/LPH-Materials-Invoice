@@ -89,6 +89,9 @@ work described.
   - `"too_vague"` — the description doesn't say what was done ("Custom Solution", "per quote") —
     a manager can't verify the charge.
   - `"not_work"` — it's a diagnosis, note or warranty placeholder rather than work.
+- Lines whose `line` starts with `est:` are ESTIMATE OPTIONS (not invoice lines) that were priced exactly at a
+  General Time price; `techDescription` is the option's name and summary. Match them the same way — the
+  question is which pricebook task(s) the tech should have built the option from.
 - `confidence`: "high" when the task(s) clearly are the same work, "medium" when close, "low" when unsure.
 - Don't compute prices — the tool looks them up. Don't raise General Time as an `issues` entry.
 

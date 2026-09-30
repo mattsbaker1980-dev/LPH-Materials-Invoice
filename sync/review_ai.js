@@ -23,8 +23,10 @@ const fs = require('fs');
 const L = require('./review_sync.js');
 const PB = require('./pricebook.js');
 const GT_RE = /^GT-\d{4}-\d{4}$/i;
-const gtLinesOf = (j) => j.invoices.flatMap((i) => i.items || []).filter((x) => GT_RE.test(x.code || ''));
-const gtKey = (x) => x.code + '|' + x.price;
+// General Time lines on invoices, plus estimate options priced exactly at a GT price (e.gt set by review_sync)
+const gtLinesOf = (j) => j.invoices.flatMap((i) => i.items || []).filter((x) => GT_RE.test(x.code || ''))
+  .concat(j.estimates.filter((e) => e.gt).map((e) => ({ code: e.gt, price: e.subtotal, desc: 'ESTIMATE OPTION: ' + (e.name || '') + (e.summary ? ' — ' + e.summary : ''), _key: 'est:' + e.id })));
+const gtKey = (x) => x._key || (x.code + '|' + x.price);
 // Candidates for the whole description plus each clause/sentence, so multi-part work gets a task per part.
 function gtCandidates(pb, desc, jobType) {
   const seen = new Set(), out = [];
@@ -195,7 +197,7 @@ async function apply(o) {
     saved++;
   }
   for (const [mo, m] of Object.entries(months)) {
-    L.recomputeMonth(m.data);
+    L.recomputeMonth(m.data, pb);
     await L.writeMonth(store, mo, m.sha, m.data, `Claude review: ${saved} job(s) [${mo}]`);
   }
   console.log(`Claude review saved for ${saved} job(s)${stale ? `, ${stale} skipped (data changed since queued)` : ''}${missing ? `, ${missing} not found` : ''}.`);
