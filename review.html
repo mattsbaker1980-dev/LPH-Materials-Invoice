@@ -97,6 +97,9 @@ td.type{max-width:220px;color:var(--muted);font-size:12.5px;}
 .why-row{display:grid;grid-template-columns:200px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:13px;}
 .why-row:last-child{border-bottom:none;}
 .why-row>.pill{align-self:start;justify-self:start;}
+.why-row.is-ex{opacity:.6;} .why-row.is-ex .pill{background:var(--line-soft);color:var(--muted);text-decoration:line-through;}
+.linkbtn{font-family:inherit;font-size:12px;font-weight:600;color:var(--info);background:none;border:none;padding:0;margin-top:6px;cursor:pointer;text-decoration:underline;}
+.excused{font-size:12px;color:var(--muted);margin-top:4px;} .excused .linkbtn{margin:0 0 0 6px;}
 .why-row .how{color:var(--muted);font-size:12.5px;margin-top:3px;line-height:1.5;}
 .gap{background:#F4F1FB;border:1px solid #DDD4F2;border-radius:6px;padding:8px 12px;margin-top:8px;font-size:12.5px;line-height:1.5;}
 .gap b{color:#5B3FA6;}
@@ -191,7 +194,7 @@ tr.reviewed td{opacity:.72;}
   <details class="panel guide" id="guide">
     <summary>How to use this page</summary>
     <ol>
-      <li><b>Start with the list as it opens</b> — it shows only jobs that need attention and that nobody has marked Reviewed yet.</li>
+      <li><b>Pick what to work on</b> with the <b>Show</b> menu — e.g. “Needs attention, not yet reviewed” lists only flagged jobs nobody has marked Reviewed.</li>
       <li><b>Click a job</b> to open it. The top box explains each flag in plain English and what to check. Below that, compare the three panels side by side: what the tech <i>wrote</i>, what was <i>billed</i> (MAT = material used, SVC = service line), and the <i>options</i> the tech built.</li>
       <li><b>Flags come from two places.</b> Plain flags are simple math on the ServiceTitan reports (e.g. PO cost vs. materials recorded). Flags marked <b>✦</b> come from Claude reading the write-up against the invoice. Both are pointers, not verdicts — confirm in ServiceTitan with the <i>Open job</i> / <i>Open invoice</i> buttons.</li>
       <li><b>When you’re done with a job, click “Needs checked”</b> to mark it Reviewed. It drops off the default list and the count at the top goes down.</li>
@@ -248,6 +251,7 @@ tr.reviewed td{opacity:.72;}
     short_visit:'Very little time on site for a billed job. Check the timesheet.',
     long_visit:'Much more time on site than is typical for this job type. Check the timesheet and whether it was sold/billed accordingly.'
   };
+  var HOW_AI = 'Found by reading the tech\u2019s write-up against the invoice. Confirm in ServiceTitan.';
   var NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
 
   var WORKER_URL = 'https://lph-materials-invoice.mattsbaker1980.workers.dev';
@@ -255,7 +259,7 @@ tr.reviewed td{opacity:.72;}
   var hideZero = tryLS('jr_hideZero')==='1';
   var notes = {}; // jobNumber -> {concern, positive, at}
   var monthCache = {}, textCache = {};
-  var state = { index:null, range:{key:tryLS('jr_range')||'1m'}, jobs:[], dept:'All', tech:'', flag:'attention-open', q:'', sort:'date', dir:'desc', open:null, limit:200, tab:'jobs' };
+  var state = { index:null, range:{key:tryLS('jr_range')||'1m'}, jobs:[], dept:'All', tech:'', flag:'all', q:'', sort:'date', dir:'desc', open:null, limit:200, tab:'jobs' };
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function money(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
@@ -341,11 +345,9 @@ tr.reviewed td{opacity:.72;}
     if(seq!==loadSeq) return;
     var jobs=[];
     datas.forEach(function(d,i){ Object.values(d.jobs).forEach(function(j){ var c=j.completionDate||''; if(c>=r.from && c<=r.to){ j._month=ms[i]; if(!j._derived){ derive(j); j._derived=true; } jobs.push(j); } }); });
-    state.jobs = jobs;
+    state.jobs = jobs; recomputeWarn();
     $('rangeNote').textContent = 'Showing jobs completed '+fdate(r.from)+'/'+r.from.slice(2,4)+' – '+fdate(r.to)+'/'+r.to.slice(2,4)+' ('+jobs.length.toLocaleString()+' jobs). Data available from '+((state.index.months||[]).slice(-1)[0]||'—')+'.';
-    var techs = {}; state.jobs.forEach(function(j){ if(j.primaryTech) techs[j.primaryTech]=1; });
-    var tsel=$('techSel'), cur=state.tech;
-    tsel.innerHTML='<option value="">All technicians</option>'+Object.keys(techs).sort().map(function(t){return '<option'+(t===cur?' selected':'')+'>'+esc(t)+'</option>';}).join('');
+    buildTechSel();
     buildFlagSel(); buildDept(); render();
     ensureText(ms).then(function(){ if(seq===loadSeq) render(); });
   }
@@ -357,22 +359,42 @@ tr.reviewed td{opacity:.72;}
       var n={};
       (Array.isArray(list)?list:[]).forEach(function(x){
         if(!x) return; var id=String(x.id);
-        if(id.indexOf('note:')===0){ if(x.concern||x.positive) n[id.slice(5)]={concern:x.concern||'', positive:x.positive||'', at:x.noteAt||x.savedAt}; return; }
+        if(id.indexOf('note:')===0){ var ex=x.excused||{}; if(x.concern||x.positive||Object.keys(ex).length) n[id.slice(5)]={concern:x.concern||'', positive:x.positive||'', at:x.noteAt||x.savedAt, excused:ex}; return; }
         if(x.manualOverride==='pass'||x.manualOverride==='fail') s[id]=x.manualOverride;
       });
-      statuses = s; notes = n; if(state.jobs.length) render();
+      statuses = s; notes = n; recomputeWarn(); if(state.jobs.length) render();
     }catch(e){}
+  }
+  // One shared record per job ("note:<job#>") holds my notes and any excused flags; saved through the same Worker as statuses.
+  async function saveNoteRecord(jobNo, patch){
+    var cur = notes[jobNo] || {concern:'', positive:'', excused:{}};
+    var next = { concern: cur.concern||'', positive: cur.positive||'', excused: Object.assign({}, cur.excused||{}) };
+    if(patch.concern!==undefined) next.concern=patch.concern;
+    if(patch.positive!==undefined) next.positive=patch.positive;
+    if(patch.excuse) next.excused[patch.excuse.code]=patch.excuse.reason;
+    if(patch.unexcuse) delete next.excused[patch.unexcuse];
+    var rec={ id:'note:'+jobNo, noteFor:jobNo, concern:next.concern, positive:next.positive, excused:next.excused, noteAt:Date.now(), flags:[], savedAt:Date.now() };
+    var res = await fetch(WORKER_URL+'/api/materials-invoice-checks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({records:[rec]})});
+    if(!res.ok) throw new Error(res.status);
+    if(next.concern||next.positive||Object.keys(next.excused).length){ next.at=Date.now(); notes[jobNo]=next; } else delete notes[jobNo];
+    recomputeWarn();
   }
   async function saveNote(jobNo, concern, positive, el){
     el.textContent='Saving…';
     try{
-      var rec={ id:'note:'+jobNo, noteFor:jobNo, concern:concern, positive:positive, noteAt:Date.now(), flags:[], savedAt:Date.now() };
-      var res = await fetch(WORKER_URL+'/api/materials-invoice-checks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({records:[rec]})});
-      if(!res.ok) throw new Error(res.status);
-      if(concern||positive) notes[jobNo]={concern:concern, positive:positive, at:Date.now()}; else delete notes[jobNo];
+      await saveNoteRecord(jobNo, {concern:concern, positive:positive});
       el.textContent='Saved '+new Date().toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+' \u2014 it will appear in this tech\u2019s report.';
       var row=document.querySelector('tr.job[data-j="'+jobNo+'"] td:nth-child(10)'); if(row){ var j=state.jobs.find(function(x){return x.jobNumber===jobNo;}); if(j) row.innerHTML=flagPills(j,3); }
     }catch(e){ el.textContent='Could not save ('+e.message+'). Try again.'; }
+  }
+  function excusedOf(j){ return (notes[j.jobNumber]&&notes[j.jobNumber].excused)||{}; }
+  function activeFlags(j){ var ex=excusedOf(j); return j.flags.filter(function(f){ return !ex[f.code]; }); }
+  function recomputeWarn(){ state.jobs.forEach(function(j){ j._warn = activeFlags(j).filter(function(f){return f.level==='warn';}).length; }); }
+  async function toggleExcuse(jobNo, code, on){
+    var reason=null;
+    if(on){ reason = window.prompt('Why isn\u2019t this on the tech? (e.g. "Warranty call \u2014 parts not billable")', 'Warranty'); if(reason===null) return; reason = reason.trim()||'Excused'; }
+    try{ await saveNoteRecord(jobNo, on ? {excuse:{code:code, reason:reason}} : {unexcuse:code}); render(); }
+    catch(e){ alert('Could not save ('+e.message+'). Try again.'); }
   }
   function statusOf(j){ return statuses[j.jobNumber] || 'needs'; }
   // Saves through the same Worker the Materials vs Invoice page uses, so both pages share one status per job.
@@ -408,13 +430,20 @@ tr.reviewed td{opacity:.72;}
   }
   function copyBtn(v){ return v ? '<button class="copy-btn" data-copy="'+esc(v)+'">Copy</button>' : ''; }
 
+  // Technician list follows the Department chip: a tech belongs to the department most of their jobs are in.
+  function techHome(){ var c={}; state.jobs.forEach(function(j){ if(!j.primaryTech||j._dept==='Other') return; var t=c[j.primaryTech]=c[j.primaryTech]||{}; t[j._dept]=(t[j._dept]||0)+1; }); var h={}; Object.keys(c).forEach(function(t){ h[t]=Object.keys(c[t]).sort(function(a,b){return c[t][b]-c[t][a];})[0]; }); state.jobs.forEach(function(j){ if(j.primaryTech&&!h[j.primaryTech]) h[j.primaryTech]='Other'; }); return h; }
+  function buildTechSel(){
+    var home=techHome(), list=Object.keys(home).filter(function(t){ return state.dept==='All' || home[t]===state.dept; }).sort();
+    if(state.tech && list.indexOf(state.tech)===-1) state.tech='';
+    $('techSel').innerHTML='<option value="">'+(state.dept==='All'?'All technicians':'All '+esc(state.dept)+' technicians')+'</option>'+list.map(function(t){return '<option'+(t===state.tech?' selected':'')+'>'+esc(t)+'</option>';}).join('');
+  }
   function buildDept(){
     var ds=['All','HVAC','Plumbing','Electrical','Sewer','Other'].filter(function(d){ return d==='All'||state.jobs.some(function(j){return j._dept===d;}); });
     $('deptChips').innerHTML = ds.map(function(d){ return '<span class="chip'+(d===state.dept?' active':'')+'" data-d="'+d+'">'+d+'</span>'; }).join('');
   }
   function buildFlagSel(){
     var counts={}; state.jobs.forEach(function(j){ j.flags.forEach(function(f){ counts[f.code]=(counts[f.code]||0)+1; }); });
-    var opts=[['attention','Needs attention'],['attention-open','Needs attention, not yet reviewed'],['reviewed','Reviewed'],['all','All jobs'],['clean','No flags'],['ai','Claude review issues'],['notes','Has my notes']];
+    var opts=[['all','All jobs'],['attention','Needs attention'],['attention-open','Needs attention, not yet reviewed'],['reviewed','Reviewed'],['clean','No flags'],['ai','Claude review issues'],['notes','Has my notes']];
     Object.keys(FLAG_LABELS).forEach(function(k){ if(counts[k]) opts.push(['f:'+k, FLAG_LABELS[k]+' ('+counts[k]+')']); });
     $('flagSel').innerHTML = opts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===state.flag?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('');
   }
@@ -438,9 +467,9 @@ tr.reviewed td{opacity:.72;}
       if(f==='attention-open') return j._warn>0 && statusOf(j)==='needs';
       if(f==='reviewed') return statusOf(j)!=='needs';
       if(f==='notes') return !!notes[j.jobNumber];
-      if(f==='clean') return j.flags.length===0;
-      if(f==='ai') return j.flags.some(function(x){return x.code.indexOf('ai_')===0;});
-      if(f.indexOf('f:')===0){ var c=f.slice(2); return j.flags.some(function(x){return x.code===c;}); }
+      if(f==='clean') return activeFlags(j).length===0;
+      if(f==='ai') return activeFlags(j).some(function(x){return x.code.indexOf('ai_')===0;});
+      if(f.indexOf('f:')===0){ var c=f.slice(2); return activeFlags(j).some(function(x){return x.code===c;}); }
       return true;
     });
   }
@@ -455,7 +484,7 @@ tr.reviewed td{opacity:.72;}
     {k:'hrs',l:'On site',n:1,v:function(j){return j._hrs;}},
     {k:'opts',l:'Options',n:1,v:function(j){return j._opts;}},
     {k:'cost',l:'Mat. / PO cost',n:1,v:function(j){return j._mat+j._po;}},
-    {k:'flags',l:'Flags',v:function(j){return j._warn*100+j.flags.length;}},
+    {k:'flags',l:'Flags',v:function(j){return j._warn*100+activeFlags(j).length;}},
     {k:'status',l:'Status',v:function(j){return statusOf(j)==='needs'?0:1;}}
   ];
 
@@ -466,9 +495,9 @@ tr.reviewed td{opacity:.72;}
     var checksNo = checks.filter(function(j){return j._opts===0;}).length;
     var att = list.filter(function(j){return j._warn>0;});
     var attOpen = att.filter(function(j){return statusOf(j)==='needs';}).length;
-    var poNB = list.filter(function(j){return j.flags.some(function(f){return f.code==='po_not_billed'&&f.level==='warn';});});
+    var poNB = list.filter(function(j){return activeFlags(j).some(function(f){return f.code==='po_not_billed'&&f.level==='warn';});});
     var poAmt = poNB.reduce(function(s,j){return s+j._po;},0);
-    var ai = list.filter(function(j){return j.flags.some(function(f){return f.code.indexOf('ai_')===0;});}).length;
+    var ai = list.filter(function(j){return activeFlags(j).some(function(f){return f.code.indexOf('ai_')===0;});}).length;
     var reviewed = list.filter(function(j){return j.aiReview;}).length;
     var avgOpt = opp.length ? (opp.reduce(function(s,j){return s+j._opts;},0)/opp.length) : 0;
     var S = [
@@ -484,7 +513,7 @@ tr.reviewed td{opacity:.72;}
     $('stats').innerHTML = S.map(function(s){ return '<div class="stat '+s[3]+(state.flag===s[0]&&s[0]!=='all'?' active':'')+'" data-f="'+s[0]+'"><div class="num">'+s[1]+'</div><div class="lbl">'+esc(s[2])+'</div></div>'; }).join('');
   }
 
-  function gtOf(j){ var gm=(j.aiReview&&j.aiReview.gt)||{}; return j.invoices.flatMap(function(i){return i.items||[];}).filter(function(x){return /^GT-\d{4}-\d{4}$/i.test(x.code||'');}).map(function(x){ return {x:x, m:gm[x.code+'|'+x.price]}; }); }
+  function gtOf(j){ if(excusedOf(j).general_time) return []; var gm=(j.aiReview&&j.aiReview.gt)||{}; return j.invoices.flatMap(function(i){return i.items||[];}).filter(function(x){return /^GT-\d{4}-\d{4}$/i.test(x.code||'');}).map(function(x){ return {x:x, m:gm[x.code+'|'+x.price]}; }); }
   var _gtc=null, _gtl=null;
   function gtStats(list){
     if(_gtl===list) return _gtc;
@@ -493,11 +522,12 @@ tr.reviewed td{opacity:.72;}
     _gtl=list; _gtc=r; return r;
   }
   function flagPills(j, max){
-    var fl=j.flags.slice().sort(function(a,b){return (a.level==='warn'?0:1)-(b.level==='warn'?0:1);});
+    var fl=activeFlags(j).slice().sort(function(a,b){return (a.level==='warn'?0:1)-(b.level==='warn'?0:1);});
     var out = fl.slice(0,max||99).map(function(f){ return '<span class="pill '+f.level+(f.code.indexOf('ai_')===0?' ai':'')+'" title="'+esc(f.text)+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span>'; }).join('');
     if(max && fl.length>max) out += '<span class="pill info">+'+(fl.length-max)+'</span>';
-    if(!fl.length) out = j.aiReview ? '<span class="pill good">Reviewed ✓</span>' : '';
-    var nt=notes[j.jobNumber]; if(nt) out = '<span class="pill note" title="'+esc((nt.concern?'Concern: '+nt.concern+' ':'')+(nt.positive?'Done well: '+nt.positive:''))+'">\u270e My note</span>'+out;
+    if(!fl.length) out = j.aiReview ? '<span class="pill good">Checked ✓</span>' : '';
+    var nex=Object.keys(excusedOf(j)).length; if(nex) out += '<span class="pill" style="background:var(--line-soft);color:var(--muted);">'+nex+' excused</span>';
+    var nt=notes[j.jobNumber]; if(nt && (nt.concern||nt.positive)) out = '<span class="pill note" title="'+esc((nt.concern?'Concern: '+nt.concern+' ':'')+(nt.positive?'Done well: '+nt.positive:''))+'">\u270e My note</span>'+out;
     return out;
   }
 
@@ -540,16 +570,20 @@ tr.reviewed td{opacity:.72;}
     if(j.aiReview){
       var iss=j.aiReview.issues||[];
       h+='<div class="ai-box"><b>✦ Claude review</b> — '+(iss.length?iss.length+' issue'+(iss.length>1?'s':''):'no billing issues found between the write-up and the invoice')+(j.aiReview.note?' · '+esc(j.aiReview.note):'')+
-        (iss.length?'<ul>'+iss.map(function(i){return '<li>'+(i.severity==='high'?'<b style="color:var(--warn)">High:</b> ':'')+esc(i.text)+'</li>';}).join('')+'</ul>':'')+'</div>';
+        (iss.length?' \u2014 listed below':'')+'</div>';
     }
-    var rule = j.flags.filter(function(f){return f.code.indexOf('ai_')!==0;});
+    var ex = excusedOf(j);
+    var rule = j.flags.slice().sort(function(a,b){ return (ex[a.code]?1:0)-(ex[b.code]?1:0) || (a.level==='warn'?0:1)-(b.level==='warn'?0:1); });
     if(rule.length) h+='<div class="why">'+rule.map(function(f){
       var extra='';
       if(f.code==='po_not_recorded' && j.aiReview && j.aiReview.gapFor!=null){
         var li=j.aiReview.likelyUnrecorded||[];
         extra='<div class="gap"><b>✦ What the write-up says was used that isn\u2019t recorded as materials:</b>'+(li.length?'<ul>'+li.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'')+(j.aiReview.gapNote?'<div>'+esc(j.aiReview.gapNote)+'</div>':'')+'<div class="none">Taken from the tech\u2019s write-up, not the PO itself \u2014 compare against the PO in ServiceTitan.</div></div>';
       }
-      return '<div class="why-row"><span class="pill '+f.level+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span><div><div>'+esc(f.text)+'</div><div class="how">'+esc(HOW[f.code]||'')+'</div>'+extra+'</div></div>';
+      var isEx = ex[f.code];
+      var ctl = isEx ? '<div class="excused">Excused \u2014 '+esc(isEx)+' \u00b7 not counted against the tech <button class="linkbtn unexcuse" data-job="'+esc(j.jobNumber)+'" data-code="'+esc(f.code)+'">Undo</button></div>'
+                     : '<button class="linkbtn excuse" data-job="'+esc(j.jobNumber)+'" data-code="'+esc(f.code)+'" title="Not the tech\u2019s fault (e.g. warranty call) \u2014 hide it from the list and their report">Excuse this</button>';
+      return '<div class="why-row'+(isEx?' is-ex':'')+'"><span class="pill '+(isEx?'':f.level)+(f.code.indexOf('ai_')===0?' ai':'')+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span><div><div>'+esc(f.text)+'</div>'+(isEx?'':'<div class="how">'+esc(HOW[f.code]||HOW_AI)+'</div>'+extra)+ctl+'</div></div>';
     }).join('')+'</div>';
 
     // write-up
@@ -610,7 +644,7 @@ tr.reviewed td{opacity:.72;}
       r.jobs++; r.rev+=j._rev; r.hrs+=j._hrs; if(j._warn) r.warn++;
       if(j._dept!=='Other'){ r.depts=r.depts||{}; r.depts[j._dept]=(r.depts[j._dept]||0)+1; }
       gtOf(j).forEach(function(g){ r.gtLines=(r.gtLines||0)+1; r.gtBilled=(r.gtBilled||0)+g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) r.gtUnder=(r.gtUnder||0)+g.m.diff; });
-      if(j.flags.some(function(f){return f.code.indexOf('ai_')===0;})) r.ai++;
+      if(activeFlags(j).some(function(f){return f.code.indexOf('ai_')===0;})) r.ai++;
       if(j._oppVisit && j.detail){ r.opp++; r.optSum+=j._opts; if(j._opts===0) r.noOpt++; }
       r.est+=j.estimates.length; r.sold+=j._sold; r.estNoSum+=j.estimates.filter(function(e){return e.summary!==undefined&&!e.summary;}).length;
     });
@@ -634,10 +668,12 @@ tr.reviewed td{opacity:.72;}
   document.addEventListener('click', function(e){
     var t;
     if((t=e.target.closest('#rangeChips .chip'))){ state.range.key=t.dataset.r; tryLS('jr_range',t.dataset.r); state.open=null; state.limit=200; loadRange(); return; }
+    if((t=e.target.closest('.excuse'))){ toggleExcuse(t.dataset.job, t.dataset.code, true); return; }
+    if((t=e.target.closest('.unexcuse'))){ toggleExcuse(t.dataset.job, t.dataset.code, false); return; }
     if((t=e.target.closest('.note-save'))){ var box=t.closest('.notes'); saveNote(box.dataset.note, box.querySelector('.note-c').value.trim(), box.querySelector('.note-p').value.trim(), box.querySelector('.note-msg')); return; }
     if(e.target.closest('#reportBtn')){ openReport(); return; }
     if(e.target.closest('.notes')) return;
-    if((t=e.target.closest('#deptChips .chip'))){ state.dept=t.dataset.d; buildDept(); state.limit=200; render(); return; }
+    if((t=e.target.closest('#deptChips .chip'))){ state.dept=t.dataset.d; buildDept(); buildTechSel(); state.limit=200; render(); return; }
     if((t=e.target.closest('.stat'))){ state.flag=t.dataset.f; buildFlagSel(); state.limit=200; render(); return; }
     if((t=e.target.closest('#headRow th'))){ var k=t.dataset.k; if(state.sort===k) state.dir=state.dir==='asc'?'desc':'asc'; else { state.sort=k; state.dir=(k==='cust'||k==='tech'||k==='type')?'asc':'desc'; } render(); return; }
     if(e.target.closest('#moreBtn')){ state.limit+=200; render(); return; }

@@ -96,8 +96,10 @@ tr{page-break-inside:avoid;}
       Object.values(d.jobs).forEach(function(j){ var c=j.completionDate||''; if(c<from||c>to) return; if(t) applyText(j,(t.jobs||{})[j.jobNumber]); all.push(j); });
     }
     var checks = await getJSON('data/invoice_checks.json').catch(function(){return [];});
-    var notes={}, status={};
-    (Array.isArray(checks)?checks:[]).forEach(function(x){ if(!x) return; var id=String(x.id); if(id.indexOf('note:')===0){ if(x.concern||x.positive) notes[id.slice(5)]=x; } else if(x.manualOverride) status[id]=x.manualOverride; });
+    var notes={}, status={}, excused={};
+    (Array.isArray(checks)?checks:[]).forEach(function(x){ if(!x) return; var id=String(x.id); if(id.indexOf('note:')===0){ if(x.concern||x.positive) notes[id.slice(5)]=x; if(x.excused) excused[id.slice(5)]=x.excused; } else if(x.manualOverride) status[id]=x.manualOverride; });
+    // Flags the manager excused (e.g. warranty call) don't count against the tech
+    all.forEach(function(j){ var ex=excused[j.jobNumber]; if(!ex) return; j.flags=j.flags.filter(function(f){return !ex[f.code];}); if(ex.general_time) j._exGT=true; if(ex.gt_option) j.estimates.forEach(function(e){ delete e.gt; }); });
     all.forEach(derive);
     // Compare each tech with the other techs in their own department (Plumbing vs. HVAC etc. are very different businesses).
     // A tech's department = the department most of their jobs fall in.
@@ -121,7 +123,7 @@ tr{page-break-inside:avoid;}
     j._soldAmt = j.estimates.filter(function(e){return e.status==='Sold';}).reduce(function(s,e){return s+(e.subtotal||0);},0);
     j._hrs = d.hoursWorked||0;
     var gm=(j.aiReview&&j.aiReview.gt)||{};
-    j._gt = j.invoices.flatMap(function(i){return i.items||[];}).filter(function(x){return /^GT-\d{4}-\d{4}$/i.test(x.code||'');}).map(function(x){return {x:x,m:gm[x.code+'|'+x.price]};});
+    j._gt = j._exGT ? [] : j.invoices.flatMap(function(i){return i.items||[];}).filter(function(x){return /^GT-\d{4}-\d{4}$/i.test(x.code||'');}).map(function(x){return {x:x,m:gm[x.code+'|'+x.price]};});
     j._warn = j.flags.filter(function(f){return f.level==='warn';});
   }
   function stats(list){
@@ -132,7 +134,7 @@ tr{page-break-inside:avoid;}
       if(j._opp){ s.opp++; s.optSum+=j._opts; if(j._opts===0) s.noOpt++; }
       if(j._check){ s.checks++; if(j._opts===0) s.checksNo++; }
       s.est+=j.estimates.length; s.sold+=j.estimates.filter(function(e){return e.status==='Sold';}).length; s.soldAmt+=j._soldAmt;
-      if(j.aiReview){ s.reviewed++; if((j.aiReview.issues||[]).length) s.aiIssues++; }
+      if(j.aiReview){ s.reviewed++; if(j.flags.some(function(f){return f.code.indexOf('ai_')===0;})) s.aiIssues++; }
       j._gt.forEach(function(g){ s.gtLines++; s.gtBilled+=g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) s.gtUnder+=g.m.diff; if(g.m&&g.m.reason==='too_vague') s.gtVague++; });
       j.estimates.forEach(function(e){ if(e.gt) s.gtOptions++; });
       j.flags.forEach(function(f){ if(/^po_/.test(f.code)||f.code==='materials_not_billed') s.poIssues++; if(f.code==='no_writeup'||f.code==='ai_writeup') s.writeupIssues++; if(f.code==='ai_not_billed') s.notBilled++; });
