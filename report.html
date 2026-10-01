@@ -124,6 +124,12 @@ tr{page-break-inside:avoid;}
       return { dept:d, mine:mine.filter(function(j){return dept(j.businessUnit)===d;}), peers:peers, techCount:peerTechs.length };
     });
     if(!sections.length) sections=[{dept:'Other', mine:mine, peers:mine, techCount:1}];
+    // Leads this tech set for consultants / other techs (credit only; the sale stays on the lead job)
+    var leadJobs = all.filter(function(j){ return j.leadFrom && j.leadFrom.tech===tech; });
+    var deptTechs = Object.keys(home).filter(function(t){ return home[t]===mainDept; });
+    var deptLeads = all.filter(function(j){ return j.leadFrom && home[j.leadFrom.tech]===mainDept; }).length;
+    LEADS = { n: leadJobs.length, sold: leadJobs.filter(function(j){ return j.leadFrom.sold; }).length,
+      list: leadJobs, avg: deptTechs.length ? deptLeads/deptTechs.length : 0, dept: mainDept };
     render(mine, sections, minor.map(function(d){return {dept:d, n:myCounts[d]};}), notes, status);
   }
   function dept(bu){ var s=String(bu||'').toLowerCase(); if(s.indexOf('hvac')>-1) return s.indexOf('install')>-1 ? 'HVAC Install' : 'HVAC Service'; if(s.indexOf('elec')>-1) return 'Electrical'; if(s.indexOf('sewer')>-1) return s.indexOf('install')>-1 ? 'Sewer Install' : 'Sewer Service'; if(s.indexOf('plumb')>-1) return 'Plumbing'; return 'Other'; }
@@ -203,8 +209,11 @@ tr{page-break-inside:avoid;}
     return {kpis:h, pos:pos, neg:neg};
   }
 
+  var LEADS = null;
   function render(mine, sections, minor, notes, status){
     var multi = sections.length>1, M = sections.map(metrics);
+    if(LEADS && LEADS.n){ var mi=sections.findIndex(function(x){return x.dept===LEADS.dept;}); if(mi<0) mi=0;
+      M[mi].pos.push('Set '+LEADS.n+' lead'+(LEADS.n>1?'s':'')+' for a consultant or another department'+(LEADS.sold?' ('+LEADS.sold+' sold so far)':'')+(LEADS.avg>0?' \u2014 '+LEADS.dept+' dept average '+LEADS.avg.toFixed(1)+' per tech':'')+'. The sales stay with whoever ran those jobs: '+LEADS.list.map(function(j){ return esc(j.jobNumber)+' ('+esc(j.primaryTech)+')'; }).join(', ')+'.'); }
     var h='';
     h+='<div class="rhead"><h1>Technician Review — '+esc(tech)+'</h1><img src="assets/logo.png" alt="Lancaster Plumbing Heating Cooling"></div>';
     var split = sections.map(function(x){return x.mine.length+' '+esc(x.dept);}).concat(minor.map(function(x){return x.n+' '+esc(x.dept);})).join(' · ');

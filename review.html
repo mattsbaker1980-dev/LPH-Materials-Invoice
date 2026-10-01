@@ -539,6 +539,7 @@ tr.reviewed td{opacity:.72;}
     var out = fl.slice(0,max||99).map(function(f){ return '<span class="pill '+f.level+(f.code.indexOf('ai_')===0?' ai':'')+'" title="'+esc(f.text)+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span>'; }).join('');
     if(max && fl.length>max) out += '<span class="pill info">+'+(fl.length-max)+'</span>';
     if(!fl.length) out = j.aiReview ? '<span class="pill good">Checked ✓</span>' : '';
+    if(j.leadsSet&&j.leadsSet.length) out = '<span class="pill good" title="Lead set for another tech/consultant">\u2605 Lead set'+(j.leadsSet.length>1?' \u00d7'+j.leadsSet.length:'')+'</span>'+out;
     var nex=Object.keys(excusedOf(j)).length; if(nex) out += '<span class="pill" style="background:var(--line-soft);color:var(--muted);">'+nex+' excused</span>';
     var nt=notes[j.jobNumber]; if(nt && (nt.concern||nt.positive)) out = '<span class="pill note" title="'+esc((nt.concern?'Concern: '+nt.concern+' ':'')+(nt.positive?'Done well: '+nt.positive:''))+'">\u270e My note</span>'+out;
     return out;
@@ -626,6 +627,8 @@ tr.reviewed td{opacity:.72;}
       soldWorkLine(j,x)+(x.summary?'<div class="sum">'+esc(x.summary)+'</div>':'')+'</div>'; }).join('')
       : '<div class="none">'+(d.estimatesCount? d.estimatesCount+' estimate(s) on the job, not in the estimates report window.' : 'No estimates built on this job.')+'</div>';
     var lk='';
+    if(j.leadFrom){ var lf=j.leadFrom; lk+='<div class="linkbox">\u2605 Lead set by <b>'+esc(lf.tech)+'</b>'+(lf.jobNumber?' on <a class="jumpjob" data-job="'+esc(lf.jobNumber)+'">job '+esc(lf.jobNumber)+'</a>'+(lf.date?' ('+fdate(lf.date)+')':''):' (their earlier visit isn\u2019t in the data)')+'. Any sale here stays in '+esc(j.primaryTech||'this tech')+'\u2019s numbers.</div>'; }
+    if(j.leadsSet&&j.leadsSet.length){ lk+='<div class="linkbox">\u2605 '+esc(j.primaryTech)+' set '+(j.leadsSet.length===1?'a lead':j.leadsSet.length+' leads')+' from this visit: '+j.leadsSet.map(function(x){ return '<a class="jumpjob" data-job="'+esc(x.jobNumber)+'">job '+esc(x.jobNumber)+'</a> ('+esc(x.jobType)+', '+esc(x.tech)+(x.date?', '+fdate(x.date):'')+') \u2014 '+(x.sold?'<b>sold</b>':'not sold yet'); }).join('; ')+'.</div>'; }
     if(j.fromEstimate){ var fe=j.fromEstimate; lk+='<div class="linkbox">Follow-up job for work sold on <a class="jumpjob" data-job="'+esc(fe.jobNumber)+'">job '+esc(fe.jobNumber)+'</a>: \u201c'+esc(fe.estimateName)+'\u201d '+money2(fe.subtotal)+(fe.soldOn?' (sold '+fdate(fe.soldOn)+')':'')+(fe.match==='exact'?' \u2014 invoice lines match the estimate exactly.':' \u2014 likely match (same customer, similar amount).')+'</div>'; }
     h+='<div class="card"><h4><span>Options presented</span><span>'+j._opts+'</span></h4>'+lk+e+'</div>';
     h+='</div>';
@@ -662,11 +665,12 @@ tr.reviewed td{opacity:.72;}
       gtOf(j).forEach(function(g){ r.gtLines=(r.gtLines||0)+1; r.gtBilled=(r.gtBilled||0)+g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) r.gtUnder=(r.gtUnder||0)+g.m.diff; });
       if(activeFlags(j).some(function(f){return f.code.indexOf('ai_')===0;})) r.ai++;
       if(j._oppVisit && j.detail){ r.opp++; r.optSum+=j._opts; if(j._opts===0) r.noOpt++; }
+      if(j.leadFrom){ var lt=t[j.leadFrom.tech]=t[j.leadFrom.tech]||{tech:j.leadFrom.tech,jobs:0,opp:0,noOpt:0,optSum:0,est:0,estNoSum:0,sold:0,rev:0,hrs:0,warn:0,ai:0}; lt.leads=(lt.leads||0)+1; }
       r.est+=j.estimates.length; r.sold+=j._sold; r.estNoSum+=j.estimates.filter(function(e){return e.summary!==undefined&&!e.summary;}).length;
     });
     Object.values(t).forEach(function(r){ var d=r.depts||{}; r.dept=Object.keys(d).sort(function(a,b){return d[b]-d[a];})[0]||'Other'; });
-    var rows=Object.values(t).sort(function(a,b){return a.dept.localeCompare(b.dept) || b.jobs-a.jobs;});
-    var H=[['Technician'],['Dept'],['Jobs','n'],['Opportunity visits','n'],['Avg options','n'],['No options','n'],['Estimates','n'],['Sold','n'],['Close rate','n'],['General Time','n'],['GT under task price','n'],['Revenue','n'],['Avg hrs/job','n'],['Need attention','n']];
+    var rows=Object.values(t).filter(function(r){return r.jobs>0;}).sort(function(a,b){return a.dept.localeCompare(b.dept) || b.jobs-a.jobs;});
+    var H=[['Technician'],['Dept'],['Jobs','n'],['Opportunity visits','n'],['Avg options','n'],['No options','n'],['Estimates','n'],['Sold','n'],['Close rate','n'],['Leads set','n'],['General Time','n'],['GT under task price','n'],['Revenue','n'],['Avg hrs/job','n'],['Need attention','n']];
     $('techHead').innerHTML=H.map(function(h){return '<th class="'+(h[1]?'num':'')+'">'+h[0]+'</th>';}).join('');
     $('techBody').innerHTML=rows.map(function(r){
       var avg=r.opp? r.optSum/r.opp:0, np=r.opp? r.noOpt/r.opp:0;
