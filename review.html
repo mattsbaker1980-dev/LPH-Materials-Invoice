@@ -405,7 +405,7 @@ tr.reviewed td{opacity:.72;}
   function recomputeWarn(){ state.jobs.forEach(function(j){ j._warn = activeFlags(j).filter(function(f){return f.level==='warn';}).length; }); }
   async function toggleExcuse(jobNo, code, on){
     var reason=null;
-    if(on){ reason = window.prompt('Why isn\u2019t this on the tech? (e.g. "Warranty call \u2014 parts not billable")', 'Warranty'); if(reason===null) return; reason = reason.trim()||'Excused'; }
+    if(on) reason = 'Excused';
     try{ await saveNoteRecord(jobNo, on ? {excuse:{code:code, reason:reason}} : {unexcuse:code}); render(); }
     catch(e){ alert('Could not save ('+e.message+'). Try again.'); }
   }
@@ -598,7 +598,7 @@ tr.reviewed td{opacity:.72;}
         extra='<div class="gap"><b>✦ What the write-up says was used that isn\u2019t recorded as materials:</b>'+(li.length?'<ul>'+li.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>':'')+(j.aiReview.gapNote?'<div>'+esc(j.aiReview.gapNote)+'</div>':'')+'<div class="none">Taken from the tech\u2019s write-up, not the PO itself \u2014 compare against the PO in ServiceTitan.</div></div>';
       }
       var isEx = ex[f.code];
-      var ctl = isEx ? '<div class="excused">Excused \u2014 '+esc(isEx)+' \u00b7 not counted against the tech <button class="linkbtn unexcuse" data-job="'+esc(j.jobNumber)+'" data-code="'+esc(f.code)+'">Undo</button></div>'
+      var ctl = isEx ? '<div class="excused">Excused'+(isEx&&isEx!=='Excused'?' \u2014 '+esc(isEx):'')+' \u00b7 not counted against the tech <button class="linkbtn unexcuse" data-job="'+esc(j.jobNumber)+'" data-code="'+esc(f.code)+'">Undo</button></div>'
                      : '<button class="linkbtn excuse" data-job="'+esc(j.jobNumber)+'" data-code="'+esc(f.code)+'" title="Not the tech\u2019s fault (e.g. warranty call) \u2014 hide it from the list and their report">Excuse this</button>';
       return '<div class="why-row'+(isEx?' is-ex':'')+'"><span class="pill '+(isEx?'':f.level)+(f.code.indexOf('ai_')===0?' ai':'')+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span><div><div>'+esc(f.text)+'</div>'+(isEx?'':'<div class="how">'+esc(HOW[f.code]||HOW_AI)+'</div>'+extra)+ctl+'</div></div>';
     }).join('')+'</div>';
