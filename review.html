@@ -25,7 +25,9 @@ header.top .brand{display:flex;align-items:center;gap:16px;}
 header.top .logo{background:#fff;border-radius:8px;padding:6px 10px;display:flex;align-items:center;}
 header.top .logo img{height:88px;width:auto;display:block;}
 @media (max-width:700px){ header.top .logo img{height:60px;} }
-header.top h1{font-size:19px;font-weight:600;margin:0;letter-spacing:-0.01em;}
+header.top h1{font-size:38px;font-weight:700;margin:0;letter-spacing:-0.01em;color:#F3770C;line-height:1.1;}
+header.top .titleblock{text-align:right;}
+@media (max-width:700px){ header.top h1{font-size:28px;} header.top .titleblock{text-align:left;} }
 header.top p{font-size:13px;color:#AEB6C2;margin:4px 0 0;}
 .btn{font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:6px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
 .btn-ghost{background:transparent;border-color:#4A5361;color:#fff;}
@@ -50,6 +52,10 @@ header.top p{font-size:13px;color:#AEB6C2;margin:4px 0 0;}
 .field label{font-size:12.5px;color:var(--muted);}
 select,.search{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13px;}
 .search{min-width:220px;}
+#searchBox{width:340px;max-width:100%;padding-right:30px;}
+.searchwrap{position:relative;display:inline-block;max-width:100%;}
+.searchclear{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:var(--line);color:var(--ink);width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:14px;line-height:20px;padding:0;}
+.searchclear:hover{background:var(--muted);color:#fff;}
 .chips{display:flex;flex-wrap:wrap;gap:6px;}
 .chip{font-size:12.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--muted);cursor:pointer;user-select:none;}
 .chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
@@ -169,12 +175,10 @@ tr.reviewed td{opacity:.72;}
   <div class="wrap">
     <div class="brand">
       <span class="logo"><img src="assets/logo.png" alt="Lancaster Plumbing Heating Cooling"></span>
-      <div>
+    </div>
+    <div class="titleblock">
       <h1>Job Review</h1>
       <p id="subhead">Loading&hellip;</p>
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
     </div>
   </div>
 </header>
@@ -196,10 +200,9 @@ tr.reviewed td{opacity:.72;}
       <div class="field"><label>Technician</label><select id="techSel"><option value="">All technicians</option></select></div>
       <div class="field"><label>Show</label><select id="flagSel"></select></div>
       <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="hideZero"> Hide $0 jobs</label></div>
-      <div class="field"><label>Search</label><input class="search" id="searchBox" placeholder="Job #, customer, text in write-up…"></div>
-      <div class="field"><label>&nbsp;</label><button class="btn btn-accent" id="reportBtn" type="button">Technician report (PDF)</button></div>
+      <div class="field"><label>Search</label><div class="searchwrap"><input class="search" id="searchBox" placeholder="Job #, customer, text in write-up…"><button type="button" id="searchClear" class="searchclear" title="Clear search" aria-label="Clear search" style="display:none;">&times;</button></div></div>
+      <div class="field" style="margin-left:auto;"><label>&nbsp;</label><button class="btn btn-accent" id="reportBtn" type="button">Technician report (PDF)</button></div>
     </div>
-    <div class="footer-note" id="rangeNote" style="margin-top:10px;"></div>
   </div>
 
   <details class="panel guide" id="guide">
@@ -359,7 +362,7 @@ tr.reviewed td{opacity:.72;}
     var jobs=[];
     datas.forEach(function(d,i){ Object.values(d.jobs).forEach(function(j){ var c=j.completionDate||''; if(c>=r.from && c<=r.to){ j._month=ms[i]; if(!j._derived){ derive(j); j._derived=true; } jobs.push(j); } }); });
     state.jobs = jobs; recomputeWarn();
-    $('rangeNote').textContent = 'Showing jobs completed '+fdate(r.from)+'/'+r.from.slice(2,4)+' – '+fdate(r.to)+'/'+r.to.slice(2,4)+' ('+jobs.length.toLocaleString()+' jobs). Data available from '+((state.index.months||[]).slice(-1)[0]||'—')+'.';
+    if($('rangeNote')) $('rangeNote').textContent = 'Showing jobs completed '+fdate(r.from)+'/'+r.from.slice(2,4)+' – '+fdate(r.to)+'/'+r.to.slice(2,4)+' ('+jobs.length.toLocaleString()+' jobs). Data available from '+((state.index.months||[]).slice(-1)[0]||'—')+'.';
     buildTechSel();
     buildFlagSel(); buildDept(); render();
     ensureText(ms).then(function(){ if(seq===loadSeq) render(); });
@@ -704,7 +707,7 @@ tr.reviewed td{opacity:.72;}
     if((t=e.target.closest('.copy-btn'))){ var v=t.dataset.copy; var done=function(){ t.textContent='Copied'; t.classList.add('copied'); setTimeout(function(){ t.textContent='Copy'; t.classList.remove('copied'); },1200); };
       if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(done,function(){ fallbackCopy(v); done(); }); } else { fallbackCopy(v); done(); } return; }
     if(e.target.closest('.tgl')) return; // handled by the change event below
-    if((t=e.target.closest('a.jumpjob'))){ e.preventDefault(); state.q=t.dataset.job; $('searchBox').value=t.dataset.job; state.open={}; state.open[t.dataset.job]=1; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+    if((t=e.target.closest('a.jumpjob'))){ e.preventDefault(); state.q=t.dataset.job; $('searchBox').value=t.dataset.job; syncClear(); state.open={}; state.open[t.dataset.job]=1; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
     if(e.target.closest('a,button,details')) return;
     if((t=e.target.closest('tr.job[data-j]'))){
       // keep the clicked row exactly where it was on screen when the detail opens/closes
@@ -737,7 +740,9 @@ tr.reviewed td{opacity:.72;}
   }
   $('techSel').addEventListener('change', function(){ state.tech=this.value; state.limit=200; render(); });
   $('flagSel').addEventListener('change', function(){ state.flag=this.value; state.limit=200; render(); });
-  var tmr; $('searchBox').addEventListener('input', function(){ var v=this.value; clearTimeout(tmr); tmr=setTimeout(function(){ state.q=v.trim(); state.limit=200; render(); },200); });
+  function syncClear(){ $('searchClear').style.display = $('searchBox').value ? '' : 'none'; }
+  $('searchClear').addEventListener('click', function(){ $('searchBox').value=''; state.q=''; state.limit=200; syncClear(); render(); $('searchBox').focus(); });
+  var tmr; $('searchBox').addEventListener('input', function(){ var v=this.value; syncClear(); clearTimeout(tmr); tmr=setTimeout(function(){ state.q=v.trim(); state.limit=200; render(); },200); });
 
   load();
 })();
