@@ -15,6 +15,7 @@
   --needs:#8A5A00; --needs-bg:#FBF0DD; --info:#34598A; --info-bg:#E8EFF8;
 }
 *{box-sizing:border-box;}
+html{overflow-anchor:none;}
 body{margin:0;background:var(--steel);color:var(--ink);font-family:'Inter',system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;}
 a{color:var(--info);}
 .wrap{max-width:1800px;margin:0 auto;padding:0 32px 60px;}
@@ -695,7 +696,13 @@ tr.reviewed td{opacity:.72;}
     if(e.target.closest('.tgl')) return; // handled by the change event below
     if((t=e.target.closest('a.jumpjob'))){ e.preventDefault(); state.q=t.dataset.job; $('searchBox').value=t.dataset.job; state.open=t.dataset.job; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
     if(e.target.closest('a,button,details')) return;
-    if((t=e.target.closest('tr.job[data-j]'))){ state.open = state.open===t.dataset.j?null:t.dataset.j; render(); return; }
+    if((t=e.target.closest('tr.job[data-j]'))){
+      // keep the clicked row exactly where it was on screen when the detail opens/closes
+      var jn=t.dataset.j, y0=t.getBoundingClientRect().top;
+      state.open = state.open===jn?null:jn; render();
+      var row=document.querySelector('tr.job[data-j="'+jn+'"]');
+      if(row){ var dy=row.getBoundingClientRect().top-y0; if(Math.abs(dy)>1) window.scrollBy(0,dy); }
+      return; }
   });
   function switchTab(tab){
     state.tab=tab;
