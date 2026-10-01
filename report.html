@@ -142,20 +142,21 @@ tr{page-break-inside:avoid;}
   }
   function stats(list){
     var s={jobs:list.length, rev:0, opp:0, optSum:0, noOpt:0, checks:0, checksNo:0, est:0, sold:0, soldAmt:0, hrs:0, flagged:0, reviewed:0, aiIssues:0,
-      gtLines:0, gtOptions:0, gtBilled:0, gtUnder:0, gtVague:0, poIssues:0, writeupIssues:0, notBilled:0};
+      gtLines:0, gtLinesQ:0, gtOptions:0, gtOptionsOk:0, gtBilled:0, gtUnder:0, gtVague:0, poIssues:0, writeupIssues:0, notBilled:0};
     list.forEach(function(j){
       s.rev+=j._rev; s.hrs+=j._hrs; if(j._warn.length) s.flagged++;
       if(j._opp){ s.opp++; s.optSum+=j._opts; if(j._opts===0) s.noOpt++; }
       if(j._check){ s.checks++; if(j._opts===0) s.checksNo++; }
       s.est+=j.estimates.length; s.sold+=j.estimates.filter(function(e){return e.status==='Sold';}).length; s.soldAmt+=j._soldAmt;
       if(j.aiReview){ s.reviewed++; if(j.flags.some(function(f){return f.code.indexOf('ai_')===0;})) s.aiIssues++; }
-      j._gt.forEach(function(g){ s.gtLines++; s.gtBilled+=g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) s.gtUnder+=g.m.diff; if(g.m&&g.m.reason==='too_vague') s.gtVague++; });
-      j.estimates.forEach(function(e){ if(e.gt) s.gtOptions++; });
+      j._gt.forEach(function(g){ s.gtLines++; if(!(g.m && !g.m.taskCode && g.m.reason==='custom_work')) s.gtLinesQ++; s.gtBilled+=g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) s.gtUnder+=g.m.diff; if(g.m&&g.m.reason==='too_vague') s.gtVague++; });
+      var gmo=(j.aiReview&&j.aiReview.gt)||{};
+      j.estimates.forEach(function(e){ if(!e.gt) return; var m=gmo['est:'+e.id]; if(m && !m.taskCode && m.reason==='custom_work'){ s.gtOptionsOk++; return; } s.gtOptions++; });
       j.flags.forEach(function(f){ if(/^po_/.test(f.code)||f.code==='materials_not_billed'||f.code==='high_material_cost') s.poIssues++; if(f.code==='no_writeup'||f.code==='ai_writeup') s.writeupIssues++; if(f.code==='ai_not_billed') s.notBilled++; });
     });
     s.avgOpt = s.opp? s.optSum/s.opp : 0; s.noOptRate = s.opp? s.noOpt/s.opp : 0; s.close = s.est? s.sold/s.est : 0;
     s.checkNoRate = s.checks? s.checksNo/s.checks : 0; s.cleanRate = s.reviewed? 1-s.aiIssues/s.reviewed : 0; s.flagRate = s.jobs? s.flagged/s.jobs : 0;
-    s.revPerJob = s.jobs? s.rev/s.jobs : 0; s.gtPerJob = s.jobs? s.gtLines/s.jobs : 0;
+    s.revPerJob = s.jobs? s.rev/s.jobs : 0; s.gtPerJob = s.jobs? s.gtLinesQ/s.jobs : 0;
     return s;
   }
   function cmp(v, co, better){ // better: 'high' | 'low'
@@ -189,8 +190,8 @@ tr{page-break-inside:avoid;}
     var c3=cmp(S.close,C.close,'high'); if(S.est>=5){ if(c3.good) pos.push('Closes estimates above average: '+pct(S.close)+' vs. '+pct(C.close)+' ('+money(S.soldAmt)+' sold).'); if(c3.bad) neg.push('Estimate close rate below average: '+pct(S.close)+' vs. '+pct(C.close)+'.'); }
     var c4=cmp(S.revPerJob,C.revPerJob,'high'); if(S.jobs>=5){ if(c4.good) pos.push('Revenue per job above average: '+money(S.revPerJob)+' vs. '+money(C.revPerJob)+'.'); if(c4.bad) neg.push('Revenue per job below average: '+money(S.revPerJob)+' vs. '+money(C.revPerJob)+'.'); }
     if(S.reviewed>=5){ var c5=cmp(S.cleanRate,C.cleanRate,'high'); if(c5.good||S.aiIssues===0) pos.push('Write-ups and invoices line up well: '+pct(S.cleanRate)+' of reviewed jobs had no billing/write-up issues ('+DL+' '+pct(C.cleanRate)+').'); else if(c5.bad) neg.push('More write-up/billing mismatches than average: '+S.aiIssues+' of '+S.reviewed+' reviewed jobs had an issue ('+pct(1-S.cleanRate)+' vs. '+pct(1-C.cleanRate)+').'); }
-    if(S.jobs>=5){ if(S.gtLines===0) pos.push('Used pricebook tasks throughout — no General Time lines.'); else if(cmp(S.gtPerJob,C.gtPerJob,'low').bad) neg.push('Uses General Time more than average: '+S.gtLines+' lines ('+money(S.gtBilled)+').'); }
-    if(S.est>=5){ var gor=S.gtOptions/S.est, cor=C.est?C.gtOptions/C.est:0; if(S.gtOptions===0) pos.push('Built every estimate option from pricebook tasks — no General Time options.'); else if(gor>cor*1.1) neg.push(S.gtOptions+' of '+S.est+' estimate options were built from General Time ('+pct(gor)+' vs. '+pct(cor)+' in '+DL+').'); }
+    if(S.jobs>=5){ if(S.gtLines===0) pos.push('Used pricebook tasks throughout — no General Time lines.'); else if(cmp(S.gtPerJob,C.gtPerJob,'low').bad) neg.push('Uses General Time more than average: '+S.gtLinesQ+' of '+S.gtLines+' General Time lines weren\u2019t custom work (a pricebook task fit, or the description doesn\u2019t say what was done).'); }
+    if(S.est>=5){ var gor=S.gtOptions/S.est, cor=C.est?C.gtOptions/C.est:0; if(S.gtOptions===0) pos.push(S.gtOptionsOk ? 'Used General Time on options only for custom work with no pricebook task ('+S.gtOptionsOk+' option'+(S.gtOptionsOk>1?'s':'')+').' : 'Built every estimate option from pricebook tasks — no General Time options.'); else if(gor>cor*1.1) neg.push(S.gtOptions+' of '+S.est+' estimate options were built from General Time where it wasn\u2019t custom work ('+pct(gor)+' vs. '+pct(cor)+' in '+DL+').'); }
     if(S.gtUnder>0) neg.push('General Time billed '+money(S.gtUnder)+' below the matching pricebook tasks.');
     if(S.gtVague>0) neg.push(S.gtVague+' General Time line'+(S.gtVague>1?'s':'')+' with a description too vague to verify.');
     if(S.notBilled>0) neg.push(S.notBilled+' job'+(S.notBilled>1?'s':'')+' where the write-up describes work that isn’t on the invoice.');
