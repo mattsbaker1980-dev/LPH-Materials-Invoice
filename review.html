@@ -222,6 +222,7 @@ tr.reviewed td{opacity:.72;}
       </table>
     </div>
     <div class="more" id="more"></div>
+    <button class="btn btn-accent" id="closeAllFab" style="display:none;position:fixed;right:24px;bottom:24px;z-index:20;box-shadow:0 4px 14px rgba(0,0,0,.25);"></button>
   </div>
 
   <div id="techsTab" style="display:none;">
@@ -571,8 +572,8 @@ tr.reviewed td{opacity:.72;}
     var drafts={}; document.querySelectorAll('.notes[data-note]').forEach(function(b){ drafts[b.dataset.note]=[b.querySelector('.note-c').value,b.querySelector('.note-p').value]; });
     $('body').innerHTML = rows || '<tr><td colspan="11" class="none" style="padding:30px;text-align:center;">No jobs match these filters.</td></tr>';
     Object.keys(drafts).forEach(function(k){ var b=document.querySelector('.notes[data-note="'+k+'"]'); if(b){ b.querySelector('.note-c').value=drafts[k][0]; b.querySelector('.note-p').value=drafts[k][1]; } });
-    var nOpen=Object.keys(state.open).length;
-    $('more').innerHTML = (nOpen>1?'<button class="btn btn-line" id="closeAllBtn" style="margin-right:10px;">Close all ('+nOpen+' open)</button>':'') + (list.length>state.limit ? '<button class="btn btn-line" id="moreBtn">Show more ('+(list.length-state.limit)+' more)</button>' : '<span class="footer-note">'+list.length+' job'+(list.length===1?'':'s')+'</span>');
+    var nOpen=Object.keys(state.open).length; $('closeAllFab').style.display=nOpen>1?'':'none'; $('closeAllFab').textContent='Close all ('+nOpen+' open)';
+    $('more').innerHTML = (list.length>state.limit ? '<button class="btn btn-line" id="moreBtn">Show more ('+(list.length-state.limit)+' more)</button>' : '<span class="footer-note">'+list.length+' job'+(list.length===1?'':'s')+'</span>');
     if(state.tab==='techs') renderTechs(base);
     var ls = state.index && state.index.lastSync;
     $('footNote').textContent = ls ? 'Latest reports: '+ls.reports.map(function(r){return r.kind+(r.range?' ('+r.range+')':'');}).join(', ')+'. Photos aren’t in ServiceTitan reports — use “Open job in ServiceTitan”.' : '';
@@ -643,7 +644,7 @@ tr.reviewed td{opacity:.72;}
       '<div><span>Warranty / recall</span>'+(d.warranty?'Warranty':d.recall?'Recall':'No')+'</div>'+
       '</div>';
     if(m.bookingNotes) h+='<details><summary>Booking notes from the office</summary><div class="txt" style="margin-top:6px;">'+esc(m.bookingNotes)+'</div></details>';
-    h+='<div class="links"><a class="btn btn-line" target="_blank" rel="noopener" href="'+ST+'Job/Index/'+esc(j.jobId||j.jobNumber)+'">Open job in ServiceTitan (photos, forms)</a></div>';
+    h+='<div class="links"><a class="btn btn-line" target="_blank" rel="noopener" href="'+ST+'Job/Index/'+esc(j.jobId||j.jobNumber)+'">Open job in ServiceTitan (photos, forms)</a> <button class="btn btn-line close-job" data-j="'+esc(j.jobNumber)+'">Close this job \u25B4</button></div>';
     var nt=notes[j.jobNumber]||{concern:'',positive:''};
     h+='<div class="notes" data-note="'+esc(j.jobNumber)+'"><h4>My notes for '+esc(j.primaryTech||'the tech')+' \u2014 included in their technician report</h4><div class="ng">'+
       '<div class="c"><label style="color:var(--warn);">What I didn\u2019t like</label><textarea class="note-c" placeholder="e.g. Didn\u2019t record the PO parts as materials used; write-up doesn\u2019t say what was replaced.">'+esc(nt.concern)+'</textarea></div>'+
@@ -682,7 +683,8 @@ tr.reviewed td{opacity:.72;}
   // events
   document.addEventListener('click', function(e){
     var t;
-    if(e.target.closest('#closeAllBtn')){ state.open={}; render(); return; }
+    if(e.target.closest('#closeAllFab')){ state.open={}; render(); return; }
+    if((t=e.target.closest('.close-job'))){ var cj=t.dataset.j; delete state.open[cj]; render(); var r0=document.querySelector('tr.job[data-j="'+cj+'"]'); if(r0){ var bb=r0.getBoundingClientRect(); if(bb.top<60||bb.bottom>window.innerHeight) window.scrollBy(0,bb.top-120); } return; }
     if((t=e.target.closest('#rangeChips .chip'))){ state.range.key=t.dataset.r; tryLS('jr_range',t.dataset.r); state.open={}; state.limit=200; loadRange(); return; }
     if((t=e.target.closest('.excuse'))){ toggleExcuse(t.dataset.job, t.dataset.code, true); return; }
     if((t=e.target.closest('.unexcuse'))){ toggleExcuse(t.dataset.job, t.dataset.code, false); return; }
