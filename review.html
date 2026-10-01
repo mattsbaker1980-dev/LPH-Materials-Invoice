@@ -271,7 +271,7 @@ tr.reviewed td{opacity:.72;}
   var hideZero = tryLS('jr_hideZero')==='1';
   var notes = {}; // jobNumber -> {concern, positive, at}
   var monthCache = {}, textCache = {};
-  var state = { index:null, range:{key:tryLS('jr_range')||'1m'}, jobs:[], dept:'All', tech:'', flag:'all', q:'', sort:'date', dir:'desc', open:null, limit:200, tab:'jobs' };
+  var state = { index:null, range:{key:tryLS('jr_range')||'1m'}, jobs:[], dept:'All', tech:'', flag:'all', q:'', sort:'date', dir:'desc', open:{}, limit:200, tab:'jobs' };
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function money(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
@@ -551,7 +551,7 @@ tr.reviewed td{opacity:.72;}
     list.sort(function(a,b){ var x=col.v(a), y=col.v(b); var r = (typeof x==='number'&&typeof y==='number') ? x-y : String(x).localeCompare(String(y)); return state.dir==='asc'?r:-r; });
     $('headRow').innerHTML = COLS.map(function(c){ return '<th class="'+(c.n?'num':'')+'" data-k="'+c.k+'">'+c.l+(state.sort===c.k?(state.dir==='asc'?' ▲':' ▼'):'')+'</th>'; }).join('');
     var rows = list.slice(0,state.limit).map(function(j){
-      var open = state.open===j.jobNumber;
+      var open = !!state.open[j.jobNumber];
       var optCls = j._opts===0 && j._oppVisit ? 'opt zero' : 'opt';
       var h = '<tr class="job'+(open?' open':'')+(statusOf(j)!=='needs'?' reviewed':'')+'" data-j="'+j.jobNumber+'">'+
         '<td class="nowrap">'+fdate(j.completionDate)+'</td>'+
@@ -568,8 +568,11 @@ tr.reviewed td{opacity:.72;}
       if(open) h += '<tr class="detail"><td colspan="11">'+detail(j)+'</td></tr>';
       return h;
     }).join('');
+    var drafts={}; document.querySelectorAll('.notes[data-note]').forEach(function(b){ drafts[b.dataset.note]=[b.querySelector('.note-c').value,b.querySelector('.note-p').value]; });
     $('body').innerHTML = rows || '<tr><td colspan="11" class="none" style="padding:30px;text-align:center;">No jobs match these filters.</td></tr>';
-    $('more').innerHTML = list.length>state.limit ? '<button class="btn btn-line" id="moreBtn">Show more ('+(list.length-state.limit)+' more)</button>' : '<span class="footer-note">'+list.length+' job'+(list.length===1?'':'s')+'</span>';
+    Object.keys(drafts).forEach(function(k){ var b=document.querySelector('.notes[data-note="'+k+'"]'); if(b){ b.querySelector('.note-c').value=drafts[k][0]; b.querySelector('.note-p').value=drafts[k][1]; } });
+    var nOpen=Object.keys(state.open).length;
+    $('more').innerHTML = (nOpen>1?'<button class="btn btn-line" id="closeAllBtn" style="margin-right:10px;">Close all ('+nOpen+' open)</button>':'') + (list.length>state.limit ? '<button class="btn btn-line" id="moreBtn">Show more ('+(list.length-state.limit)+' more)</button>' : '<span class="footer-note">'+list.length+' job'+(list.length===1?'':'s')+'</span>');
     if(state.tab==='techs') renderTechs(base);
     var ls = state.index && state.index.lastSync;
     $('footNote').textContent = ls ? 'Latest reports: '+ls.reports.map(function(r){return r.kind+(r.range?' ('+r.range+')':'');}).join(', ')+'. Photos aren’t in ServiceTitan reports — use “Open job in ServiceTitan”.' : '';
@@ -679,7 +682,8 @@ tr.reviewed td{opacity:.72;}
   // events
   document.addEventListener('click', function(e){
     var t;
-    if((t=e.target.closest('#rangeChips .chip'))){ state.range.key=t.dataset.r; tryLS('jr_range',t.dataset.r); state.open=null; state.limit=200; loadRange(); return; }
+    if(e.target.closest('#closeAllBtn')){ state.open={}; render(); return; }
+    if((t=e.target.closest('#rangeChips .chip'))){ state.range.key=t.dataset.r; tryLS('jr_range',t.dataset.r); state.open={}; state.limit=200; loadRange(); return; }
     if((t=e.target.closest('.excuse'))){ toggleExcuse(t.dataset.job, t.dataset.code, true); return; }
     if((t=e.target.closest('.unexcuse'))){ toggleExcuse(t.dataset.job, t.dataset.code, false); return; }
     if((t=e.target.closest('.note-save'))){ var box=t.closest('.notes'); saveNote(box.dataset.note, box.querySelector('.note-c').value.trim(), box.querySelector('.note-p').value.trim(), box.querySelector('.note-msg')); return; }
@@ -694,12 +698,12 @@ tr.reviewed td{opacity:.72;}
     if((t=e.target.closest('.copy-btn'))){ var v=t.dataset.copy; var done=function(){ t.textContent='Copied'; t.classList.add('copied'); setTimeout(function(){ t.textContent='Copy'; t.classList.remove('copied'); },1200); };
       if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(done,function(){ fallbackCopy(v); done(); }); } else { fallbackCopy(v); done(); } return; }
     if(e.target.closest('.tgl')) return; // handled by the change event below
-    if((t=e.target.closest('a.jumpjob'))){ e.preventDefault(); state.q=t.dataset.job; $('searchBox').value=t.dataset.job; state.open=t.dataset.job; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
+    if((t=e.target.closest('a.jumpjob'))){ e.preventDefault(); state.q=t.dataset.job; $('searchBox').value=t.dataset.job; state.open={}; state.open[t.dataset.job]=1; render(); window.scrollTo({top:0,behavior:'smooth'}); return; }
     if(e.target.closest('a,button,details')) return;
     if((t=e.target.closest('tr.job[data-j]'))){
       // keep the clicked row exactly where it was on screen when the detail opens/closes
       var jn=t.dataset.j, y0=t.getBoundingClientRect().top;
-      state.open = state.open===jn?null:jn; render();
+      if(state.open[jn]) delete state.open[jn]; else state.open[jn]=1; render();
       var row=document.querySelector('tr.job[data-j="'+jn+'"]');
       if(row){ var dy=row.getBoundingClientRect().top-y0; if(Math.abs(dy)>1) window.scrollBy(0,dy); }
       return; }
