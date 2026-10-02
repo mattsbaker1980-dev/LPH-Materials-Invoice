@@ -44,21 +44,10 @@ function build(jobs, pb) {
       e.samples.push([j.primaryTech, dept(j.businessUnit), hrs, (j.completionDate || '').slice(0, 7), tt.multi]);
     }
   }
-  const rules = {};
-  for (const [code, n] of Object.entries(withTask)) {
-    if (n < 5) continue;
-    const m = matWith[code] || {}, linked = new Set((links.get(code) || []).map((x) => x[0]));
-    const list = [];
-    for (const [mc, c] of Object.entries(m)) {
-      const name = (pbMat.get(mc) || {}).name || mc;
-      if (JUNK_MAT.test(name) || /^MATMISC/i.test(mc)) continue;
-      const rate = c / n;
-      // usually recorded with this task, or linked to it in the pricebook AND genuinely used with it
-      if ((n >= 8 && rate >= 0.6) || (linked.has(mc) && rate >= 0.35)) list.push({ code: mc, name, rate: Math.round(rate * 100) / 100, linked: linked.has(mc) });
-    }
-    if (list.length) rules[code] = { name: (pbSvc.get(code) || {}).name || code, jobs: n, materials: list.sort((a, b) => b.rate - a.rate) };
-  }
-  return { times, rules };
+  const counts = {};
+  for (const [code, n] of Object.entries(withTask)) counts[code] = { n, m: matWith[code] || {} };
+  const rules = L.deriveRules(counts, pb);
+  return { times, rules, counts };
 }
 
 if (require.main === module) {
@@ -66,11 +55,11 @@ if (require.main === module) {
   if (cmd !== 'build') { console.error('usage: node baseline.js build <outDir> <files...>'); process.exit(1); }
   const pb = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'pricebook.json'), 'utf8'));
   const jobs = load(rest);
-  const { times, rules } = build(jobs, pb);
+  const { times, rules, counts } = build(jobs, pb);
   fs.mkdirSync(outDir, { recursive: true });
   const meta = { builtAt: new Date().toISOString(), jobs: Object.keys(jobs).length, note: 'Aggregates from historical exports; no individual jobs stored.' };
   fs.writeFileSync(path.join(outDir, 'task_times.json'), JSON.stringify({ meta, tasks: times }));
-  fs.writeFileSync(path.join(outDir, 'material_rules.json'), JSON.stringify({ meta, rules }));
+  fs.writeFileSync(path.join(outDir, 'material_rules.json'), JSON.stringify({ meta, rules, counts }));
   console.log('jobs', meta.jobs, 'tasks with times', Object.keys(times).length, 'samples', Object.values(times).reduce((s, t) => s + t.samples.length, 0), 'material rules', Object.keys(rules).length);
 }
 module.exports = { load, build };

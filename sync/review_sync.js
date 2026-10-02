@@ -376,6 +376,36 @@ function taskTimeOf(j) {
 }
 const matWords = (n) => String(n || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 3).join(' ');
 
+// ---------------------------------------------------------------- learned "usual materials" per task
+// counts = { taskCode: { n: jobsWithTask, m: { materialCode: jobsWithBoth } } }  (history + daily jobs)
+const JUNK_MAT = /^(misc|materials? misc|misc spiff|spiff)/i;
+function matFootprint(j) {
+  const items = j.invoices.flatMap((i) => i.items || []);
+  return [workTasks(j).map((t) => t.code), [...new Set(items.filter(isMatItem).map((x) => x.code).filter(Boolean))]];
+}
+function addCounts(counts, fp) {
+  const [tasks, mats] = fp;
+  for (const t of tasks) { const c = counts[t] = counts[t] || { n: 0, m: {} }; c.n++; for (const m of mats) c.m[m] = (c.m[m] || 0) + 1; }
+}
+function deriveRules(counts, pb) {
+  const pbSvc = new Map(((pb && pb.services) || []).map((s) => [s.code, s]));
+  const pbMat = new Map(((pb && pb.materials) || []).map((m) => [m.code, m]));
+  const links = new Map(Array.isArray(pb && pb.links) ? pb.links : Object.entries((pb && pb.links) || {}));
+  const rules = {};
+  for (const [code, c] of Object.entries(counts)) {
+    if (c.n < 5) continue;
+    const linked = new Set((links.get(code) || []).map((x) => x[0])), list = [];
+    for (const [mc, k] of Object.entries(c.m)) {
+      const name = (pbMat.get(mc) || {}).name || mc;
+      if (JUNK_MAT.test(name) || /^MATMISC/i.test(mc)) continue;
+      const rate = k / c.n;
+      if ((c.n >= 8 && rate >= 0.6) || (linked.has(mc) && rate >= 0.35)) list.push({ code: mc, name, rate: Math.round(rate * 100) / 100, linked: linked.has(mc) });
+    }
+    if (list.length) rules[code] = { name: (pbSvc.get(code) || {}).name || code, jobs: c.n, materials: list.sort((a, b) => b.rate - a.rate) };
+  }
+  return rules;
+}
+
 function computeFlags(job, ctx) {
   const f = [];
   const add = (code, level, text) => f.push({ code, level, text });
@@ -772,7 +802,18 @@ async function main() {
   }
 
   const pbData = (await store.read('data/pricebook.json')).data;
-  if (pbData) pbData._matRules = ((await store.read('data/baseline/material_rules.json')).data || {}).rules || null;
+  // learned materials: history counts + every daily job (re-derived each run so the rules keep learning)
+  const mrRes = await store.read('data/baseline/material_rules.json');
+  const liveRes = await store.read('data/baseline/task_live.json');
+  const live = Object.assign({ jobs: {}, mats: {} }, liveRes.data || {}); live.mats = live.mats || {};
+  for (const b of Object.values(monthCache)) if (b.dirty) for (const j of Object.values(b.data.jobs)) { if (j.invoices.length) live.mats[j.jobNumber] = matFootprint(j); }
+  let matRules = mrRes.data && mrRes.data.rules || null;
+  if (mrRes.data && mrRes.data.counts) {
+    const counts = JSON.parse(JSON.stringify(mrRes.data.counts));
+    Object.values(live.mats).forEach((fp) => addCounts(counts, fp));
+    matRules = deriveRules(counts, pbData);
+  }
+  if (pbData) pbData._matRules = matRules;
   // 4a. link sold estimates to follow-up jobs across the touched months and their neighbours
   const touched = Object.keys(monthCache).filter((m) => monthCache[m].dirty);
   const near = (m, d) => { const [y, mm] = m.split('-').map(Number); const t = new Date(Date.UTC(y, mm - 1 + d, 1)); return t.toISOString().slice(0, 7); };
@@ -798,14 +839,15 @@ async function main() {
     if (b.dirty) await writeMonth(store, mo, b.sha, b.data, `${msg} [${mo}]`);
   }
   await store.write(`${DIR}/pending.json`, pendRes.sha, { jobs: pending, updatedAt: new Date().toISOString() }, `${msg} [pending]`);
-  // live task-time samples (jobs from the daily reports) for the Task times view; historical samples live in task_times.json
+  // live task-time samples + material footprints (jobs from the daily reports); history lives in task_times.json / material_rules.json
   try {
-    const lv = await store.read('data/baseline/task_live.json'); const live = (lv.data && lv.data.jobs) || {};
-    for (const [mo, b] of Object.entries(monthCache)) if (b.dirty) for (const j of Object.values(b.data.jobs)) {
-      if (j.taskTime) live[j.jobNumber] = [j.taskTime.code, j.primaryTech, deptOf(j.businessUnit), j.taskTime.hrs, (j.completionDate || '').slice(0, 7), j.taskTime.multi, j.taskTime.name]; else delete live[j.jobNumber];
+    for (const b of Object.values(monthCache)) if (b.dirty) for (const j of Object.values(b.data.jobs)) {
+      if (j.taskTime) live.jobs[j.jobNumber] = [j.taskTime.code, j.primaryTech, deptOf(j.businessUnit), j.taskTime.hrs, (j.completionDate || '').slice(0, 7), j.taskTime.multi, j.taskTime.name]; else delete live.jobs[j.jobNumber];
     }
-    await store.write('data/baseline/task_live.json', lv.sha, { updatedAt: new Date().toISOString(), jobs: live }, `${msg} [task times]`);
-  } catch (e) { console.log('task_live not updated: ' + e.message); }
+    live.updatedAt = new Date().toISOString();
+    await store.write('data/baseline/task_live.json', liveRes.sha, live, `${msg} [task times]`);
+    if (mrRes.data && mrRes.data.counts && matRules) await store.write('data/baseline/material_rules.json', mrRes.sha, Object.assign({}, mrRes.data, { rules: matRules, rulesUpdatedAt: new Date().toISOString(), liveJobs: Object.keys(live.mats).length }), `${msg} [material rules]`);
+  } catch (e) { console.log('task_live / material rules not updated: ' + e.message); }
   index.updatedAt = new Date().toISOString();
   index.lastSync = { at: index.updatedAt, context: opts.context, reports: log.reports };
   await store.write(`${DIR}/index.json`, idxRes.sha, index, `${msg} [index]`);
@@ -828,4 +870,4 @@ async function writeLog(store, log) {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e.stack || e.message); process.exit(1); });
 
-module.exports = { workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
+module.exports = { matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
