@@ -275,7 +275,7 @@ tr.reviewed td{opacity:.72;}
   var hideZero = tryLS('jr_hideZero')==='1';
   var notes = {}; // jobNumber -> {concern, positive, at}
   var monthCache = {}, textCache = {};
-  var state = { index:null, range:{key:tryLS('jr_range')||'1m'}, jobs:[], dept:'All', tech:'', flag:'all', q:'', sort:'date', dir:'desc', open:{}, limit:200, tab:'jobs' };
+  var state = { index:null, range:{key:tryLS('jr_range')||'1m'}, jobs:[], dept:'All', tech:'', flag:'needs', q:'', sort:'date', dir:'desc', open:{}, limit:200, tab:'jobs' };
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function money(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0}); }
@@ -459,7 +459,7 @@ tr.reviewed td{opacity:.72;}
   }
   function buildFlagSel(){
     var counts={}; state.jobs.forEach(function(j){ j.flags.forEach(function(f){ counts[f.code]=(counts[f.code]||0)+1; }); });
-    var opts=[['all','All jobs'],['attention','Needs attention'],['attention-open','Needs attention, not yet reviewed'],['reviewed','Reviewed'],['clean','No flags'],['ai','Claude review issues'],['notes','Has my notes']];
+    var opts=[['needs','Needs checked'],['reviewed','Reviewed'],['all','All jobs'],['attention','Needs attention'],['attention-open','Needs attention, not yet reviewed'],['clean','No flags'],['ai','Claude review issues'],['notes','Has my notes']];
     Object.keys(FLAG_LABELS).forEach(function(k){ if(counts[k]) opts.push(['f:'+k, FLAG_LABELS[k]+' ('+counts[k]+')']); });
     $('flagSel').innerHTML = opts.map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===state.flag?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('');
   }
@@ -482,6 +482,7 @@ tr.reviewed td{opacity:.72;}
       if(f==='attention') return j._warn>0;
       if(f==='attention-open') return j._warn>0 && statusOf(j)==='needs';
       if(f==='reviewed') return statusOf(j)!=='needs';
+      if(f==='needs') return statusOf(j)==='needs';
       if(f==='notes') return !!notes[j.jobNumber];
       if(f==='clean') return activeFlags(j).length===0;
       if(f==='ai') return activeFlags(j).some(function(x){return x.code.indexOf('ai_')===0;});
