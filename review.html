@@ -155,6 +155,7 @@ details summary{cursor:pointer;font-size:12.5px;color:var(--muted);margin-top:12
 .btn-accent{background:var(--accent);color:#fff;} .btn-accent:hover{background:var(--accent-dark);}
 .pill.note{background:#EEE8FB;color:#5B3FA6;}
 @media (max-width:700px){ .notes .ng{grid-template-columns:1fr;} }
+.tasktime{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:12px 0 0;font-size:13px;}
 .linkbox{background:var(--good-bg);border:1px solid #BFDCC9;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;}
 .linkbox.none{background:var(--needs-bg);border-color:#EED9B3;font-style:normal;color:var(--ink);}
 .linkbox a{font-weight:600;cursor:pointer;}
@@ -187,6 +188,7 @@ tr.reviewed td{opacity:.72;}
   <div class="wrap tabbar-inner">
     <button class="tab-btn active" data-tab="jobs">Jobs</button>
     <button class="tab-btn" data-tab="techs">Technicians</button>
+    <button class="tab-btn" data-tab="tasks">Task times</button>
   </div>
 </div>
 
@@ -238,6 +240,16 @@ tr.reviewed td{opacity:.72;}
     <p class="footer-note">"Opportunity visits" are service calls, system checks and estimate visits where the tech should be presenting options (sold work, installs, non-repair, warranty and recall jobs are excluded). Technicians are grouped by the department most of their jobs fall in; the technician report compares each tech with the others in that department. Click a technician to see their jobs.</p>
   </div>
 
+  <div id="tasksTab" style="display:none;">
+    <div class="table-wrap">
+      <table>
+        <thead><tr id="taskHead"></tr></thead>
+        <tbody id="taskBody"></tbody>
+      </table>
+    </div>
+    <p class="footer-note" id="taskNote">How this works: ServiceTitan records time for the whole visit, not each task. A visit counts toward a task when it was the only repair task billed (a system check or diagnosis may also be on it), so times include diagnosis and talking with the customer. Built from January 2026 onward; history before September is used only for these averages and never appears as jobs to review. Pick a department to see each technician. Green = 20%+ faster than the median, red = 20%+ slower; a technician needs 3+ jobs on a task to be shown.</p>
+  </div>
+
   <p class="footer-note" id="footNote"></p>
 </div>
 
@@ -247,12 +259,13 @@ tr.reviewed td{opacity:.72;}
   var FLAG_LABELS = {
     no_options:'No options presented', one_option:'Only one option',
     po_not_billed:'PO costs, $0 invoiced', sold_not_found:'Sold, not billed yet', general_time:'General Time', gt_option:'General Time option', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
-    negative_margin:'Negative margin', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit',
+    negative_margin:'Negative margin', material_not_recorded:'Material likely not recorded', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit',
     ai_not_billed:'Work done, not billed', ai_billed_not_described:'Billed, not described', ai_options:'Options gap',
     ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note'
   };
   // Plain-English "what this means / what to check" shown under each flag.
   var HOW = {
+    material_not_recorded:'A task was billed that almost always has a certain part recorded with it (learned from your jobs since January, plus the parts linked to that task in your pricebook), but that part isn\u2019t on this invoice. It may have been used and not taken out of inventory. Check the truck stock / ask the tech.',
     no_options:'No estimate was built on this visit. On a system check or service call the tech should almost always find something to offer. Check: were there really no recommendations?',
     one_option:'Only one estimate was built. Customers usually do better with a choice (good / better / best). Check: was a second option reasonable?',
     po_not_billed:'Money was spent on a purchase order for this job but the invoice is $0. Check: is the work billed on another job, is it warranty, or was it missed?',
@@ -580,6 +593,7 @@ tr.reviewed td{opacity:.72;}
     var nOpen=Object.keys(state.open).length; $('closeAllFab').style.display=nOpen>1?'':'none'; $('closeAllFab').textContent='Close all ('+nOpen+' open)';
     $('more').innerHTML = (list.length>state.limit ? '<button class="btn btn-line" id="moreBtn">Show more ('+(list.length-state.limit)+' more)</button>' : '<span class="footer-note">'+list.length+' job'+(list.length===1?'':'s')+'</span>');
     if(state.tab==='techs') renderTechs(base);
+    if(state.tab==='tasks') renderTaskTimes();
     var ls = state.index && state.index.lastSync;
     $('footNote').textContent = ls ? 'Latest reports: '+ls.reports.map(function(r){return r.kind+(r.range?' ('+r.range+')':'');}).join(', ')+'. Photos aren’t in ServiceTitan reports — use “Open job in ServiceTitan”.' : '';
   }
@@ -638,6 +652,7 @@ tr.reviewed td{opacity:.72;}
     h+='</div>';
     // facts
     var med = j.medianHours;
+    h+=taskTimeHtml(j);
     h+='<div class="facts">'+
       '<div><span>Hours worked</span>'+hrs(d.hoursWorked)+(med?' <span class="none" style="display:inline;">(typical '+hrs(med)+')</span>':'')+'</div>'+
       '<div><span>Paid time</span>'+hrs(d.paidHours)+'</div>'+
@@ -660,6 +675,65 @@ tr.reviewed td{opacity:.72;}
     return h;
   }
 
+
+  // ---------- task times (history since January + daily jobs; aggregates only)
+  var TT=null, TTload=null;
+  function loadTT(){
+    if(TTload) return TTload;
+    TTload = Promise.all([
+      fetch('data/baseline/task_times.json?t='+Date.now()).then(function(r){return r.json();}),
+      fetch('data/baseline/task_live.json?t='+Date.now()).then(function(r){return r.ok?r.json():{jobs:{}};}).catch(function(){return {jobs:{}};})
+    ]).then(function(a){
+      var by={};
+      Object.values(a[0].tasks||{}).forEach(function(t){ by[t.code]={code:t.code,name:t.name,pb:t.pbHours,s:t.samples.slice()}; });
+      Object.values(a[1].jobs||{}).forEach(function(x){ var e=by[x[0]]=by[x[0]]||{code:x[0],name:x[6]||x[0],pb:null,s:[]}; e.s.push([x[1],x[2],x[3],x[4],x[5]]); });
+      TT=by; return by;
+    }).catch(function(){ TT={}; return TT; });
+    return TTload;
+  }
+  function q(arr,p){ if(!arr.length) return null; var a=arr.slice().sort(function(x,y){return x-y;}); var i=(a.length-1)*p, lo=Math.floor(i), hi=Math.ceil(i); return a[lo]+(a[hi]-a[lo])*(i-lo); }
+  function mins(h){ return Math.round(Math.abs(h)*60); }
+  function taskTimeHtml(j){
+    var tt=j.taskTime; if(!tt) return '';
+    if(!TT){ loadTT().then(function(){ render(); }); return ''; }
+    var e=TT[tt.code]; if(!e) return '';
+    var all=e.s.map(function(x){return x[2];}), dep=e.s.filter(function(x){return x[1]===j._dept;}).map(function(x){return x[2];}), me=e.s.filter(function(x){return x[0]===j.primaryTech;}).map(function(x){return x[2];});
+    if(all.length<5) return '<div class="tasktime"><b>Task time</b> — '+esc(e.name)+': '+hrs(tt.hrs)+' on site. Not enough history on this task yet to compare ('+all.length+' job'+(all.length===1?'':'s')+').</div>';
+    var cm=q(all,0.5), d=tt.hrs-cm;
+    var cmp = Math.abs(d)<0.05 ? 'right at the company median' : (mins(d)+' min '+(d<0?'faster':'slower')+' than the company median');
+    return '<div class="tasktime"><b>Task time</b> — '+esc(e.name)+': <b>'+hrs(tt.hrs)+'</b> on site, '+cmp+'. '+
+      'Company median '+hrs(cm)+' ('+all.length+' jobs)'+(dep.length>=5?' · '+esc(j._dept)+' '+hrs(q(dep,0.5))+' ('+dep.length+')':'')+(me.length>=3?' · '+esc(j.primaryTech)+'’s usual '+hrs(q(me,0.5))+' ('+me.length+')':'')+
+      (tt.multi?'<span class="none" style="display:inline;"> · includes the system check / diagnosis on this visit</span>':'')+'</div>';
+  }
+  function renderTaskTimes(){
+    if(!TT){ $('taskBody').innerHTML='<tr><td class="none" style="padding:24px;">Loading task history…</td></tr>'; loadTT().then(function(){ if(state.tab==='tasks') renderTaskTimes(); }); return; }
+    var dp=state.dept, qq=(state.q||'').toLowerCase();
+    var rows=Object.values(TT).map(function(e){ var s=dp==='All'?e.s:e.s.filter(function(x){return x[1]===dp;}); return {e:e,s:s}; })
+      .filter(function(r){ return r.s.length>=5 && (!qq || r.e.name.toLowerCase().indexOf(qq)>-1 || r.e.code.toLowerCase().indexOf(qq)>-1); })
+      .sort(function(a,b){return b.s.length-a.s.length;}).slice(0,200);
+    var techs=[];
+    if(dp!=='All'){
+      var cnt={}; rows.forEach(function(r){ var c={}; r.s.forEach(function(x){c[x[0]]=(c[x[0]]||0)+1;}); Object.keys(c).forEach(function(t){ if(c[t]>=3) cnt[t]=(cnt[t]||0)+c[t]; }); });
+      techs=Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];});
+      if(state.tech) techs=techs.filter(function(t){return t===state.tech;});
+    }
+    $('taskHead').innerHTML='<th>Task</th><th class="num">Jobs</th><th class="num">Median</th><th class="num">Middle half</th><th class="num">Pricebook hrs</th>'+(dp==='All'?'<th>Fastest / slowest tech (3+ jobs)</th>':techs.map(function(t){return '<th class="num">'+esc(t)+'</th>';}).join(''));
+    if(!rows.length){ $('taskBody').innerHTML='<tr><td colspan="6" class="none" style="padding:24px;">No tasks with 5+ timed jobs'+(dp!=='All'?' in '+esc(dp):'')+(qq?' matching “'+esc(qq)+'”':'')+'.</td></tr>'; return; }
+    $('taskBody').innerHTML=rows.map(function(r){
+      var hs=r.s.map(function(x){return x[2];}), m=q(hs,0.5);
+      var by={}; r.s.forEach(function(x){ (by[x[0]]=by[x[0]]||[]).push(x[2]); });
+      var cells;
+      if(dp==='All'){
+        var tm=Object.keys(by).filter(function(t){return by[t].length>=3;}).map(function(t){return [t,q(by[t],0.5),by[t].length];}).sort(function(a,b){return a[1]-b[1];});
+        cells='<td>'+(tm.length>=2?'<span style="color:var(--good);">'+esc(tm[0][0])+' '+hrs(tm[0][1])+' ('+tm[0][2]+')</span> · <span style="color:var(--warn);">'+esc(tm[tm.length-1][0])+' '+hrs(tm[tm.length-1][1])+' ('+tm[tm.length-1][2]+')</span>':'<span class="none">—</span>')+'</td>';
+      } else {
+        cells=techs.map(function(t){ var a=by[t]; if(!a||a.length<3) return '<td class="num none">'+(a?a.length+' job'+(a.length>1?'s':''):'')+'</td>'; var tm=q(a,0.5), rel=(tm-m)/m;
+          var st=rel<=-0.2?' style="background:var(--good-bg);color:var(--good);font-weight:600;"':rel>=0.2?' style="background:var(--warn-bg);color:var(--warn);font-weight:600;"':'';
+          return '<td class="num"'+st+' title="'+a.length+' jobs">'+hrs(tm)+' <span class="none" style="display:inline;">('+a.length+')</span></td>'; }).join('');
+      }
+      return '<tr><td>'+esc(r.e.name)+'</td><td class="num">'+hs.length+'</td><td class="num"><b>'+hrs(m)+'</b></td><td class="num">'+hrs(q(hs,0.25))+'–'+hrs(q(hs,0.75))+'</td><td class="num">'+(r.e.pb?hrs(r.e.pb):'—')+'</td>'+cells+'</tr>';
+    }).join('');
+  }
   function renderTechs(base){
     var t={};
     base.forEach(function(j){
@@ -723,6 +797,7 @@ tr.reviewed td{opacity:.72;}
     document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.tab===tab); });
     $('jobsTab').style.display = tab==='jobs'?'':'none';
     $('techsTab').style.display = tab==='techs'?'':'none';
+    $('tasksTab').style.display = tab==='tasks'?'':'none';
     render();
   }
   document.addEventListener('change', function(e){

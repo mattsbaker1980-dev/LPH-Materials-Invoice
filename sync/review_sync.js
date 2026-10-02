@@ -350,7 +350,7 @@ const NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|r
 
 
 // ---------------------------------------------------------------- tasks (shared with baseline.js)
-const NOT_TASK = /(gift card|adjustment|phone call|revision of options|membership|member ship|enrollment|sign.?up|fee|discount|deposit|coupon|credit|refund|financ|permit|trip charge|dispatch|after hours|overtime|spiff|warranty upgrade|labor warranty|tank warranty)/i;
+const NOT_TASK = /(partner plan|\bspp\b|gift card|adjustment|phone call|revision of options|membership|member ship|enrollment|sign.?up|fee|discount|deposit|coupon|credit|refund|financ|permit|trip charge|dispatch|after hours|overtime|spiff|warranty upgrade|labor warranty|tank warranty)/i;
 const WRAPPER = /(system check|clean & check|tune.?up|consult|customer satisfaction|phone call|revision of options|continuation|warranty|diagnos|video inspection|\$\s?\d+\s*(off|or free)|% off|special|minor misc|evaluation|estimate)/i;
 const isGTcode = (c) => /^GT-\d{4}-\d{4}$/i.test(c || '');
 const isMatItem = (x) => /material/i.test(x.type || '');
@@ -370,7 +370,8 @@ function taskTimeOf(j) {
   const hrs = j.detail && j.detail.hoursWorked;
   if (!(hrs > 0 && hrs < 24) || !j.primaryTech) return null;
   const tasks = workTasks(j), rep = repairTasks(j);
-  const one = rep.length === 1 ? rep[0] : (tasks.length === 1 ? tasks[0] : null);
+  const COUPON = /(\$\s?\d+|% off|special|off any|gift)/i;
+  const one = rep.length === 1 ? rep[0] : (tasks.length === 1 && !COUPON.test(tasks[0].name + ' ' + tasks[0].code) ? tasks[0] : null);
   return one ? { code: one.code, name: one.name, hrs: Math.round(hrs * 100) / 100, multi: tasks.length > 1 ? 1 : 0 } : null;
 }
 const matWords = (n) => String(n || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 3).join(' ');
@@ -801,7 +802,7 @@ async function main() {
   try {
     const lv = await store.read('data/baseline/task_live.json'); const live = (lv.data && lv.data.jobs) || {};
     for (const [mo, b] of Object.entries(monthCache)) if (b.dirty) for (const j of Object.values(b.data.jobs)) {
-      if (j.taskTime) live[j.jobNumber] = [j.taskTime.code, j.primaryTech, deptOf(j.businessUnit), j.taskTime.hrs, (j.completionDate || '').slice(0, 7), j.taskTime.multi]; else delete live[j.jobNumber];
+      if (j.taskTime) live[j.jobNumber] = [j.taskTime.code, j.primaryTech, deptOf(j.businessUnit), j.taskTime.hrs, (j.completionDate || '').slice(0, 7), j.taskTime.multi, j.taskTime.name]; else delete live[j.jobNumber];
     }
     await store.write('data/baseline/task_live.json', lv.sha, { updatedAt: new Date().toISOString(), jobs: live }, `${msg} [task times]`);
   } catch (e) { console.log('task_live not updated: ' + e.message); }

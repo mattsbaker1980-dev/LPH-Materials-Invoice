@@ -73,7 +73,7 @@ tr{page-break-inside:avoid;}
   var NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
   var LABEL = { no_options:'No options presented', one_option:'Only one option', po_not_billed:'PO costs on a $0 invoice', sold_not_found:'Sold work not billed yet',
     general_time:'General Time used', gt_option:'Option built from General Time', po_not_recorded:'PO parts not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
-    negative_margin:'Negative margin', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit', ai_not_billed:'Work described but not billed',
+    negative_margin:'Negative margin', material_not_recorded:'Material likely not recorded', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit', ai_not_billed:'Work described but not billed',
     ai_billed_not_described:'Billed but not described', ai_options:'Options gap', ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note' };
   var q = new URLSearchParams(location.search), tech=q.get('tech')||'', from=q.get('from')||'', to=q.get('to')||'';
   var $=function(id){return document.getElementById(id);};
@@ -124,6 +124,26 @@ tr{page-break-inside:avoid;}
       return { dept:d, mine:mine.filter(function(j){return dept(j.businessUnit)===d;}), peers:peers, techCount:peerTechs.length };
     });
     if(!sections.length) sections=[{dept:'Other', mine:mine, peers:mine, techCount:1}];
+    // Task times: where this tech is clearly faster / slower than their department on the same task
+    try {
+      var tt = await getJSON('data/baseline/task_times.json'), tl = await getJSON('data/baseline/task_live.json').catch(function(){return {jobs:{}};});
+      var by={}; Object.values(tt.tasks||{}).forEach(function(t){ by[t.code]={name:t.name,s:t.samples.slice()}; });
+      Object.values(tl.jobs||{}).forEach(function(x){ var e=by[x[0]]=by[x[0]]||{name:x[6]||x[0],s:[]}; e.s.push([x[1],x[2],x[3],x[4],x[5]]); });
+      var endM=to.slice(0,7), y=+endM.slice(0,4), m=+endM.slice(5,7), startM=(y-1)+'-'+String(m).padStart(2,'0');
+      var med=function(a){ a=a.slice().sort(function(p,q){return p-q;}); var n=a.length; return n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2; };
+      var fast=[], slow=[];
+      Object.values(by).forEach(function(e){
+        var s=e.s.filter(function(x){ return x[1]===mainDept && x[3]>startM && x[3]<=endM; });
+        var mine2=s.filter(function(x){return x[0]===tech;}).map(function(x){return x[2];}), oth=s.filter(function(x){return x[0]!==tech;}).map(function(x){return x[2];});
+        if(mine2.length<3 || oth.length<8) return;
+        var a=med(mine2), b=med(oth), rel=(a-b)/b, row={name:e.name,a:a,b:b,n:mine2.length,rel:rel};
+        if(rel<=-0.25) fast.push(row); else if(rel>=0.35) slow.push(row);
+      });
+      var fh=function(h){ return h<1? Math.round(h*60)+' min' : h.toFixed(1)+' hrs'; };
+      var fmtRow=function(r){ return esc(r.name)+' ('+fh(r.a)+' vs. '+fh(r.b)+', '+r.n+' jobs)'; };
+      fast.sort(function(p,q){return p.rel-q.rel;}); slow.sort(function(p,q){return q.rel-p.rel;});
+      TASKS = { fast: fast.slice(0,4), slow: slow.slice(0,4), dept: mainDept };
+    } catch(e) { TASKS = null; }
     // Leads this tech set for consultants / other techs (credit only; the sale stays on the lead job)
     var leadJobs = all.filter(function(j){ return j.leadFrom && j.leadFrom.tech===tech; });
     var deptTechs = Object.keys(home).filter(function(t){ return home[t]===mainDept; });
@@ -158,7 +178,7 @@ tr{page-break-inside:avoid;}
       j._gt.forEach(function(g){ s.gtLines++; if(!(g.m && !g.m.taskCode && g.m.reason==='custom_work')) s.gtLinesQ++; s.gtBilled+=g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) s.gtUnder+=g.m.diff; if(g.m&&g.m.reason==='too_vague') s.gtVague++; });
       var gmo=(j.aiReview&&j.aiReview.gt)||{};
       j.estimates.forEach(function(e){ if(!e.gt) return; var m=gmo['est:'+e.id]; if(m && !m.taskCode && m.reason==='custom_work'){ s.gtOptionsOk++; return; } s.gtOptions++; });
-      j.flags.forEach(function(f){ if(/^po_/.test(f.code)||f.code==='materials_not_billed'||f.code==='high_material_cost') s.poIssues++; if(f.code==='no_writeup'||f.code==='ai_writeup') s.writeupIssues++; if(f.code==='ai_not_billed') s.notBilled++; });
+      j.flags.forEach(function(f){ if(/^po_/.test(f.code)||f.code==='materials_not_billed'||f.code==='high_material_cost'||f.code==='material_not_recorded') s.poIssues++; if(f.code==='no_writeup'||f.code==='ai_writeup') s.writeupIssues++; if(f.code==='ai_not_billed') s.notBilled++; });
     });
     s.avgOpt = s.opp? s.optSum/s.opp : 0; s.noOptRate = s.opp? s.noOpt/s.opp : 0; s.close = s.est? s.sold/s.est : 0;
     s.checkNoRate = s.checks? s.checksNo/s.checks : 0; s.cleanRate = s.reviewed? 1-s.aiIssues/s.reviewed : 0; s.flagRate = s.jobs? s.flagged/s.jobs : 0;
@@ -209,9 +229,13 @@ tr{page-break-inside:avoid;}
     return {kpis:h, pos:pos, neg:neg};
   }
 
-  var LEADS = null;
+  var LEADS = null, TASKS = null;
   function render(mine, sections, minor, notes, status){
     var multi = sections.length>1, M = sections.map(metrics);
+    if(TASKS){ var ti=sections.findIndex(function(x){return x.dept===TASKS.dept;}); if(ti<0) ti=0;
+      var fh2=function(h){ return h<1? Math.round(h*60)+' min' : h.toFixed(1)+' hrs'; }, fr=function(r){ return esc(r.name)+' ('+fh2(r.a)+' vs. '+fh2(r.b)+', '+r.n+' jobs)'; };
+      if(TASKS.fast.length) M[ti].pos.push('Faster than the '+TASKS.dept+' dept on the same task (last 12 months, time on site): '+TASKS.fast.map(fr).join('; ')+'.');
+      if(TASKS.slow.length) M[ti].neg.push('Slower than the '+TASKS.dept+' dept on the same task (last 12 months, time on site): '+TASKS.slow.map(fr).join('; ')+'.'); }
     if(LEADS && LEADS.n){ var mi=sections.findIndex(function(x){return x.dept===LEADS.dept;}); if(mi<0) mi=0;
       M[mi].pos.push('Set '+LEADS.n+' lead'+(LEADS.n>1?'s':'')+' for a consultant or another department'+(LEADS.sold?' ('+LEADS.sold+' sold so far)':'')+(LEADS.avg>0?' \u2014 '+LEADS.dept+' dept average '+LEADS.avg.toFixed(1)+' per tech':'')+'. The sales stay with whoever ran those jobs: '+LEADS.list.map(function(j){ return esc(j.jobNumber)+' ('+esc(j.primaryTech)+')'; }).join(', ')+'.'); }
     var h='';
