@@ -147,6 +147,7 @@ async function apply(o) {
   const store = L.makeStore({ local: o.local });
   const idx = await store.read(`${L.DIR}/index.json`);
   const pb = (await store.read('data/pricebook.json')).data;
+  if (pb) pb._matRules = ((await store.read('data/baseline/material_rules.json')).data || {}).rules || null;
   const svc = {}; (pb ? pb.services : []).forEach((x) => { svc[x.code.toLowerCase()] = x; });
   const months = {};
   let saved = 0, stale = 0, missing = 0;

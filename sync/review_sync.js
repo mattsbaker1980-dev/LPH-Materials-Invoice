@@ -348,6 +348,33 @@ function summaryNotBilled(summary, itemNames) {
 
 const NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
 
+
+// ---------------------------------------------------------------- tasks (shared with baseline.js)
+const NOT_TASK = /(gift card|adjustment|phone call|revision of options|membership|member ship|enrollment|sign.?up|fee|discount|deposit|coupon|credit|refund|financ|permit|trip charge|dispatch|after hours|overtime|spiff|warranty upgrade|labor warranty|tank warranty)/i;
+const WRAPPER = /(system check|clean & check|tune.?up|consult|customer satisfaction|phone call|revision of options|continuation|warranty|diagnos|video inspection|\$\s?\d+\s*(off|or free)|% off|special|minor misc|evaluation|estimate)/i;
+const isGTcode = (c) => /^GT-\d{4}-\d{4}$/i.test(c || '');
+const isMatItem = (x) => /material/i.test(x.type || '');
+const isEquipItem = (x) => /equip/i.test(x.type || '');
+function deptOf(bu) { const s = String(bu || '').toLowerCase(); if (s.includes('hvac')) return s.includes('install') ? 'HVAC Install' : 'HVAC Service'; if (s.includes('elec')) return 'Electrical'; if (s.includes('sewer')) return s.includes('install') ? 'Sewer Install' : 'Sewer Service'; if (s.includes('plumb')) return 'Plumbing'; return 'Other'; }
+function workTasks(j) {
+  const seen = new Map();
+  for (const x of j.invoices.flatMap((i) => i.items || [])) {
+    if (isMatItem(x) || isEquipItem(x) || !x.code || isGTcode(x.code) || NOT_TASK.test(x.name + ' ' + x.code)) continue;
+    if (!seen.has(x.code)) seen.set(x.code, x);
+  }
+  return [...seen.values()];
+}
+function repairTasks(j) { return workTasks(j).filter((t) => !WRAPPER.test(t.name + ' ' + t.code)); }
+// The visit time belongs to a task when it is the only repair task on the job (a system check may also be on it)
+function taskTimeOf(j) {
+  const hrs = j.detail && j.detail.hoursWorked;
+  if (!(hrs > 0 && hrs < 24) || !j.primaryTech) return null;
+  const tasks = workTasks(j), rep = repairTasks(j);
+  const one = rep.length === 1 ? rep[0] : (tasks.length === 1 ? tasks[0] : null);
+  return one ? { code: one.code, name: one.name, hrs: Math.round(hrs * 100) / 100, multi: tasks.length > 1 ? 1 : 0 } : null;
+}
+const matWords = (n) => String(n || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).slice(0, 3).join(' ');
+
 function computeFlags(job, ctx) {
   const f = [];
   const add = (code, level, text) => f.push({ code, level, text });
@@ -442,6 +469,21 @@ function computeFlags(job, ctx) {
   const invMatCost = job.invoices.reduce((s, i) => s + (i.materialCost || 0), 0);
   if (poCost >= 100 && invTotal > 0 && invMatCost < poCost * 0.25) {
     add('po_not_recorded', 'warn', `$${Math.round(poCost).toLocaleString()} purchased on PO, only $${Math.round(invMatCost).toLocaleString()} recorded as materials used`);
+  }
+  // --- materials that normally go with a billed task but weren't recorded (learned from history + pricebook links)
+  if (ctx.matRules && job.invoices.length) {
+    const items = job.invoices.flatMap((i) => i.items || []);
+    const codes = new Set(items.map((x) => x.code)), words = new Set(items.filter(isMatItem).map((x) => matWords(x.name)));
+    const miss = [];
+    for (const t of workTasks(job)) {
+      const r = ctx.matRules[t.code]; if (!r) continue;
+      for (const m of r.materials) if (m.rate >= 0.5 && !codes.has(m.code) && !words.has(matWords(m.name))) miss.push({ task: t.name, m });
+    }
+    if (miss.length) {
+      const strong = miss.filter((x) => x.m.rate >= 0.75);
+      const txt = miss.slice(0, 4).map((x) => `${x.m.name} (recorded on ${Math.round(x.m.rate * 100)}% of "${x.task}" jobs)`).join('; ');
+      add('material_not_recorded', strong.length ? 'warn' : 'info', `Likely used but not recorded: ${txt}`);
+    }
   }
   if (matCost >= 25 && job.invoices.length && materialLines.length === 0 && invTotal <= 0) {
     add('materials_not_billed', 'warn', `$${Math.round(matCost).toLocaleString()} in material cost, nothing billed`);
@@ -544,9 +586,9 @@ function recomputeMonth(monthData, pb) {
   const jobs = Object.values(monthData.jobs);
   const byType = {};
   jobs.forEach((j) => { if (j.detail && j.detail.hoursWorked > 0) (byType[j.jobType] = byType[j.jobType] || []).push(j.detail.hoursWorked); });
-  const ctx = { medianHoursByType: {}, gtPrice: gtPriceMap(pb) };
+  const ctx = { medianHoursByType: {}, gtPrice: gtPriceMap(pb), matRules: (pb && pb._matRules) || null };
   for (const [t, a] of Object.entries(byType)) if (a.length >= 5) ctx.medianHoursByType[t] = median(a);
-  jobs.forEach((j) => { j.flags = computeFlags(j, ctx); j.medianHours = ctx.medianHoursByType[j.jobType] || null; });
+  jobs.forEach((j) => { j.flags = computeFlags(j, ctx); j.medianHours = ctx.medianHoursByType[j.jobType] || null; const tt = taskTimeOf(j); if (tt) j.taskTime = tt; else delete j.taskTime; });
   monthData.updatedAt = new Date().toISOString();
   monthData.jobCount = jobs.length;
   monthData.flaggedCount = jobs.filter((j) => j.flags.some((x) => x.level === 'warn')).length;
@@ -729,6 +771,7 @@ async function main() {
   }
 
   const pbData = (await store.read('data/pricebook.json')).data;
+  if (pbData) pbData._matRules = ((await store.read('data/baseline/material_rules.json')).data || {}).rules || null;
   // 4a. link sold estimates to follow-up jobs across the touched months and their neighbours
   const touched = Object.keys(monthCache).filter((m) => monthCache[m].dirty);
   const near = (m, d) => { const [y, mm] = m.split('-').map(Number); const t = new Date(Date.UTC(y, mm - 1 + d, 1)); return t.toISOString().slice(0, 7); };
@@ -754,6 +797,14 @@ async function main() {
     if (b.dirty) await writeMonth(store, mo, b.sha, b.data, `${msg} [${mo}]`);
   }
   await store.write(`${DIR}/pending.json`, pendRes.sha, { jobs: pending, updatedAt: new Date().toISOString() }, `${msg} [pending]`);
+  // live task-time samples (jobs from the daily reports) for the Task times view; historical samples live in task_times.json
+  try {
+    const lv = await store.read('data/baseline/task_live.json'); const live = (lv.data && lv.data.jobs) || {};
+    for (const [mo, b] of Object.entries(monthCache)) if (b.dirty) for (const j of Object.values(b.data.jobs)) {
+      if (j.taskTime) live[j.jobNumber] = [j.taskTime.code, j.primaryTech, deptOf(j.businessUnit), j.taskTime.hrs, (j.completionDate || '').slice(0, 7), j.taskTime.multi]; else delete live[j.jobNumber];
+    }
+    await store.write('data/baseline/task_live.json', lv.sha, { updatedAt: new Date().toISOString(), jobs: live }, `${msg} [task times]`);
+  } catch (e) { console.log('task_live not updated: ' + e.message); }
   index.updatedAt = new Date().toISOString();
   index.lastSync = { at: index.updatedAt, context: opts.context, reports: log.reports };
   await store.write(`${DIR}/index.json`, idxRes.sha, index, `${msg} [index]`);
@@ -776,4 +827,4 @@ async function writeLog(store, log) {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e.stack || e.message); process.exit(1); });
 
-module.exports = { writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
+module.exports = { workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
