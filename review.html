@@ -156,6 +156,7 @@ details summary{cursor:pointer;font-size:12.5px;color:var(--muted);margin-top:12
 .pill.note{background:#EEE8FB;color:#5B3FA6;}
 @media (max-width:700px){ .notes .ng{grid-template-columns:1fr;} }
 .tasktime{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:12px 0 0;font-size:13px;}
+.newdata{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#FFF4E8;border:1px solid #F3C58F;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-weight:600;font-size:14px;}
 .linkbox{background:var(--good-bg);border:1px solid #BFDCC9;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;}
 .linkbox.none{background:var(--needs-bg);border-color:#EED9B3;font-style:normal;color:var(--ink);}
 .linkbox a{font-weight:600;cursor:pointer;}
@@ -193,6 +194,7 @@ tr.reviewed td{opacity:.72;}
 </div>
 
 <div class="wrap">
+  <div id="newDataBar" class="newdata" style="display:none;"><span>This morning’s update is in — new jobs are ready.</span><button class="btn btn-accent" id="newDataBtn" type="button">Reload</button></div>
   <div class="panel">
     <div class="controls">
       <div class="field"><label>Date range (completed)</label><div class="chips" id="rangeChips">
@@ -353,6 +355,7 @@ tr.reviewed td{opacity:.72;}
       var r = await fetch('data/review/index.json?t='+Date.now());
       if(!r.ok) throw new Error('index '+r.status);
       state.index = await r.json();
+      watchForUpdate(state.index);
       var ls = state.index.lastSync;
       $('subhead').textContent = 'Last synced '+new Date(state.index.updatedAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+(ls&&ls.context?' · '+ls.context:'');
       try{ var cr=JSON.parse(tryLS('jr_custom')||'null'); if(cr){ state.range.from=cr.from; state.range.to=cr.to; $('fromD').value=cr.from; $('toD').value=cr.to; } }catch(e){}
@@ -676,6 +679,25 @@ tr.reviewed td{opacity:.72;}
   }
 
 
+
+  // The daily update runs once each morning (about 8:35 ET, backup about 9:40). Instead of polling, the page checks
+  // once shortly after each of those times (if it's open) and whenever someone comes back to the tab; it only shows
+  // the Reload bar when the data has actually changed since the page was loaded.
+  var loadedSync=null, updateTimers=[];
+  function syncStamp(ix){ return (ix && (ix.lastSync && ix.lastSync.at || ix.updatedAt)) || ''; }
+  async function checkForUpdate(){
+    if(!loadedSync || $('newDataBar').style.display!=='none') return;
+    try{ var r=await fetch('data/review/index.json?t='+Date.now()); if(!r.ok) return; var ix=await r.json(); if(syncStamp(ix) && syncStamp(ix)!==loadedSync) $('newDataBar').style.display=''; }catch(e){}
+  }
+  function watchForUpdate(ix){
+    if(loadedSync) return; loadedSync=syncStamp(ix);
+    var now=new Date();
+    [[8,50],[9,55]].forEach(function(hm){ // local times just after the main and backup runs
+      var t=new Date(now); t.setHours(hm[0],hm[1],0,0); var ms=t-now; if(ms>0 && ms<12*3600000) updateTimers.push(setTimeout(checkForUpdate, ms));
+    });
+    document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') checkForUpdate(); });
+  }
+
   // ---------- task times (history since January + daily jobs; aggregates only)
   var TT=null, TTload=null;
   function loadTT(){
@@ -765,6 +787,7 @@ tr.reviewed td{opacity:.72;}
   // events
   document.addEventListener('click', function(e){
     var t;
+    if(e.target.closest('#newDataBtn')){ location.reload(); return; }
     if(e.target.closest('#closeAllFab')){ state.open={}; render(); return; }
     if((t=e.target.closest('.close-job'))){ var cj=t.dataset.j; delete state.open[cj]; render(); var r0=document.querySelector('tr.job[data-j="'+cj+'"]'); if(r0){ var bb=r0.getBoundingClientRect(); if(bb.top<60||bb.bottom>window.innerHeight) window.scrollBy(0,bb.top-120); } return; }
     if((t=e.target.closest('#rangeChips .chip'))){ state.range.key=t.dataset.r; tryLS('jr_range',t.dataset.r); state.open={}; state.limit=200; loadRange(); return; }
