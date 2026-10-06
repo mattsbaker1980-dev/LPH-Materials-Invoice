@@ -140,7 +140,8 @@ function parseMaterials(rows, cols) {
         matEquipPoCost: round(num(r[I.mepo])),
         totalCosts: round(num(r[I.costs])),
         grossMargin: round(num(r[I.gm])),
-        grossMarginPct: round(pct(r[I.gmPct]), 1),
+        // computed, not parsed: the report's decimal (-6.09 = -609%) was being misread for margins below -150%
+        grossMarginPct: num(r[I.rev]) ? round(num(r[I.gm]) / num(r[I.rev]) * 100, 1) : round(pct(r[I.gmPct]), 1),
       },
     });
   }
@@ -523,7 +524,8 @@ function computeFlags(job, ctx) {
   if (revenue >= 100 && (m.materialCost || 0) > revenue * 0.30) {
     add('high_material_cost', 'warn', `Material cost $${Math.round(m.materialCost).toLocaleString()} is ${Math.round(m.materialCost / revenue * 100)}% of revenue ($${Math.round(revenue).toLocaleString()})`);
   }
-  if (revenue >= 100 && m.grossMarginPct != null && m.grossMarginPct < 0) add('negative_margin', 'info', `Negative margin (${m.grossMarginPct}%)`);
+  // Negative margin flag turned off 10/6/2026: ServiceTitan labor burden rates vary ~$20-$620/hr by tech, so margins aren't reliable.
+  // if (revenue >= 100 && m.grossMarginPct != null && m.grossMarginPct < 0) add('negative_margin', 'info', `Negative margin (${m.grossMarginPct}%)`);
 
   // --- time on site
   if (job.detail) {

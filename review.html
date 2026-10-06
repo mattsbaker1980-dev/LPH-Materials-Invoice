@@ -310,6 +310,7 @@ tr.reviewed td{opacity:.72;}
     j._opts = Math.max(j.estimates.length, d.estimatesCount||0);
     j._sold = j.estimates.filter(function(e){return e.status==='Sold';}).length;
     j._hrs = d.hoursWorked||0;
+    j.flags = j.flags.filter(function(f){return f.code!=='negative_margin';}); // hidden: ServiceTitan labor burden rates make margins unreliable
     j._warn = j.flags.filter(function(f){return f.level==='warn';}).length;
     j._oppVisit = !NO_OPTION_EXEMPT.test(j.jobType||'') && !d.warranty && !d.recall;
     j._text = searchText(j);
@@ -727,7 +728,7 @@ tr.reviewed td{opacity:.72;}
       '<div><span>Paid time</span>'+hrs(d.paidHours)+'</div>'+
       '<div><span>Sold hours</span>'+(d.soldHours?hrs(d.soldHours):'—')+'</div>'+
       '<div><span>Revenue</span>'+money2(j._rev)+'</div>'+
-      '<div><span>Gross margin</span>'+(m.grossMarginPct!=null? m.grossMarginPct+'%':'—')+'</div>'+
+      '<div><span>Gross margin</span>'+(m.revenue&&m.grossMargin!=null? (m.grossMargin/m.revenue*100).toFixed(1)+'%' : (m.grossMarginPct!=null? m.grossMarginPct+'%':'—'))+'</div>'+
       '<div><span>Material / PO cost</span>'+money2(j._mat)+' / '+money2(j._po)+'</div>'+
       '<div><span>Assigned</span>'+esc(d.assignedTechs||j.primaryTech||'—')+'</div>'+
       '<div><span>Campaign</span>'+esc(d.campaign||'—')+'</div>'+

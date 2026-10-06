@@ -109,6 +109,7 @@ tr{page-break-inside:avoid;}
       (Array.isArray(checks)?checks:[]).forEach(function(x){ if(!x) return; var id=String(x.id); if(id.indexOf('note:')===0){ if(x.concern||x.positive) notes[id.slice(5)]=x; if(x.excused) excused[id.slice(5)]=x.excused; } else if(x.manualOverride) status[id]=x.manualOverride; });
     }
     // Flags the manager excused (e.g. warranty call) don't count against the tech
+    all.forEach(function(j){ j.flags=(j.flags||[]).filter(function(f){return f.code!=='negative_margin';}); });
     all.forEach(function(j){ var ex=excused[j.jobNumber]; if(!ex) return; j.flags=j.flags.filter(function(f){return !ex[f.code];}); if(ex.general_time) j._exGT=true; if(ex.gt_option) j.estimates.forEach(function(e){ delete e.gt; }); });
     all.forEach(derive);
     // Compare each tech with the other techs in their own department (Plumbing vs. HVAC etc. are very different businesses).
