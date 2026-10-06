@@ -98,9 +98,16 @@ tr{page-break-inside:avoid;}
       var t = d._full ? null : await getJSON('data/review/'+m+'.text.json').catch(function(){return null;});
       Object.values(d.jobs).forEach(function(j){ var c=j.completionDate||''; if(c<from||c>to) return; if(t) applyText(j,(t.jobs||{})[j.jobNumber]); all.push(j); });
     }
-    var checks = await getJSON('data/invoice_checks.json').catch(function(){return [];});
     var notes={}, status={}, excused={};
-    (Array.isArray(checks)?checks:[]).forEach(function(x){ if(!x) return; var id=String(x.id); if(id.indexOf('note:')===0){ if(x.concern||x.positive) notes[id.slice(5)]=x; if(x.excused) excused[id.slice(5)]=x.excused; } else if(x.manualOverride) status[id]=x.manualOverride; });
+    var st = await fetch('https://lph-materials-invoice.mattsbaker1980.workers.dev/api/state', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+    if(st && st.ok){
+      // Reviewed marks + notes from the Worker's database
+      status = st.statuses || {};
+      Object.keys(st.notes||{}).forEach(function(k){ var x=st.notes[k]; if(x.concern||x.positive) notes[k]={concern:x.concern, positive:x.positive, noteAt:x.at}; if(x.excused && Object.keys(x.excused).length) excused[k]=x.excused; });
+    } else {
+      var checks = await getJSON('data/invoice_checks.json').catch(function(){return [];});
+      (Array.isArray(checks)?checks:[]).forEach(function(x){ if(!x) return; var id=String(x.id); if(id.indexOf('note:')===0){ if(x.concern||x.positive) notes[id.slice(5)]=x; if(x.excused) excused[id.slice(5)]=x.excused; } else if(x.manualOverride) status[id]=x.manualOverride; });
+    }
     // Flags the manager excused (e.g. warranty call) don't count against the tech
     all.forEach(function(j){ var ex=excused[j.jobNumber]; if(!ex) return; j.flags=j.flags.filter(function(f){return !ex[f.code];}); if(ex.general_time) j._exGT=true; if(ex.gt_option) j.estimates.forEach(function(e){ delete e.gt; }); });
     all.forEach(derive);

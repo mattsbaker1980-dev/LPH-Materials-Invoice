@@ -13,6 +13,9 @@
 //   /api/materials-invoice-delete { id }                       remove one record from data/invoice_checks.json
 //   /api/materials-jobs-clear     {}                           reset data/jobs.json to []
 //
+//   /api/state, /api/state/status, /api/state/note, /api/state/log   Job Review marks + notes (Cloudflare D1, see below)
+//
+// Required binding: DB — a Cloudflare D1 database (Settings -> Bindings -> D1 database, variable name DB).
 // Required secret: GITHUB_TOKEN — a fine-grained PAT scoped to just this repo,
 // Contents: Read and write, no expiration. Set with:
 //   wrangler secret put GITHUB_TOKEN
@@ -158,6 +161,176 @@ async function handleJobsClear(token) {
   return json({ ok: true });
 }
  
+// ---------------------------------------------------------------------------
+// Job Review state (Reviewed marks + notes) lives in Cloudflare D1, bound to this
+// Worker as "DB". One row per job, so saves never overwrite each other, and every
+// change is also written to a change log. A copy is backed up to GitHub
+// (data/review/state_backup.json) at most every 10 minutes while people are working.
+//
+// Routes (POST, JSON):
+//   /api/state         {}                                   -> { statuses, notes, imported }
+//   /api/state/status  { job, status: 'pass'|'fail'|null }  -> { ok, row }
+//   /api/state/note    { job, concern?, positive?, excuse?:{code,reason}, unexcuse?:code } -> { ok, row }
+//   /api/state/log     { job? }                             -> { rows } (latest 500 changes)
+// ---------------------------------------------------------------------------
+const BACKUP_PATH = 'data/review/state_backup.json';
+const BACKUP_EVERY_MS = 10 * 60 * 1000;
+let schemaReady = false;
+
+async function ensureSchema(db) {
+  if (schemaReady) return;
+  await db.batch([
+    db.prepare('CREATE TABLE IF NOT EXISTS job_state (job TEXT PRIMARY KEY, status TEXT, status_at INTEGER, concern TEXT, positive TEXT, excused TEXT, note_at INTEGER)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS change_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, job TEXT, field TEXT, value TEXT)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)'),
+  ]);
+  schemaReady = true;
+}
+
+async function getMeta(db, k) {
+  const r = await db.prepare('SELECT v FROM meta WHERE k = ?').bind(k).first();
+  return r ? r.v : null;
+}
+async function setMeta(db, k, v) {
+  await db.prepare('INSERT INTO meta (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v').bind(k, String(v)).run();
+}
+
+// First run only: copy the marks and notes that were stored in data/invoice_checks.json.
+// Uses DO NOTHING on conflict, so it can never overwrite a newer save.
+async function importLegacy(env) {
+  const db = env.DB;
+  const done = await getMeta(db, 'imported');
+  if (done) return JSON.parse(done);
+  const { data } = await ghGet(env.GITHUB_TOKEN, 'data/invoice_checks.json');
+  const rows = {};
+  asArray(data).forEach((x) => {
+    if (!x || x.id === undefined || x.id === null) return;
+    const id = String(x.id);
+    if (id.indexOf('note:') === 0) {
+      const job = id.slice(5);
+      const ex = x.excused && typeof x.excused === 'object' ? x.excused : {};
+      if (!x.concern && !x.positive && !Object.keys(ex).length) return;
+      const r = rows[job] = rows[job] || { job };
+      r.concern = x.concern || ''; r.positive = x.positive || ''; r.excused = JSON.stringify(ex); r.note_at = x.noteAt || x.savedAt || Date.now();
+    } else if (x.manualOverride === 'pass' || x.manualOverride === 'fail') {
+      const r = rows[id] = rows[id] || { job: id };
+      r.status = x.manualOverride; r.status_at = x.savedAt || Date.now();
+    }
+  });
+  const list = Object.values(rows);
+  const stmt = db.prepare('INSERT INTO job_state (job, status, status_at, concern, positive, excused, note_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(job) DO NOTHING');
+  for (let i = 0; i < list.length; i += 50) {
+    await db.batch(list.slice(i, i + 50).map((r) => stmt.bind(r.job, r.status || null, r.status_at || null, r.concern || null, r.positive || null, r.excused || null, r.note_at || null)));
+  }
+  const summary = { at: Date.now(), statuses: list.filter((r) => r.status).length, notes: list.filter((r) => r.note_at).length };
+  await setMeta(db, 'imported', JSON.stringify(summary));
+  await db.prepare('INSERT INTO change_log (at, job, field, value) VALUES (?, ?, ?, ?)').bind(Date.now(), '*', 'import', JSON.stringify(summary)).run();
+  return summary;
+}
+
+function rowOut(r) {
+  let excused = {};
+  try { excused = r.excused ? JSON.parse(r.excused) : {}; } catch (e) { excused = {}; }
+  return { job: r.job, status: r.status || null, statusAt: r.status_at || null, concern: r.concern || '', positive: r.positive || '', excused, noteAt: r.note_at || null };
+}
+
+async function readAll(db) {
+  const { results } = await db.prepare('SELECT * FROM job_state').all();
+  const statuses = {}, notes = {};
+  (results || []).forEach((r) => {
+    const o = rowOut(r);
+    if (o.status === 'pass' || o.status === 'fail') statuses[o.job] = o.status;
+    if (o.concern || o.positive || Object.keys(o.excused).length) notes[o.job] = { concern: o.concern, positive: o.positive, excused: o.excused, at: o.noteAt };
+  });
+  return { statuses, notes };
+}
+
+async function maybeBackup(env, force) {
+  try {
+    const db = env.DB;
+    const last = +(await getMeta(db, 'last_backup')) || 0;
+    const dirty = +(await getMeta(db, 'last_change')) || 0;
+    if (!force && (dirty <= last || Date.now() - last < BACKUP_EVERY_MS)) return;
+    // Claim the backup slot atomically so simultaneous saves don't all back up at once.
+    const now = Date.now();
+    await db.prepare("INSERT INTO meta (k, v) VALUES ('last_backup', '0') ON CONFLICT(k) DO NOTHING").run();
+    const claim = await db.prepare("UPDATE meta SET v = ? WHERE k = 'last_backup' AND CAST(v AS INTEGER) = ?").bind(String(now), last).run();
+    if (!claim || !claim.meta || claim.meta.changes !== 1) return;
+    const all = await readAll(db);
+    const { results } = await db.prepare('SELECT * FROM job_state ORDER BY job').all();
+    const payload = { backedUpAt: new Date().toISOString(), counts: { statuses: Object.keys(all.statuses).length, notes: Object.keys(all.notes).length }, rows: (results || []).map(rowOut) };
+    await ghUpdate(env.GITHUB_TOKEN, BACKUP_PATH, () => ({ data: payload }), `Job Review state backup: ${payload.counts.statuses} reviewed, ${payload.counts.notes} notes`);
+  } catch (e) { /* best effort; next save or page load retries */ }
+}
+
+async function logChange(db, job, field, value) {
+  await db.batch([
+    db.prepare('INSERT INTO change_log (at, job, field, value) VALUES (?, ?, ?, ?)').bind(Date.now(), job, field, value === null || value === undefined ? null : String(value)),
+    db.prepare("INSERT INTO meta (k, v) VALUES ('last_change', ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(String(Date.now())),
+  ]);
+}
+
+function jobOf(body) {
+  const j = body && body.job !== undefined && body.job !== null ? String(body.job).trim() : '';
+  return /^[A-Za-z0-9_-]{1,40}$/.test(j) ? j : '';
+}
+
+async function handleState(env, body, ctx) {
+  const imported = await importLegacy(env);
+  const all = await readAll(env.DB);
+  ctx.waitUntil(maybeBackup(env, false));
+  return json({ ok: true, statuses: all.statuses, notes: all.notes, imported });
+}
+
+async function handleStateStatus(env, body, ctx) {
+  const job = jobOf(body);
+  if (!job) return json({ ok: false, error: 'job is required' }, 400);
+  const status = body.status === 'pass' || body.status === 'fail' ? body.status : null;
+  await importLegacy(env);
+  const now = Date.now();
+  await env.DB.prepare('INSERT INTO job_state (job, status, status_at) VALUES (?, ?, ?) ON CONFLICT(job) DO UPDATE SET status = excluded.status, status_at = excluded.status_at').bind(job, status, now).run();
+  await logChange(env.DB, job, 'status', status);
+  const row = await env.DB.prepare('SELECT * FROM job_state WHERE job = ?').bind(job).first();
+  ctx.waitUntil(maybeBackup(env, false));
+  return json({ ok: true, row: row ? rowOut(row) : null });
+}
+
+async function handleStateNote(env, body, ctx) {
+  const job = jobOf(body);
+  if (!job) return json({ ok: false, error: 'job is required' }, 400);
+  await importLegacy(env);
+  const cur = await env.DB.prepare('SELECT * FROM job_state WHERE job = ?').bind(job).first();
+  const c = cur ? rowOut(cur) : { concern: '', positive: '', excused: {} };
+  const next = { concern: c.concern, positive: c.positive, excused: Object.assign({}, c.excused) };
+  if (typeof body.concern === 'string') next.concern = body.concern.slice(0, 5000);
+  if (typeof body.positive === 'string') next.positive = body.positive.slice(0, 5000);
+  if (body.excuse && body.excuse.code) next.excused[String(body.excuse.code)] = String(body.excuse.reason || 'Excused').slice(0, 500);
+  if (body.unexcuse) delete next.excused[String(body.unexcuse)];
+  const now = Date.now();
+  await env.DB.prepare('INSERT INTO job_state (job, concern, positive, excused, note_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(job) DO UPDATE SET concern = excluded.concern, positive = excluded.positive, excused = excluded.excused, note_at = excluded.note_at')
+    .bind(job, next.concern, next.positive, JSON.stringify(next.excused), now).run();
+  await logChange(env.DB, job, 'note', JSON.stringify(next));
+  const row = await env.DB.prepare('SELECT * FROM job_state WHERE job = ?').bind(job).first();
+  ctx.waitUntil(maybeBackup(env, false));
+  return json({ ok: true, row: row ? rowOut(row) : null });
+}
+
+async function handleStateLog(env, body) {
+  const job = jobOf(body);
+  const q = job
+    ? env.DB.prepare('SELECT * FROM change_log WHERE job = ? ORDER BY id DESC LIMIT 500').bind(job)
+    : env.DB.prepare('SELECT * FROM change_log ORDER BY id DESC LIMIT 500');
+  const { results } = await q.all();
+  return json({ ok: true, rows: results || [] });
+}
+
+const STATE_ROUTES = {
+  '/api/state': handleState,
+  '/api/state/status': handleStateStatus,
+  '/api/state/note': handleStateNote,
+  '/api/state/log': handleStateLog,
+};
+ 
 const ROUTES = {
   '/api/materials-jobs': handleJobsUpsert,
   '/api/materials-invoice-checks': handleInvoiceChecksUpsert,
@@ -166,7 +339,7 @@ const ROUTES = {
 };
  
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders() });
     }
@@ -180,6 +353,13 @@ export default {
     const url = new URL(request.url);
  
     try {
+      if (STATE_ROUTES[url.pathname]) {
+        if (!env.DB) return json({ ok: false, error: 'no_db', message: 'The D1 database is not connected to this Worker yet (Settings -> Bindings -> D1 database, variable name DB).' }, 503);
+        await ensureSchema(env.DB);
+        let body = {};
+        try { body = await request.json(); } catch (e) { body = {}; }
+        return await STATE_ROUTES[url.pathname](env, body, ctx);
+      }
       if (url.pathname === '/api/materials-jobs-clear') {
         return await handleJobsClear(env.GITHUB_TOKEN);
       }

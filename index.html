@@ -937,9 +937,14 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
     }catch(e){ errEl.textContent = 'Could not save this check. Try again.'; }
   }
 
+  var stateDb = false;
   async function setManualStatus(id, status){
     if(!requireWorker()) return;
-    try{ await postToWorker('/api/materials-invoice-status', {id: id, manualOverride: status}); await loadData(); }
+    try{
+      if(stateDb){ var d = await postToWorker('/api/state/status', {job: id, status: status}); if(!d.row || (d.row.status||null) !== (status||null)) throw new Error('not confirmed'); }
+      else { await postToWorker('/api/materials-invoice-status', {id: id, manualOverride: status}); }
+      await loadData();
+    }
     catch(e){ alert('Could not save the override. Try again.'); }
   }
   window.__mviSetStatus = setManualStatus;
@@ -1081,6 +1086,9 @@ tbody tr.flagged:hover{background:var(--warn-bg);filter:brightness(0.97);}
       var invRes = await fetch('data/invoice_checks.json' + bust, {cache:'no-store'});
       var invData = invRes.ok ? await invRes.json() : [];
       pastedInvoices = invData.filter(function(r){ return r && String(r.id).indexOf('note:')!==0; }).map(function(r){ if(!r.flags) r.flags = []; return r; });
+      // Reviewed/Failed marks live in the Worker's database now (shared with the Job Review page)
+      var st = await fetch(WORKER_URL + '/api/state', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+      if(st && st.ok){ stateDb = true; pastedInvoices.forEach(function(r){ r.manualOverride = (st.statuses||{})[String(r.id)] || null; }); }
       if(rawJobs.length){ initBUChips(); showMain(); } else { showEmpty(); }
       render();
       renderPasteTab();

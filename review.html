@@ -384,7 +384,45 @@ tr.reviewed td{opacity:.72;}
     ensureText(ms).then(function(){ if(seq===loadSeq) render(); });
   }
 
+  // Reviewed marks + notes live in the Worker's database (Cloudflare D1). 'legacy' = the Worker
+  // has no database yet, so the old shared file is used; 'down' = the Worker didn't answer, so
+  // saving is blocked (rather than saving somewhere the database would never see).
+  var saveMode = 'loading', pendingSaves = 0;
+  async function postState(path, body){
+    var res = await fetch(WORKER_URL+path, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body||{})});
+    var data = null; try{ data = await res.json(); }catch(e){}
+    if(!res.ok || !data || !data.ok){ var err = new Error((data&&data.error)||('HTTP '+res.status)); err.status=res.status; err.code=data&&data.error; throw err; }
+    return data;
+  }
+  function saveBanner(msg, kind){
+    var el=$('saveBanner');
+    if(!el){ el=document.createElement('div'); el.id='saveBanner'; el.style.cssText='position:sticky;top:0;z-index:50;padding:10px 16px;font-weight:600;text-align:center;'; document.body.insertBefore(el, document.body.firstChild); }
+    if(!msg){ el.style.display='none'; return; }
+    el.style.display=''; el.textContent=msg;
+    el.style.background = kind==='bad' ? '#b42318' : '#b54708'; el.style.color='#fff';
+  }
+  function saveIndicator(){
+    var el=$('saveInd');
+    if(!el){ el=document.createElement('div'); el.id='saveInd'; el.style.cssText='position:fixed;right:16px;bottom:16px;z-index:60;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.2);'; document.body.appendChild(el); }
+    if(pendingSaves>0){ el.style.display=''; el.style.background='#1d4ed8'; el.style.color='#fff'; el.textContent='Saving '+pendingSaves+'…'; }
+    else { el.style.background='#067647'; el.style.color='#fff'; el.textContent='All changes saved'; clearTimeout(el._t); el._t=setTimeout(function(){ if(pendingSaves===0) el.style.display='none'; },2500); }
+  }
+  window.addEventListener('beforeunload', function(e){ if(pendingSaves>0){ e.preventDefault(); e.returnValue='Changes are still saving.'; return e.returnValue; } });
+  async function trackSave(fn){
+    pendingSaves++; saveIndicator();
+    try{ return await fn(); } finally { pendingSaves--; saveIndicator(); }
+  }
   async function loadStatuses(){
+    try{
+      var d = await postState('/api/state');
+      saveMode='db'; saveBanner(null);
+      var n={}; Object.keys(d.notes||{}).forEach(function(k){ var x=d.notes[k]; n[k]={concern:x.concern||'', positive:x.positive||'', at:x.at, excused:x.excused||{}}; });
+      statuses = d.statuses||{}; notes = n; recomputeWarn(); if(state.jobs.length) render();
+      return;
+    }catch(e){
+      if(e.status===404 || e.code==='no_db'){ saveMode='legacy'; }
+      else { saveMode='down'; saveBanner('Can’t reach the save service right now ('+e.message+'). Marks and notes shown may be out of date, and saving is paused. Reload in a minute.', 'bad'); }
+    }
     try{
       var r = await fetch('data/invoice_checks.json?t='+Date.now());
       var list = await r.json(); var s={};
@@ -405,9 +443,16 @@ tr.reviewed td{opacity:.72;}
     if(patch.positive!==undefined) next.positive=patch.positive;
     if(patch.excuse) next.excused[patch.excuse.code]=patch.excuse.reason;
     if(patch.unexcuse) delete next.excused[patch.unexcuse];
-    var rec={ id:'note:'+jobNo, noteFor:jobNo, concern:next.concern, positive:next.positive, excused:next.excused, noteAt:Date.now(), flags:[], savedAt:Date.now() };
-    var res = await fetch(WORKER_URL+'/api/materials-invoice-checks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({records:[rec]})});
-    if(!res.ok) throw new Error(res.status);
+    if(saveMode==='down') throw new Error('saving is paused \u2014 reload the page');
+    if(saveMode==='db'){
+      var d = await trackSave(function(){ return postState('/api/state/note', Object.assign({job:jobNo}, patch)); });
+      var row = d.row || {};
+      if((row.concern||'')!==next.concern || (row.positive||'')!==next.positive || JSON.stringify(row.excused||{})!==JSON.stringify(next.excused)) throw new Error('save could not be confirmed');
+    } else {
+      var rec={ id:'note:'+jobNo, noteFor:jobNo, concern:next.concern, positive:next.positive, excused:next.excused, noteAt:Date.now(), flags:[], savedAt:Date.now() };
+      var res = await fetch(WORKER_URL+'/api/materials-invoice-checks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({records:[rec]})});
+      if(!res.ok) throw new Error(res.status);
+    }
     if(next.concern||next.positive||Object.keys(next.excused).length){ next.at=Date.now(); notes[jobNo]=next; } else delete notes[jobNo];
     recomputeWarn();
   }
@@ -431,25 +476,39 @@ tr.reviewed td{opacity:.72;}
   function statusOf(j){ return statuses[j.jobNumber] || 'needs'; }
   // Saves through the same Worker the Materials vs Invoice page uses, so both pages share one status per job.
   async function setStatus(jobNo, next, btn){
-    var j = state.jobs.find(function(x){return x.jobNumber===jobNo;}); if(!j) return;
+    var j = state.jobs.find(function(x){return x.jobNumber===jobNo;});
     if(btn) btn.disabled = true;
     try{
-      var r = await fetch('data/invoice_checks.json?t='+Date.now()); var list = await r.json();
-      var rec = (Array.isArray(list)?list:[]).find(function(x){return String(x.id)===jobNo;});
-      if(!rec){
-        var items = j.invoices.flatMap(function(i){return i.items||[];});
-        var svc = items.filter(function(x){return !/material/i.test(x.type);}).map(function(x){return {name:x.name, price:x.price};});
-        var mat = items.filter(function(x){return /material/i.test(x.type);}).map(function(x){return {name:x.name, price:x.price};});
-        rec = { id:jobNo, invoiceNumber:jobNo, jobSummary:'', invoiceSummary:j.invoices.map(function(i){return i.summary;}).filter(Boolean).join('\n\n'),
-          servicesText:svc.map(function(x){return x.name;}).join(', '), materialsText:mat.map(function(x){return x.name;}).join(', '),
-          serviceItems:svc, materialItems:mat, total:j._inv?j._inv.toFixed(2):'', flags:[], savedAt:Date.now() };
-      } else { rec = Object.assign({}, rec); }
-      rec.manualOverride = next==='needs' ? null : next;
-      var res = await fetch(WORKER_URL+'/api/materials-invoice-checks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({records:[rec]})});
-      if(!res.ok) throw new Error(res.status);
+      if(saveMode==='down' || saveMode==='loading') throw new Error(saveMode==='down' ? 'saving is paused — reload the page' : 'still loading, try again in a moment');
+      if(saveMode==='db'){
+        var want = next==='needs' ? null : next;
+        var d = await trackSave(function(){ return postState('/api/state/status', {job:jobNo, status:want}); });
+        if(!d.row || (d.row.status||null)!==want) throw new Error('save could not be confirmed');
+      } else {
+        if(!j) throw new Error('job not loaded');
+        await trackSave(async function(){
+          var r = await fetch('data/invoice_checks.json?t='+Date.now()); var list = await r.json();
+          var rec = (Array.isArray(list)?list:[]).find(function(x){return String(x.id)===jobNo;});
+          if(!rec){
+            var items = j.invoices.flatMap(function(i){return i.items||[];});
+            var svc = items.filter(function(x){return !/material/i.test(x.type);}).map(function(x){return {name:x.name, price:x.price};});
+            var mat = items.filter(function(x){return /material/i.test(x.type);}).map(function(x){return {name:x.name, price:x.price};});
+            rec = { id:jobNo, invoiceNumber:jobNo, jobSummary:'', invoiceSummary:j.invoices.map(function(i){return i.summary;}).filter(Boolean).join('\n\n'),
+              servicesText:svc.map(function(x){return x.name;}).join(', '), materialsText:mat.map(function(x){return x.name;}).join(', '),
+              serviceItems:svc, materialItems:mat, total:j._inv?j._inv.toFixed(2):'', flags:[], savedAt:Date.now() };
+          } else { rec = Object.assign({}, rec); }
+          rec.manualOverride = next==='needs' ? null : next;
+          var res = await fetch(WORKER_URL+'/api/materials-invoice-checks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({records:[rec]})});
+          if(!res.ok) throw new Error(res.status);
+        });
+      }
       if(next==='needs') delete statuses[jobNo]; else statuses[jobNo]=next;
+      if($('saveBanner') && /NOT SAVED/.test($('saveBanner').textContent)) saveBanner(null);
       render();
-    }catch(e){ alert('Could not save the status ('+e.message+'). Try again.'); if(btn) btn.disabled=false; render(); }
+    }catch(e){
+      saveBanner('NOT SAVED: job '+jobNo+' ('+e.message+'). It’s still marked the old way — try that one again.', 'bad');
+      alert('Could not save job '+jobNo+' ('+e.message+'). Try again.'); if(btn) btn.disabled=false; render();
+    }
   }
   function statusBtn(j){
     var s = statusOf(j), on = s!=='needs', lbl = s==='pass'?'Reviewed':s==='fail'?'Failed':'Needs checked';
