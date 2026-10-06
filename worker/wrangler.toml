@@ -1,10 +1,15 @@
 name = "lph-materials-invoice"
 main = "worker.js"
 compatibility_date = "2024-09-01"
- 
+
+# Job Review marks + notes database (Cloudflare D1)
+[[d1_databases]]
+binding = "DB"
+database_name = "lph-job-review"
+database_id = "09651aad-805f-4116-a011-183c6bc4601b"
+
 # Secret (set separately, never committed):
 #   wrangler secret put GITHUB_TOKEN
 #
 # Deploy:
 #   wrangler deploy
- 
