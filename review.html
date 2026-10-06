@@ -412,15 +412,20 @@ tr.reviewed td{opacity:.72;}
     pendingSaves++; saveIndicator();
     try{ return await fn(); } finally { pendingSaves--; saveIndicator(); }
   }
+  function modeTag(txt, color){
+    var el=$('modeTag');
+    if(!el){ el=document.createElement('div'); el.id='modeTag'; el.style.cssText='position:fixed;left:16px;bottom:16px;z-index:60;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;color:#fff;opacity:.9;'; document.body.appendChild(el); }
+    el.textContent=txt; el.style.background=color;
+  }
   async function loadStatuses(){
     try{
       var d = await postState('/api/state');
-      saveMode='db'; saveBanner(null);
+      saveMode='db'; saveBanner(null); modeTag('Saving to: database \u2713', '#067647');
       var n={}; Object.keys(d.notes||{}).forEach(function(k){ var x=d.notes[k]; n[k]={concern:x.concern||'', positive:x.positive||'', at:x.at, excused:x.excused||{}}; });
       statuses = d.statuses||{}; notes = n; recomputeWarn(); if(state.jobs.length) render();
       return;
     }catch(e){
-      if(e.status===404 || e.code==='no_db'){ saveMode='legacy'; }
+      if(e.status===404 || e.code==='no_db'){ saveMode='legacy'; modeTag('Saving to: old file ('+(e.code||e.status)+')', '#b54708'); }
       else { saveMode='down'; saveBanner('Can’t reach the save service right now ('+e.message+'). Marks and notes shown may be out of date, and saving is paused. Reload in a minute.', 'bad'); }
     }
     try{
