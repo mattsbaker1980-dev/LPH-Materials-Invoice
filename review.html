@@ -359,7 +359,7 @@ tr.reviewed td{opacity:.72;}
       watchForUpdate(state.index);
       var ls = state.index.lastSync;
       $('subhead').textContent = 'Last synced '+new Date(state.index.updatedAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+(ls&&ls.context?' · '+ls.context:'');
-      try{ var cr=JSON.parse(tryLS('jr_custom')||'null'); if(cr){ state.range.from=cr.from; state.range.to=cr.to; $('fromD').value=cr.from; $('toD').value=cr.to; } }catch(e){}
+      try{ var cr=JSON.parse(tryLS('jr_custom')||'null'); if(cr){ if(cr.toLatest){ cr.to=iso(new Date()); } state.range.from=cr.from; state.range.to=cr.to; $('fromD').value=cr.from; $('toD').value=cr.to; } }catch(e){}
       await loadRange();
     }catch(e){
       $('subhead').textContent='No review data yet';
@@ -898,7 +898,7 @@ tr.reviewed td{opacity:.72;}
   function fallbackCopy(text){ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta); }
   $('hideZero').checked = hideZero;
   $('hideZero').addEventListener('change', function(){ hideZero=this.checked; tryLS('jr_hideZero', hideZero?'1':'0'); state.limit=200; render(); });
-  ['fromD','toD'].forEach(function(id){ $(id).addEventListener('change', function(){ state.range.key='custom'; state.range.from=$('fromD').value; state.range.to=$('toD').value; tryLS('jr_range','custom'); tryLS('jr_custom', JSON.stringify({from:state.range.from,to:state.range.to})); if(state.range.from&&state.range.to) loadRange(); }); });
+  ['fromD','toD'].forEach(function(id){ $(id).addEventListener('change', function(){ state.range.key='custom'; state.range.from=$('fromD').value; state.range.to=$('toD').value; tryLS('jr_range','custom'); var yd=new Date(); yd.setDate(yd.getDate()-1); tryLS('jr_custom', JSON.stringify({from:state.range.from,to:state.range.to,toLatest:!!state.range.to && state.range.to>=iso(yd)})); if(state.range.from&&state.range.to) loadRange(); }); });
   function openReport(){
     var r=computeRange();
     if(!state.tech){ alert('Pick a technician first (Technician menu), then click Technician report.'); $('techSel').focus(); return; }
