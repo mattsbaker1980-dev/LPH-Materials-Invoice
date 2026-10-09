@@ -11,6 +11,18 @@ Read each job and return one result object per job. Be conservative: only raise 
 issue when the text clearly supports it. A clean job is `"verdict": "ok"` with no issues.
 Do not invent facts.
 
+## Jobs installed for someone else's sale (`soldBy` is set)
+
+When a job has `soldBy`, the tech on site (often an installer — `installer: true`) did work that
+**someone else sold**. The installer is responsible only for time and the materials actually used;
+what was sold, how it was priced and what options were offered belong to the seller.
+- Judge the installer's write-up only for whether it says what was done and what was used.
+- If the write-up shows work done beyond what was sold and billed (extra piping, a reroute, an
+  added part), raise it as `not_billed` and word it as unsold / un-billed extra scope, e.g.
+  "Write-up says the softener piping was re-plumbed; not part of what Robert R. sold and not billed —
+  undersold or a change order not added." Don't blame the installer for it.
+- Never raise option or pricing concerns about the installer on these jobs.
+
 ## What counts as an issue
 
 `not_billed` (usually **high**) — the write-up says the tech *actually did* a repair,
