@@ -348,7 +348,7 @@ tr.reviewed td{opacity:.72;}
     j.estimates.forEach(function(e){ if(e.hasSummary!==undefined) e.summary=(x.e||{})[e.id]||''; });
     j._text=searchText(j);
   }
-  function searchText(j){ return (j.jobNumber+' '+j.customer+' '+j.primaryTech+' '+j.jobType+' '+j.invoices.map(function(i){return (i.summary||'')+' '+(i.items||[]).map(function(x){return x.name+' '+(x.desc||'');}).join(' ');}).join(' ')+' '+j.estimates.map(function(e){return e.name+' '+(e.summary||'');}).join(' ')).toLowerCase(); }
+  function searchText(j){ return (j.jobNumber+' '+j.customer+' '+j.primaryTech+' '+(j.seller||'')+' '+j.jobType+' '+j.invoices.map(function(i){return (i.summary||'')+' '+(i.items||[]).map(function(x){return x.name+' '+(x.desc||'');}).join(' ');}).join(' ')+' '+j.estimates.map(function(e){return e.name+' '+(e.summary||'');}).join(' ')).toLowerCase(); }
   async function ensureText(ms){ var ts = await Promise.all(ms.map(fetchText)); ms.forEach(function(m,i){ state.jobs.filter(function(j){return j._month===m;}).forEach(function(j){ applyText(j, ts[i]); }); }); }
 
   async function load(){
@@ -549,7 +549,7 @@ tr.reviewed td{opacity:.72;}
     var q=state.q.toLowerCase();
     return state.jobs.filter(function(j){
       if(state.dept!=='All' && j._dept!==state.dept) return false;
-      if(state.tech && j.primaryTech!==state.tech) return false;
+      if(state.tech && j.primaryTech!==state.tech && !(j.seller===state.tech && j.flags.some(function(f){return f.owner===state.tech;}))) return false;
       if(q && j._text.indexOf(q)===-1) return false;
       if(hideZero && j._rev<=0) return false;
       return true;
@@ -621,7 +621,7 @@ tr.reviewed td{opacity:.72;}
   }
   function flagPills(j, max){
     var fl=activeFlags(j).slice().sort(function(a,b){return (a.level==='warn'?0:1)-(b.level==='warn'?0:1);});
-    var out = fl.slice(0,max||99).map(function(f){ return '<span class="pill '+f.level+(f.code.indexOf('ai_')===0?' ai':'')+'" title="'+esc(f.text)+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span>'; }).join('');
+    var out = fl.slice(0,max||99).map(function(f){ return '<span class="pill '+f.level+(f.code.indexOf('ai_')===0?' ai':'')+'" title="'+esc((f.owner?'Sales side ('+f.owner+'): ':'')+f.text)+'">'+esc(FLAG_LABELS[f.code]||f.code)+(f.owner?' \u00b7 sales':'')+'</span>'; }).join('');
     if(max && fl.length>max) out += '<span class="pill info">+'+(fl.length-max)+'</span>';
     if(!fl.length) out = j.aiReview ? '<span class="pill good">Checked ✓</span>' : '';
     if(j.leadsSet&&j.leadsSet.length) out = '<span class="pill good" title="Lead set for another tech/consultant">\u2605 Lead set'+(j.leadsSet.length>1?' \u00d7'+j.leadsSet.length:'')+'</span>'+out;
@@ -644,7 +644,7 @@ tr.reviewed td{opacity:.72;}
         '<td class="nowrap">'+fdate(j.completionDate)+'</td>'+
         '<td class="nowrap"><span class="cc">'+esc(j.jobNumber)+copyBtn(j.jobNumber)+'</span></td>'+
         '<td><span class="cc">'+esc(j.customer||'—')+copyBtn(j.customer)+'</span></td>'+
-        '<td class="nowrap">'+esc(j.primaryTech)+'</td>'+
+        '<td class="nowrap">'+esc(j.primaryTech)+(j.installer?' <span class="none" style="display:inline;font-size:11.5px;">Installer</span>':'')+(j.seller?'<div style="color:var(--muted);font-size:11.5px;">'+(j.seller==='Seller not on report'?'seller not on report':'sold by '+esc(j.seller))+'</div>':'')+'</td>'+
         '<td class="type">'+esc(j.jobType)+'</td>'+
         '<td class="num">'+money(j._rev)+'</td>'+
         '<td class="num">'+hrs(j._hrs)+'</td>'+
@@ -688,7 +688,8 @@ tr.reviewed td{opacity:.72;}
       var isEx = ex[f.code];
       var ctl = isEx ? '<div class="excused">Excused'+(isEx&&isEx!=='Excused'?' \u2014 '+esc(isEx):'')+' \u00b7 not counted against the tech <button class="linkbtn unexcuse" data-job="'+esc(j.jobNumber)+'" data-code="'+esc(f.code)+'">Undo</button></div>'
                      : '<button class="linkbtn excuse" data-job="'+esc(j.jobNumber)+'" data-code="'+esc(f.code)+'" title="Not the tech\u2019s fault (e.g. warranty call) \u2014 hide it from the list and their report">Excuse this</button>';
-      return '<div class="why-row'+(isEx?' is-ex':'')+'"><span class="pill '+(isEx?'':f.level)+(f.code.indexOf('ai_')===0?' ai':'')+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span><div><div>'+esc(f.text)+'</div>'+(isEx?'':'<div class="how">'+esc(HOW[f.code]||HOW_AI)+'</div>'+extra)+ctl+'</div></div>';
+      var own = f.owner ? '<div class="none" style="font-style:normal;font-weight:600;">Sales side \u2014 '+(f.owner==='Seller not on report'?'seller isn\u2019t on the report':'counts against '+esc(f.owner))+', not '+esc(j.primaryTech||'the installer')+'</div>' : '';
+      return '<div class="why-row'+(isEx?' is-ex':'')+'"><span class="pill '+(isEx?'':f.level)+(f.code.indexOf('ai_')===0?' ai':'')+'">'+esc(FLAG_LABELS[f.code]||f.code)+'</span><div>'+own+'<div>'+esc(f.text)+'</div>'+(isEx?'':'<div class="how">'+esc(HOW[f.code]||HOW_AI)+'</div>'+extra)+ctl+'</div></div>';
     }).join('')+'</div>';
 
     // write-up
@@ -827,16 +828,19 @@ tr.reviewed td{opacity:.72;}
     var t={};
     base.forEach(function(j){
       var k=j.primaryTech||'(none)'; var r=t[k]=t[k]||{tech:k,jobs:0,opp:0,noOpt:0,optSum:0,est:0,estNoSum:0,sold:0,rev:0,hrs:0,warn:0,ai:0};
-      r.jobs++; r.rev+=j._rev; r.hrs+=j._hrs; if(j._warn) r.warn++;
+      var af=activeFlags(j), mineW=af.some(function(f){return f.level==='warn'&&!f.owner;});
+      r.jobs++; r.rev+=j._rev; r.hrs+=j._hrs; if(mineW) r.warn++;
+      var owners={}; af.forEach(function(f){ if(f.owner&&f.level==='warn') owners[f.owner]=1; });
+      Object.keys(owners).forEach(function(o){ var sr=t[o]=t[o]||{tech:o,jobs:0,opp:0,noOpt:0,optSum:0,est:0,estNoSum:0,sold:0,rev:0,hrs:0,warn:0,ai:0}; sr.warn++; sr.salesFlags=(sr.salesFlags||0)+1; });
       if(j._dept!=='Other'){ r.depts=r.depts||{}; r.depts[j._dept]=(r.depts[j._dept]||0)+1; }
-      gtOf(j).forEach(function(g){ r.gtLines=(r.gtLines||0)+1; r.gtBilled=(r.gtBilled||0)+g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) r.gtUnder=(r.gtUnder||0)+g.m.diff; });
-      if(activeFlags(j).some(function(f){return f.code.indexOf('ai_')===0;})) r.ai++;
+      if(!j.seller) gtOf(j).forEach(function(g){ r.gtLines=(r.gtLines||0)+1; r.gtBilled=(r.gtBilled||0)+g.x.price; if(g.m&&g.m.taskCode&&g.m.confidence!=='low'&&g.m.diff>25) r.gtUnder=(r.gtUnder||0)+g.m.diff; });
+      if(af.some(function(f){return f.code.indexOf('ai_')===0&&!f.owner;})) r.ai++;
       if(j._oppVisit && j.detail){ r.opp++; r.optSum+=j._opts; if(j._opts===0) r.noOpt++; }
       if(j.leadFrom){ var lt=t[j.leadFrom.tech]=t[j.leadFrom.tech]||{tech:j.leadFrom.tech,jobs:0,opp:0,noOpt:0,optSum:0,est:0,estNoSum:0,sold:0,rev:0,hrs:0,warn:0,ai:0}; lt.leads=(lt.leads||0)+1; }
       r.est+=j.estimates.length; r.sold+=j._sold; r.estNoSum+=j.estimates.filter(function(e){return e.summary!==undefined&&!e.summary;}).length;
     });
     Object.values(t).forEach(function(r){ var d=r.depts||{}; r.dept=Object.keys(d).sort(function(a,b){return d[b]-d[a];})[0]||'Other'; });
-    var rows=Object.values(t).filter(function(r){return r.jobs>0;}).sort(function(a,b){return a.dept.localeCompare(b.dept) || b.jobs-a.jobs;});
+    var rows=Object.values(t).filter(function(r){return r.jobs>0||r.salesFlags;}).sort(function(a,b){return a.dept.localeCompare(b.dept) || b.jobs-a.jobs;});
     var H=[['Technician'],['Dept'],['Jobs','n'],['Opportunity visits','n'],['Avg options','n'],['No options','n'],['Estimates','n'],['Sold','n'],['Close rate','n'],['Leads set','n'],['General Time','n'],['GT under task price','n'],['Revenue','n'],['Avg hrs/job','n'],['Need attention','n']];
     $('techHead').innerHTML=H.map(function(h){return '<th class="'+(h[1]?'num':'')+'">'+h[0]+'</th>';}).join('');
     $('techBody').innerHTML=rows.map(function(r){
