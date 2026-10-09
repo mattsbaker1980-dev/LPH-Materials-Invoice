@@ -349,6 +349,24 @@ function summaryNotBilled(summary, itemNames) {
 
 const NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
 
+// Demand calls: the customer called about one specific problem, so a single option is fine (no "Only one option" flag).
+// "No options presented" still applies. System checks and Estimate jobs are NOT demand calls.
+const DEMAND_CALL = /(concern|leak|drain stoppage|no power|no water|(sump|well|sewage) pump|sewer odor|dryer vent|appliance hook.?up|video inspection)/i;
+
+// Installers do the work someone else sold. On jobs sold by someone else, the sales-side flags
+// (options, billing, General Time pricing, sold work not billed) belong to the seller, not the tech on site.
+// The installer keeps time on site, materials recorded, PO vs materials used and the write-up.
+const INSTALLERS = ['Josh R.', 'Bill P.', 'Ben L.'];
+const INSTALL_JOB = /(sold work|install|non-repair|warranty|callback)/i;
+const SALES_FLAGS = new Set(['no_options', 'one_option', 'general_time', 'gt_option', 'sold_not_found', 'po_not_billed', 'ai_not_billed']);
+const UNKNOWN_SELLER = 'Seller not on report';
+function sellerOf(job) {
+  const s = String((job.detail && job.detail.soldBy) || '').trim();
+  if (s && s !== job.primaryTech) return s;
+  if (!s && INSTALLERS.includes(job.primaryTech) && INSTALL_JOB.test(job.jobType || '') && !/^estimate/i.test(job.jobType || '')) return UNKNOWN_SELLER;
+  return null;
+}
+
 
 // ---------------------------------------------------------------- tasks (shared with baseline.js)
 const NOT_TASK = /(partner plan|\bspp\b|gift card|adjustment|phone call|revision of options|membership|member ship|enrollment|sign.?up|fee|discount|deposit|coupon|credit|refund|financ|permit|trip charge|dispatch|after hours|overtime|spiff|warranty upgrade|labor warranty|tank warranty)/i;
@@ -428,7 +446,7 @@ function computeFlags(job, ctx) {
       const isCheck = /system check|maintenance|tune.?up/i.test(type);
       add('no_options', isEstimateJob || isCheck || d.zeroDollar ? 'warn' : 'info',
         isEstimateJob ? 'Estimate job with no estimates built' : isCheck ? 'System check with no estimate' : 'No estimate options presented');
-    } else if (estCount === 1 && !NO_OPTION_EXEMPT.test(type)) {
+    } else if (estCount === 1 && !NO_OPTION_EXEMPT.test(type) && !DEMAND_CALL.test(type)) {
       add('one_option', 'info', 'Only one option presented');
     }
   }
@@ -532,8 +550,15 @@ function computeFlags(job, ctx) {
     const hw = d.hoursWorked || 0;
     const med = ctx.medianHoursByType[type];
     if (hw > 0 && hw < 0.25 && revenue > 0) add('short_visit', 'info', `Only ${Math.round(hw * 60)} min on site for a billed job`);
-    if (med && hw >= 3 && hw > med * 3) add('long_visit', 'info', `${hw.toFixed(1)} hrs on site — ${(hw / med).toFixed(1)}× typical for ${type}`);
+    if (med && hw >= 3 && hw > med * 3) {
+      const crew = String(d.assignedTechs || '').split(',').map((x) => x.trim()).filter(Boolean).length;
+      const ctxt = [d.soldHours > 0 ? `${d.soldHours} hrs sold` : '', crew > 1 ? `${crew} techs on the job, hours may be combined` : ''].filter(Boolean).join('; ');
+      add('long_visit', 'info', `${hw.toFixed(1)} hrs on site — ${(hw / med).toFixed(1)}× typical for ${type}${ctxt ? ' · ' + ctxt : ''}`);
+    }
   }
+  // sales-side flags on a job someone else sold go to the seller
+  const seller = sellerOf(job);
+  if (seller) f.forEach((x) => { if (SALES_FLAGS.has(x.code)) x.owner = seller; });
   return f;
 }
 
@@ -621,7 +646,7 @@ function recomputeMonth(monthData, pb) {
   jobs.forEach((j) => { if (j.detail && j.detail.hoursWorked > 0) (byType[j.jobType] = byType[j.jobType] || []).push(j.detail.hoursWorked); });
   const ctx = { medianHoursByType: {}, gtPrice: gtPriceMap(pb), matRules: (pb && pb._matRules) || null };
   for (const [t, a] of Object.entries(byType)) if (a.length >= 5) ctx.medianHoursByType[t] = median(a);
-  jobs.forEach((j) => { j.flags = computeFlags(j, ctx); j.medianHours = ctx.medianHoursByType[j.jobType] || null; const tt = taskTimeOf(j); if (tt) j.taskTime = tt; else delete j.taskTime; });
+  jobs.forEach((j) => { const sl = sellerOf(j); if (sl) j.seller = sl; else delete j.seller; if (INSTALLERS.includes(j.primaryTech)) j.installer = true; else delete j.installer; j.flags = computeFlags(j, ctx); j.medianHours = ctx.medianHoursByType[j.jobType] || null; const tt = taskTimeOf(j); if (tt) j.taskTime = tt; else delete j.taskTime; });
   monthData.updatedAt = new Date().toISOString();
   monthData.jobCount = jobs.length;
   monthData.flaggedCount = jobs.filter((j) => j.flags.some((x) => x.level === 'warn')).length;
@@ -872,4 +897,4 @@ async function writeLog(store, log) {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e.stack || e.message); process.exit(1); });
 
-module.exports = { matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
+module.exports = { sellerOf, INSTALLERS, DEMAND_CALL, matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
