@@ -104,6 +104,7 @@ async function queue(o) {
         jobNumber: j.jobNumber,
         fingerprint: L.reviewFingerprint(j),
         jobType: j.jobType, tech: j.primaryTech, completed: j.completionDate,
+        soldBy: j.seller || undefined, installer: j.installer || undefined,
         bookingNotes: clip(j.materials && j.materials.bookingNotes, 400),
         invoices: j.invoices.map((i) => ({
           total: i.total, writeUp: clip(i.summary, 2500),
