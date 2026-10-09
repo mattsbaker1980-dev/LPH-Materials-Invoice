@@ -111,6 +111,10 @@ tr{page-break-inside:avoid;}
     // Flags the manager excused (e.g. warranty call) don't count against the tech
     all.forEach(function(j){ j.flags=(j.flags||[]).filter(function(f){return f.code!=='negative_margin';}); });
     all.forEach(function(j){ var ex=excused[j.jobNumber]; if(!ex) return; j.flags=j.flags.filter(function(f){return !ex[f.code];}); if(ex.general_time) j._exGT=true; if(ex.gt_option) j.estimates.forEach(function(e){ delete e.gt; }); });
+    // Sales-side flags on jobs someone else sold (e.g. an installer's job) belong to the seller, not the tech on site.
+    SALES = all.filter(function(j){ return j.primaryTech!==tech && j.flags.some(function(f){return f.owner===tech && f.level==='warn';}); })
+      .map(function(j){ return {j:j, flags:j.flags.filter(function(f){return f.owner===tech && f.level==='warn';})}; });
+    all.forEach(function(j){ j.flags=j.flags.filter(function(f){return !f.owner;}); if(j.seller){ j._exGT=true; j.estimates.forEach(function(e){ delete e.gt; }); } });
     all.forEach(derive);
     // Compare each tech with the other techs in their own department (Plumbing vs. HVAC etc. are very different businesses).
     // A tech's department = the department most of their jobs fall in.
@@ -237,7 +241,7 @@ tr{page-break-inside:avoid;}
     return {kpis:h, pos:pos, neg:neg};
   }
 
-  var LEADS = null, TASKS = null;
+  var LEADS = null, TASKS = null, SALES = [];
   function render(mine, sections, minor, notes, status){
     var multi = sections.length>1, M = sections.map(metrics);
     if(TASKS){ var ti=sections.findIndex(function(x){return x.dept===TASKS.dept;}); if(ti<0) ti=0;
@@ -283,6 +287,11 @@ tr{page-break-inside:avoid;}
 
     // ----- job detail
     var jobs = mine.filter(function(j){ return j._warn.length || (notes[j.jobNumber]&&notes[j.jobNumber].concern); }).sort(function(a,b){return String(a.completionDate).localeCompare(b.completionDate);});
+    if(SALES.length){
+      h+='<h2>Sales follow-ups on jobs installed by others <small>'+SALES.length+' job'+(SALES.length===1?'':'s')+' this tech sold</small></h2>';
+      h+='<table><thead><tr><th>Date</th><th>Job / customer</th><th>Installed by</th><th>What was found</th></tr></thead><tbody>'+SALES.map(function(x){ var j=x.j;
+        return '<tr><td>'+dShort(j.completionDate)+'</td><td><b>'+esc(j.jobNumber)+'</b><br>'+esc(j.customer)+'</td><td>'+esc(j.primaryTech)+'<br><span class="muted">'+esc(j.jobType)+'</span></td><td>'+x.flags.map(function(f){ return '<span class="fl warn'+(f.code.indexOf('ai_')===0?' ai':'')+'"><b>'+esc(LABEL[f.code]||f.code)+':</b> '+esc(f.text)+'</span>'; }).join('')+'</td></tr>'; }).join('')+'</tbody></table>';
+    }
     h+='<h2>Jobs to discuss <small>'+jobs.length+' job'+(jobs.length===1?'':'s')+' with issues or manager concerns</small></h2>';
     if(jobs.length){
       h+='<table><thead><tr><th>Date</th><th>Job / customer</th><th>'+(multi?'Dept / type':'Type')+'</th><th class="num">Revenue</th><th>What was found</th></tr></thead><tbody>';
