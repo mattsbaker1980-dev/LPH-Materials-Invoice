@@ -177,11 +177,18 @@ tr{page-break-inside:avoid;}
     var gm=(j.aiReview&&j.aiReview.gt)||{};
     j._gt = j._exGT ? [] : j.invoices.flatMap(function(i){return i.items||[];}).filter(function(x){return /^GT-\d{4}-\d{4}$/i.test(x.code||'');}).map(function(x){return {x:x,m:gm[x.code+'|'+x.price]};});
     j._warn = j.flags.filter(function(f){return f.level==='warn';});
+    // SPP (system check / maintenance) vs. Demand calls, for conversion rate and average sale
+    var bu=String(j.businessUnit||'');
+    j._kind = !j._opp ? null : /system c|sys ck/i.test(bu) ? 'spp' : (/demand/i.test(bu) || /^sewer service/i.test(bu)) ? 'dem' : null;
+    j._conv = !!d.converted;
+    // Sale = sold estimates, or the invoice when the work was sold straight onto the invoice (common on demand calls)
+    j._sale = Math.max(d.estimateSales!=null ? +d.estimateSales||0 : j._soldAmt, j._rev||0);
   }
   function stats(list){
     var s={jobs:list.length, rev:0, opp:0, optSum:0, noOpt:0, checks:0, checksNo:0, est:0, sold:0, soldAmt:0, hrs:0, flagged:0, reviewed:0, aiIssues:0,
-      gtLines:0, gtLinesQ:0, gtOptions:0, gtOptionsOk:0, gtBilled:0, gtUnder:0, gtVague:0, poIssues:0, writeupIssues:0, notBilled:0};
+      sppJobs:0, sppConv:0, sppSales:0, demJobs:0, demConv:0, demSales:0, gtLines:0, gtLinesQ:0, gtOptions:0, gtOptionsOk:0, gtBilled:0, gtUnder:0, gtVague:0, poIssues:0, writeupIssues:0, notBilled:0};
     list.forEach(function(j){
+      if(j._kind){ s[j._kind+'Jobs']++; if(j._conv){ s[j._kind+'Conv']++; s[j._kind+'Sales']+=j._sale; } }
       s.rev+=j._rev; s.hrs+=j._hrs; if(j._warn.length) s.flagged++;
       if(j._opp){ s.opp++; s.optSum+=j._opts; if(j._opts===0) s.noOpt++; }
       if(j._check){ s.checks++; if(j._opts===0) s.checksNo++; }
@@ -194,6 +201,8 @@ tr{page-break-inside:avoid;}
     });
     s.avgOpt = s.opp? s.optSum/s.opp : 0; s.noOptRate = s.opp? s.noOpt/s.opp : 0; s.close = s.est? s.sold/s.est : 0;
     s.checkNoRate = s.checks? s.checksNo/s.checks : 0; s.cleanRate = s.reviewed? 1-s.aiIssues/s.reviewed : 0; s.flagRate = s.jobs? s.flagged/s.jobs : 0;
+    s.sppRate = s.sppJobs? s.sppConv/s.sppJobs : 0; s.sppAvg = s.sppConv? s.sppSales/s.sppConv : 0;
+    s.demRate = s.demJobs? s.demConv/s.demJobs : 0; s.demAvg = s.demConv? s.demSales/s.demConv : 0;
     s.revPerJob = s.jobs? s.rev/s.jobs : 0; s.gtPerJob = s.jobs? s.gtLinesQ/s.jobs : 0;
     return s;
   }
@@ -220,6 +229,19 @@ tr{page-break-inside:avoid;}
       k(S.gtLines+' · '+money(S.gtBilled),'General Time lines', co(C.gtPerJob.toFixed(2)+'/job', S.gtPerJob, C.gtPerJob, 'low')) +
       k(S.reviewed? pct(S.cleanRate):'—','Reviewed jobs with no issues', S.reviewed? co(pct(C.cleanRate), S.cleanRate, C.cleanRate, 'high'):null)+
       '</div>';
+    // Conversion & average sale, SPP vs. Demand (only for departments that run those calls)
+    if(S.sppJobs+S.demJobs+C.sppJobs+C.demJobs>0){
+      var none={txt:'No calls this period',cls:''};
+      var kk=function(type,jobs,rate,avg,cRate,cAvg,cJobs){
+        if(!jobs) return k('—',type+' conversion',none)+k('—',type+' average sale',none);
+        return k(pct(rate),type+' conversion', cJobs? co(pct(cRate), rate, cRate, 'high') : NC)+
+          k(avg?money(avg):'—',type+' average sale', (cJobs&&cAvg)? co(money(cAvg), avg, cAvg, 'high') : NC);
+      };
+      h+='<div class="kpis" style="margin-top:8px;">'+
+        kk('SPP',S.sppJobs,S.sppRate,S.sppAvg,C.sppRate,C.sppAvg,C.sppJobs)+
+        kk('Demand',S.demJobs,S.demRate,S.demAvg,C.demRate,C.demAvg,C.demJobs)+'</div>';
+      h+='<div class="muted" style="font-size:11px;margin-top:4px;">SPP: '+S.sppConv+' of '+S.sppJobs+' system checks converted, '+money(S.sppSales)+' sold · Demand: '+S.demConv+' of '+S.demJobs+' calls converted, '+money(S.demSales)+' sold. Opportunity calls only (warranty, recall, sold-work, non-repair and install jobs excluded).</div>';
+    }
 
     var pos=[], neg=[];
     var c1=cmp(S.avgOpt,C.avgOpt,'high'); if(S.opp>=5){ if(c1.good) pos.push('Presents more options than average: '+S.avgOpt.toFixed(1)+' per opportunity visit vs. '+C.avgOpt.toFixed(1)+' in '+DL+'.'); if(c1.bad) neg.push('Presents fewer options than average: '+S.avgOpt.toFixed(1)+' per opportunity visit vs. '+C.avgOpt.toFixed(1)+' in '+DL+'.'); }
@@ -235,6 +257,11 @@ tr{page-break-inside:avoid;}
     if(S.notBilled>0) neg.push(S.notBilled+' job'+(S.notBilled>1?'s':'')+' where the write-up describes work that isn’t on the invoice.');
     if(S.poIssues>0) neg.push(S.poIssues+' job'+(S.poIssues>1?'s':'')+' with purchase-order / materials recording problems.');
     if(S.writeupIssues>0) neg.push(S.writeupIssues+' job'+(S.writeupIssues>1?'s':'')+' with a missing or unclear write-up.');
+    if(!solo) [['SPP','spp','system checks'],['Demand','dem','demand calls']].forEach(function(x){
+      var n=S[x[1]+'Jobs'], r=S[x[1]+'Rate'], cr=C[x[1]+'Rate'], a=S[x[1]+'Avg'], ca=C[x[1]+'Avg'];
+      if(n>=5 && C[x[1]+'Jobs']){ var c=cmp(r,cr,'high'); if(c.good) pos.push(x[0]+' conversion above average: '+pct(r)+' of '+n+' '+x[2]+' vs. '+pct(cr)+' in '+DL+'.'); if(c.bad) neg.push(x[0]+' conversion below average: '+pct(r)+' of '+n+' '+x[2]+' vs. '+pct(cr)+' in '+DL+'.'); }
+      if(S[x[1]+'Conv']>=3 && ca){ var c2=cmp(a,ca,'high'); if(c2.good) pos.push(x[0]+' average sale above average: '+money(a)+' vs. '+money(ca)+' in '+DL+'.'); if(c2.bad) neg.push(x[0]+' average sale below average: '+money(a)+' vs. '+money(ca)+' in '+DL+'.'); }
+    });
     var big = mine.filter(function(j){return j._soldAmt>0;}).sort(function(a,b){return b._soldAmt-a._soldAmt;}).slice(0,3);
     if(big.length) pos.push('Largest sales: '+big.map(function(j){ return money(j._soldAmt)+' ('+esc(j.customer)+', '+dShort(j.completionDate)+')'; }).join('; ')+'.');
 
