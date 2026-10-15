@@ -72,7 +72,7 @@ tr{page-break-inside:avoid;}
 (function(){
   var NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
   var LABEL = { no_options:'No options presented', one_option:'Only one option', po_not_billed:'PO costs on a $0 invoice', sold_not_found:'Sold work not billed yet',
-    general_time:'General Time used', gt_option:'Option built from General Time', po_not_recorded:'PO parts not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
+    general_time:'Grid Task used', gt_option:'Option built from a Grid Task', po_not_recorded:'PO parts not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
     negative_margin:'Negative margin', material_not_recorded:'Material likely not recorded', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit', ai_not_billed:'Work described but not billed',
     ai_billed_not_described:'Billed but not described', ai_options:'Options gap', ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note' };
   var q = new URLSearchParams(location.search), tech=q.get('tech')||'', from=q.get('from')||'', to=q.get('to')||'';
@@ -119,7 +119,7 @@ tr{page-break-inside:avoid;}
     // Compare each tech with the other techs in their own department (Plumbing vs. HVAC etc. are very different businesses).
     // A tech's department = the department most of their jobs fall in.
     var byTech={};
-    all.forEach(function(j){ if(!j.primaryTech) return; var d=dept(j.businessUnit); if(d==='Other') return; var t=byTech[j.primaryTech]=byTech[j.primaryTech]||{}; t[d]=(t[d]||0)+1; });
+    all.forEach(function(j){ if(!j.primaryTech||j._nr) return; var d=dept(j.businessUnit); if(d==='Other') return; var t=byTech[j.primaryTech]=byTech[j.primaryTech]||{}; t[d]=(t[d]||0)+1; });
     var home={}; Object.keys(byTech).forEach(function(t){ var c=byTech[t]; home[t]=Object.keys(c).sort(function(a,b){return c[b]-c[a];})[0]; });
     var mine = all.filter(function(j){return j.primaryTech===tech;});
     // A tech gets a separate, scored section for every department they do real work in
@@ -176,6 +176,7 @@ tr{page-break-inside:avoid;}
     j._hrs = d.hoursWorked||0;
     var gm=(j.aiReview&&j.aiReview.gt)||{};
     j._gt = j._exGT ? [] : j.invoices.flatMap(function(i){return i.items||[];}).filter(function(x){return /^GT-\d{4}-\d{4}$/i.test(x.code||'');}).map(function(x){return {x:x,m:gm[x.code+'|'+x.price]};});
+    j._nr = /non.?repair/i.test(j.jobType||''); // a non-repair visit isn't counted as a job
     j._warn = j.flags.filter(function(f){return f.level==='warn';});
     // SPP (system check / maintenance) vs. Demand calls, for conversion rate and average sale
     var bu=String(j.businessUnit||'');
@@ -185,7 +186,7 @@ tr{page-break-inside:avoid;}
     j._sale = Math.max(d.estimateSales!=null ? +d.estimateSales||0 : j._soldAmt, j._rev||0);
   }
   function stats(list){
-    var s={jobs:list.length, rev:0, opp:0, optSum:0, noOpt:0, checks:0, checksNo:0, est:0, sold:0, soldAmt:0, hrs:0, flagged:0, reviewed:0, aiIssues:0,
+    var s={jobs:list.filter(function(j){return !j._nr;}).length, nr:list.length-list.filter(function(j){return !j._nr;}).length, rev:0, opp:0, optSum:0, noOpt:0, checks:0, checksNo:0, est:0, sold:0, soldAmt:0, hrs:0, flagged:0, reviewed:0, aiIssues:0,
       sppJobs:0, sppConv:0, sppSales:0, demJobs:0, demConv:0, demSales:0, gtLines:0, gtLinesQ:0, gtOptions:0, gtOptionsOk:0, gtBilled:0, gtUnder:0, gtVague:0, poIssues:0, writeupIssues:0, notBilled:0};
     list.forEach(function(j){
       if(j._kind){ s[j._kind+'Jobs']++; if(j._conv){ s[j._kind+'Conv']++; s[j._kind+'Sales']+=j._sale; } }
@@ -203,7 +204,8 @@ tr{page-break-inside:avoid;}
     s.checkNoRate = s.checks? s.checksNo/s.checks : 0; s.cleanRate = s.reviewed? 1-s.aiIssues/s.reviewed : 0; s.flagRate = s.jobs? s.flagged/s.jobs : 0;
     s.sppRate = s.sppJobs? s.sppConv/s.sppJobs : 0; s.sppAvg = s.sppConv? s.sppSales/s.sppConv : 0;
     s.demRate = s.demJobs? s.demConv/s.demJobs : 0; s.demAvg = s.demConv? s.demSales/s.demConv : 0;
-    s.revPerJob = s.jobs? s.rev/s.jobs : 0; s.gtPerJob = s.jobs? s.gtLinesQ/s.jobs : 0;
+    s.revPerJob = s.jobs? s.rev/s.jobs : 0; s.gtPerJob = s.jobs? s.gtLines/s.jobs : 0;
+    s.convJobs = s.sppJobs+s.demJobs; s.conv = s.convJobs? (s.sppConv+s.demConv)/s.convJobs : 0;
     return s;
   }
   function cmp(v, co, better){ // better: 'high' | 'low'
@@ -220,13 +222,13 @@ tr{page-break-inside:avoid;}
     var co = function(txt, v, cv, better){ if(solo) return NC; var r=cmp(v,cv,better); r.txt=DL+': '+txt; return r; };
     var h='';
     h+='<div class="kpis">'+
-      k(S.jobs.toLocaleString(),'Jobs completed', solo?NC:{txt:DL+' avg per tech: '+Math.round(C.jobs/Math.max(1,techCount))}) +
-      k(money(S.rev),'Revenue', {txt:'Per job '+money(S.revPerJob)+(solo?'':' ('+DL+' '+money(C.revPerJob)+')'), cls:solo?'':cmp(S.revPerJob,C.revPerJob,'high').cls}) +
+      k(S.jobs.toLocaleString(),'Jobs completed', solo?NC:{txt:DL+' avg per tech: '+Math.round(C.jobs/Math.max(1,techCount))+(S.nr?' · '+S.nr+' non-repair not counted':'')}) +
+      k(money(S.rev),'Revenue (invoiced on these jobs)', {txt:'Per job '+money(S.revPerJob)+(solo?'':' ('+DL+' '+money(C.revPerJob)+')'), cls:solo?'':cmp(S.revPerJob,C.revPerJob,'high').cls}) +
       k(S.avgOpt.toFixed(1),'Options per opportunity visit', co(C.avgOpt.toFixed(1), S.avgOpt, C.avgOpt, 'high')) +
-      k(pct(S.close),'Estimate close rate', co(pct(C.close), S.close, C.close, 'high')) +
-      k(money(S.soldAmt),'Estimates sold ($)', {txt:S.sold+' sold of '+S.est+' built'}) +
+      k(S.convJobs?pct(S.conv):'—','Overall conversion', S.convJobs? (function(){ var r=co(pct(C.conv), S.conv, C.conv, 'high'); r.txt=(S.sppConv+S.demConv)+' of '+S.convJobs+' calls · '+r.txt; return r; })() : null) +
+      k(money(S.soldAmt),'Sold on estimates', {txt:S.sold+' of '+S.est+' options sold'}) +
       k(pct(S.noOptRate),'Visits with no options', co(pct(C.noOptRate), S.noOptRate, C.noOptRate, 'low')) +
-      k(S.gtLines+' · '+money(S.gtBilled),'General Time lines', co(C.gtPerJob.toFixed(2)+'/job', S.gtPerJob, C.gtPerJob, 'low')) +
+      k(S.gtLines+' · '+money(S.gtBilled),'Grid Tasks', solo?NC:(function(){ var r=cmp(S.gtPerJob, C.gtPerJob, 'low'); r.txt=DL+' avg for '+S.jobs+' jobs: '+(C.gtPerJob*S.jobs).toFixed(1); return r; })()) +
       k(S.reviewed? pct(S.cleanRate):'—','Reviewed jobs with no issues', S.reviewed? co(pct(C.cleanRate), S.cleanRate, C.cleanRate, 'high'):null)+
       '</div>';
     // Conversion & average sale, SPP vs. Demand (only for departments that run those calls)
@@ -247,13 +249,12 @@ tr{page-break-inside:avoid;}
     var c1=cmp(S.avgOpt,C.avgOpt,'high'); if(S.opp>=5){ if(c1.good) pos.push('Presents more options than average: '+S.avgOpt.toFixed(1)+' per opportunity visit vs. '+C.avgOpt.toFixed(1)+' in '+DL+'.'); if(c1.bad) neg.push('Presents fewer options than average: '+S.avgOpt.toFixed(1)+' per opportunity visit vs. '+C.avgOpt.toFixed(1)+' in '+DL+'.'); }
     var c2=cmp(S.noOptRate,C.noOptRate,'low'); if(S.opp>=5){ if(S.noOpt===0) pos.push('Built at least one option on every opportunity visit ('+S.opp+' visits).'); else if(c2.good) pos.push('Fewer visits without options than average ('+pct(S.noOptRate)+' vs. '+pct(C.noOptRate)+').'); else if(c2.bad) neg.push(S.noOpt+' of '+S.opp+' opportunity visits had no options presented ('+pct(S.noOptRate)+' vs. '+pct(C.noOptRate)+' in '+DL+').'); }
     if(S.checks>=3 && S.checksNo>0 && cmp(S.checkNoRate,C.checkNoRate,'low').bad) neg.push(S.checksNo+' of '+S.checks+' system checks ended with no estimate built.');
-    var c3=cmp(S.close,C.close,'high'); if(S.est>=5){ if(c3.good) pos.push('Closes estimates above average: '+pct(S.close)+' vs. '+pct(C.close)+' ('+money(S.soldAmt)+' sold).'); if(c3.bad) neg.push('Estimate close rate below average: '+pct(S.close)+' vs. '+pct(C.close)+'.'); }
     var c4=cmp(S.revPerJob,C.revPerJob,'high'); if(S.jobs>=5){ if(c4.good) pos.push('Revenue per job above average: '+money(S.revPerJob)+' vs. '+money(C.revPerJob)+'.'); if(c4.bad) neg.push('Revenue per job below average: '+money(S.revPerJob)+' vs. '+money(C.revPerJob)+'.'); }
     if(S.reviewed>=5){ var c5=cmp(S.cleanRate,C.cleanRate,'high'); if(c5.good||S.aiIssues===0) pos.push('Write-ups and invoices line up well: '+pct(S.cleanRate)+' of reviewed jobs had no billing/write-up issues ('+DL+' '+pct(C.cleanRate)+').'); else if(c5.bad) neg.push('More write-up/billing mismatches than average: '+S.aiIssues+' of '+S.reviewed+' reviewed jobs had an issue ('+pct(1-S.cleanRate)+' vs. '+pct(1-C.cleanRate)+').'); }
-    if(S.jobs>=5){ if(S.gtLines===0) pos.push('Used pricebook tasks throughout — no General Time lines.'); else if(cmp(S.gtPerJob,C.gtPerJob,'low').bad) neg.push('Uses General Time more than average: '+S.gtLinesQ+' of '+S.gtLines+' General Time lines weren\u2019t custom work (a pricebook task fit, or the description doesn\u2019t say what was done).'); }
-    if(S.est>=5){ var gor=S.gtOptions/S.est, cor=C.est?C.gtOptions/C.est:0; if(S.gtOptions===0) pos.push(S.gtOptionsOk ? 'Used General Time on options only for custom work with no pricebook task ('+S.gtOptionsOk+' option'+(S.gtOptionsOk>1?'s':'')+').' : 'Built every estimate option from pricebook tasks — no General Time options.'); else if(gor>cor*1.1) neg.push(S.gtOptions+' of '+S.est+' estimate options were built from General Time where it wasn\u2019t custom work ('+pct(gor)+' vs. '+pct(cor)+' in '+DL+').'); }
-    if(S.gtUnder>0) neg.push('General Time billed '+money(S.gtUnder)+' below the matching pricebook tasks.');
-    if(S.gtVague>0) neg.push(S.gtVague+' General Time line'+(S.gtVague>1?'s':'')+' with a description too vague to verify.');
+    if(S.jobs>=5){ if(S.gtLines===0) pos.push('Used pricebook tasks throughout — no Grid Tasks.'); else if(cmp(S.gtPerJob,C.gtPerJob,'low').bad) neg.push('Uses Grid Tasks more than average: '+S.gtLines+' vs. '+(C.gtPerJob*S.jobs).toFixed(1)+' for the same number of jobs in '+DL+(S.gtLinesQ?'; '+S.gtLinesQ+' weren\u2019t custom work (a pricebook task fit, or the description doesn\u2019t say what was done)':'')+'.'); }
+    if(S.est>=5){ var gor=S.gtOptions/S.est, cor=C.est?C.gtOptions/C.est:0; if(S.gtOptions===0) pos.push(S.gtOptionsOk ? 'Used Grid Tasks on options only for custom work with no pricebook task ('+S.gtOptionsOk+' option'+(S.gtOptionsOk>1?'s':'')+').' : 'Built every estimate option from pricebook tasks — no Grid Task options.'); else if(gor>cor*1.1) neg.push(S.gtOptions+' of '+S.est+' estimate options were built from Grid Tasks where it wasn\u2019t custom work ('+pct(gor)+' vs. '+pct(cor)+' in '+DL+').'); }
+    if(S.gtUnder>0) neg.push('Grid Tasks billed '+money(S.gtUnder)+' below the matching pricebook tasks.');
+    if(S.gtVague>0) neg.push(S.gtVague+' Grid Task'+(S.gtVague>1?'s':'')+' with a description too vague to verify.');
     if(S.notBilled>0) neg.push(S.notBilled+' job'+(S.notBilled>1?'s':'')+' where the write-up describes work that isn’t on the invoice.');
     if(S.poIssues>0) neg.push(S.poIssues+' job'+(S.poIssues>1?'s':'')+' with purchase-order / materials recording problems.');
     if(S.writeupIssues>0) neg.push(S.writeupIssues+' job'+(S.writeupIssues>1?'s':'')+' with a missing or unclear write-up.');
@@ -279,12 +280,13 @@ tr{page-break-inside:avoid;}
       M[mi].pos.push('Set '+LEADS.n+' lead'+(LEADS.n>1?'s':'')+' for a consultant or another department'+(LEADS.sold?' ('+LEADS.sold+' sold so far)':'')+(LEADS.avg>0?' \u2014 '+LEADS.dept+' dept average '+LEADS.avg.toFixed(1)+' per tech':'')+'. The sales stay with whoever ran those jobs: '+LEADS.list.map(function(j){ return esc(j.jobNumber)+' ('+esc(j.primaryTech)+')'; }).join(', ')+'.'); }
     var h='';
     h+='<div class="rhead"><h1>Technician Review — '+esc(tech)+'</h1><img src="assets/logo.png" alt="Lancaster Plumbing Heating Cooling"></div>';
-    var split = sections.map(function(x){return x.mine.length+' '+esc(x.dept);}).concat(minor.map(function(x){return x.n+' '+esc(x.dept);})).join(' · ');
-    h+='<div class="sub">Jobs completed '+dLong(from)+' – '+dLong(to)+' · Prepared '+new Date().toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'<br>'+mine.length+' jobs: '+split+'. '+
+    var nrN = mine.filter(function(j){return j._nr;}).length, realN = mine.length-nrN;
+    var split = sections.map(function(x){return x.mine.filter(function(j){return !j._nr;}).length+' '+esc(x.dept);}).concat(minor.map(function(x){return x.n+' '+esc(x.dept);})).join(' · ');
+    h+='<div class="sub">Jobs completed '+dLong(from)+' – '+dLong(to)+' · Prepared '+new Date().toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+'<br>'+realN+' jobs: '+split+(nrN?' ('+nrN+' non-repair visit'+(nrN>1?'s':'')+' not counted)':'')+'. '+
       (multi ? 'Each department is scored separately and compared only with other technicians’ work in that department.' : 'Compared with the '+sections[0].techCount+' technicians in the <b>'+esc(sections[0].dept)+'</b> department over the same period.')+
       (minor.length ? ' '+minor.map(function(x){return esc(x.dept);}).join(' and ')+' — too few jobs to score separately; those jobs still appear in notes, issues and jobs to discuss.' : '')+'</div>';
     sections.forEach(function(x,i){
-      if(multi) h+='<h2>'+esc(x.dept)+' <small>'+x.mine.length+' job'+(x.mine.length===1?'':'s')+' · '+(x.techCount<=1?'no other technician did enough '+esc(x.dept)+' work to compare':'compared with the '+x.techCount+' technicians doing '+esc(x.dept)+' work')+'</small></h2>';
+      if(multi) var xn=x.mine.filter(function(j){return !j._nr;}).length; h+='<h2>'+esc(x.dept)+' <small>'+xn+' job'+(xn===1?'':'s')+' · '+(x.techCount<=1?'no other technician did enough '+esc(x.dept)+' work to compare':'compared with the '+x.techCount+' technicians doing '+esc(x.dept)+' work')+'</small></h2>';
       h+=M[i].kpis;
     });
     var ul=function(a){ return '<ul class="pts">'+a.map(function(p){return '<li>'+p+'</li>';}).join('')+'</ul>'; };
