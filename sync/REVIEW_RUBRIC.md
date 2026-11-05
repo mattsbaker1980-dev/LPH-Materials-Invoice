@@ -85,6 +85,25 @@ Always copy `purchasedOnPO` into `materialsGapFor` for these jobs. This is a gui
 manager checking the PO, not an accusation — don't also raise it as a `not_billed` issue unless
 the write-up describes billable work that isn't priced anywhere on the invoice.
 
+## Replacement or new install? (only for jobs that have a `replaceCheck` block)
+
+The invoice bills a **"Replace Existing …"** task (`billed`). The pricebook has a more expensive
+**"Install New …"** twin (`installTask`) for the same equipment. Techs sometimes bill the cheaper
+replacement task on a first-time install to give the customer a better price, which loses the company money.
+
+Read the write-up (and `soldAs`, the sold estimate names) and decide:
+- `"replaced"` — the write-up says an old/existing unit of the same kind was removed, disconnected, swapped
+  out or replaced ("removed the old softener", "replaced the failed PRV").
+- `"new_install"` — the write-up describes a first-time install: adding tees, a bypass or loop, running a
+  new drain or supply line, tapping into the line, "new install", no previous unit — **and never mentions an
+  old unit coming out**. A sold estimate named "… install" with no mention of replacing also points here.
+- `"unclear"` — the write-up doesn't say either way.
+
+Mentions of the "existing water line" or "existing sewer line" are about the piping, not an old unit.
+Return `"replaceCode"` (copied `code`), `"replaceVerdict"`, and `"replaceEvidence"`: one short sentence quoting
+or paraphrasing what decided it, e.g. "Write-up says techs added two tees and a bypass and ran a new drain line;
+no old softener removed." Don't also raise it as an `issues` entry — the tool shows it as its own flag.
+
 ## General Time (only for jobs that have a `generalTime` block)
 
 Techs sometimes bill a "General Time" / Grid Task line (`gtCode` like GT-0075-0020 = 0.75 labor hours +

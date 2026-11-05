@@ -261,7 +261,7 @@ tr.reviewed td{opacity:.72;}
   var FLAG_LABELS = {
     no_options:'No options presented', one_option:'Only one option',
     po_not_billed:'PO costs, $0 invoiced', sold_not_found:'Sold, not billed yet', general_time:'General Time', gt_option:'General Time option', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
-    negative_margin:'Negative margin', material_not_recorded:'Material likely not recorded', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit',
+    negative_margin:'Negative margin', material_not_recorded:'Material likely not recorded', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit', replace_vs_new:'Billed as replacement, looks new',
     ai_not_billed:'Work done, not billed', ai_billed_not_described:'Billed, not described', ai_options:'Options gap',
     ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note'
   };
@@ -280,7 +280,8 @@ tr.reviewed td{opacity:.72;}
     high_material_cost:'Materials used on this job cost more than 30% of what the customer paid (the same check the old Materials vs Invoice page did). Usually means a part was under-priced, not billed, or materials were recorded on the wrong job.',
     negative_margin:'Costs are higher than revenue on this job. Usually fine on memberships and warranty; worth a look on sold work.',
     short_visit:'Very little time on site for a billed job. Check the timesheet.',
-    long_visit:'Much more time on site than is typical for this job type. Check the timesheet and whether it was sold/billed accordingly.'
+    long_visit:'About 2\u00bd times (or more) the time this visit should have taken. Expected time adds up the typical time for every task billed on the visit (system check + whatever was sold and done), from your own past jobs, or the pricebook hours when there isn\u2019t enough history, times the number of techs on the job. Check the timesheet.',
+    replace_vs_new:'The invoice uses a cheaper \u201cReplace Existing\u201d pricebook task, but there are signs this was a first-time install (the sale was called an install, or the write-up describes adding tees, a bypass or new lines and never mentions taking an old unit out). The \u201cInstall New\u201d task for the same equipment costs more \u2014 the difference is shown. Check photos in ServiceTitan for an old unit. This goes against whoever sold the job.'
   };
   var HOW_AI = 'Found by reading the tech\u2019s write-up against the invoice. Confirm in ServiceTitan.';
   var NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
@@ -725,7 +726,7 @@ tr.reviewed td{opacity:.72;}
     var med = j.medianHours;
     h+=taskTimeHtml(j);
     h+='<div class="facts">'+
-      '<div><span>Hours worked</span>'+hrs(d.hoursWorked)+(med?' <span class="none" style="display:inline;">(typical '+hrs(med)+')</span>':'')+'</div>'+
+      '<div><span>Hours worked</span>'+hrs(d.hoursWorked)+(j.expectedHours&&j.expectedHours.hrs?' <span class="none" style="display:inline;" title="'+esc(j.expectedHours.parts.map(function(x){return x.name+' '+x.hrs.toFixed(1)+'h'+(x.src==='pricebook'?' (pricebook)':'');}).join(' + ')+(j.expectedHours.crew>1?' (one tech), '+j.expectedHours.crew+' techs on the job':''))+'">(expected about '+hrs(j.expectedHours.hrs)+' of work'+(j.expectedHours.crew>1?'; '+j.expectedHours.crew+' techs on the job, so logged hours can run higher':'')+')</span>':(med?' <span class="none" style="display:inline;">(typical '+hrs(med)+')</span>':''))+'</div>'+
       '<div><span>Paid time</span>'+hrs(d.paidHours)+'</div>'+
       '<div><span>Sold hours</span>'+(d.soldHours?hrs(d.soldHours):'—')+'</div>'+
       '<div><span>Revenue</span>'+money2(j._rev)+'</div>'+
@@ -789,11 +790,11 @@ tr.reviewed td{opacity:.72;}
     var e=TT[tt.code]; if(!e) return '';
     var all=e.s.map(function(x){return x[2];}), dep=e.s.filter(function(x){return x[1]===j._dept;}).map(function(x){return x[2];}), me=e.s.filter(function(x){return x[0]===j.primaryTech;}).map(function(x){return x[2];});
     if(all.length<5) return '<div class="tasktime"><b>Task time</b> — '+esc(e.name)+': '+hrs(tt.hrs)+' on site. Not enough history on this task yet to compare ('+all.length+' job'+(all.length===1?'':'s')+').</div>';
-    var cm=q(all,0.5), d=tt.hrs-cm;
+    var th=tt.adj!=null?tt.adj:tt.hrs, cm=q(all,0.5), d=th-cm;
     var cmp = Math.abs(d)<0.05 ? 'right at the company median' : (mins(d)+' min '+(d<0?'faster':'slower')+' than the company median');
-    return '<div class="tasktime"><b>Task time</b> — '+esc(e.name)+': <b>'+hrs(tt.hrs)+'</b> on site, '+cmp+'. '+
+    return '<div class="tasktime"><b>Task time</b> — '+esc(e.name)+': <b>'+hrs(th)+'</b> '+(tt.adj!=null?'for this task':'on site')+', '+cmp+'. '+
       'Company median '+hrs(cm)+' ('+all.length+' jobs)'+(dep.length>=5?' · '+esc(j._dept)+' '+hrs(q(dep,0.5))+' ('+dep.length+')':'')+(me.length>=3?' · '+esc(j.primaryTech)+'’s usual '+hrs(q(me,0.5))+' ('+me.length+')':'')+
-      (tt.multi?'<span class="none" style="display:inline;"> · includes the system check / diagnosis on this visit</span>':'')+'</div>';
+      (tt.adj!=null?'<span class="none" style="display:inline;"> · '+hrs(tt.hrs)+' on site minus about '+hrs(tt.other)+' typical for the other work on this visit (system check etc.)</span>':tt.multi?'<span class="none" style="display:inline;"> · includes the system check / diagnosis on this visit</span>':'')+'</div>';
   }
   function renderTaskTimes(){
     if(!TT){ $('taskBody').innerHTML='<tr><td class="none" style="padding:24px;">Loading task history…</td></tr>'; loadTT().then(function(){ if(state.tab==='tasks') renderTaskTimes(); }); return; }

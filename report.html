@@ -73,7 +73,7 @@ tr{page-break-inside:avoid;}
   var NO_OPTION_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
   var LABEL = { no_options:'No options presented', one_option:'Only one option', po_not_billed:'PO costs on a $0 invoice', sold_not_found:'Sold work not billed yet',
     general_time:'Grid Task used', gt_option:'Option built from a Grid Task', po_not_recorded:'PO parts not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
-    negative_margin:'Negative margin', material_not_recorded:'Material likely not recorded', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit', ai_not_billed:'Work described but not billed',
+    negative_margin:'Negative margin', material_not_recorded:'Material likely not recorded', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit', replace_vs_new:'Billed as a replacement, looked like a new install', ai_not_billed:'Work described but not billed',
     ai_billed_not_described:'Billed but not described', ai_options:'Options gap', ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note' };
   var q = new URLSearchParams(location.search), tech=q.get('tech')||'', from=q.get('from')||'', to=q.get('to')||'';
   var $=function(id){return document.getElementById(id);};

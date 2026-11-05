@@ -358,7 +358,7 @@ const DEMAND_CALL = /(concern|leak|drain stoppage|no power|no water|(sump|well|s
 // The installer keeps time on site, materials recorded, PO vs materials used and the write-up.
 const INSTALLERS = ['Josh R.', 'Bill P.', 'Ben L.'];
 const INSTALL_JOB = /(sold work|install|non-repair|warranty|callback)/i;
-const SALES_FLAGS = new Set(['no_options', 'one_option', 'general_time', 'gt_option', 'sold_not_found', 'po_not_billed', 'ai_not_billed']);
+const SALES_FLAGS = new Set(['no_options', 'one_option', 'general_time', 'gt_option', 'sold_not_found', 'po_not_billed', 'ai_not_billed', 'replace_vs_new']);
 const UNKNOWN_SELLER = 'Seller not on report';
 function sellerOf(job) {
   const s = String((job.detail && job.detail.soldBy) || '').trim();
@@ -383,7 +383,10 @@ function workTasks(j) {
   }
   return [...seen.values()];
 }
-function repairTasks(j) { return workTasks(j).filter((t) => !WRAPPER.test(t.name + ' ' + t.code)); }
+// A "check" task is a wrapper unless it also names real work (e.g. "Tankless Water Heater Service WITH SYSTEM CHECK").
+const REAL_WORK = /(service|repair|replace|install|flush|descal|clean(?! & check)|clear|jet|rebuild|upgrade)/i;
+const isWrapper = (t) => WRAPPER.test(t.name + ' ' + t.code) && !(/system check/i.test(t.name) && REAL_WORK.test(t.name.replace(/system check/ig, '')));
+function repairTasks(j) { return workTasks(j).filter((t) => !isWrapper(t)); }
 // The visit time belongs to a task when it is the only repair task on the job (a system check may also be on it)
 function taskTimeOf(j) {
   const hrs = j.detail && j.detail.hoursWorked;
@@ -423,6 +426,90 @@ function deriveRules(counts, pb) {
     if (list.length) rules[code] = { name: (pbSvc.get(code) || {}).name || code, jobs: c.n, materials: list.sort((a, b) => b.rate - a.rate) };
   }
   return rules;
+}
+
+// ---------------------------------------------------------------- "Replace Existing" billed on a new install
+// Pair each pricebook "Replace (an) Existing X w/ (a) New Y" task with its "Install New Y" twin.
+const REPLACE_RE = /^replace (an )?existing\b/i;
+const tailKey = (s) => String(s || '').toLowerCase()
+  .replace(/^replace (an )?existing .*? w\/ (a )?new\s*/i, '').replace(/^replace (an )?existing( with)? new\s*/i, '').replace(/^install (a )?new\s*/i, '')
+  .replace(/\b(\d+)\.0\b/g, '$1').replace(/cu\s*\/?\s*ft/g, 'cuft').replace(/[^a-z0-9 ]+/g, ' ').replace(/\b(a|an|the|w|with|for)\b/g, ' ').replace(/\s+/g, ' ').trim();
+let _rpCache = null;
+function replacePairs(pb) {
+  if (!pb || !pb.services) return null;
+  if (_rpCache && _rpCache.pb === pb) return _rpCache.map;
+  const installs = new Map();
+  pb.services.filter((x) => /^install (a )?new\b/i.test(x.name) && x.price > 0).forEach((x) => { const k = tailKey(x.name); if (k && !installs.has(k)) installs.set(k, x); });
+  const map = new Map();
+  pb.services.filter((x) => REPLACE_RE.test(x.name) && x.price > 0).forEach((x) => { const t = installs.get(tailKey(x.name)); if (t && t.price > x.price) map.set(x.code, { replace: x, install: t }); });
+  _rpCache = { pb, map };
+  return map;
+}
+const TIERS = ['price', 'member', 'addOn', 'addOnMember'];
+const tierOf = (task, price) => TIERS.filter((k) => task[k] > 0).sort((a, b) => Math.abs(task[a] - price) - Math.abs(task[b] - price))[0] || 'price';
+const TIER_NAME = { price: 'standard', member: 'member', addOn: 'add-on', addOnMember: 'member add-on' };
+const NEW_WORDS = /(new install|first time|never had|no (existing|previous|prior) (unit|softener|system|neutralizer)|did(n't| not) have (a|an) |add(ed|ing)? (a |two |2 |new )?(tee|t\b|bypass|drain)|ran (a |the |new )?(new )?(drain|line|water line|supply)|install(ed)? (new )?(valves|bypass|loop|drain)|tapped into|cut (in|into) the)/i;
+// removal has to be about the equipment itself (removing hose bibs or an old hose doesn't count)
+const UNIT = '(unit|softener|neutralizer|sanitizer|conditioner|filter|system|tank|equipment|recept\\w*|prv|pressure reducing valve|expansion tank)';
+const REMOVE_WORDS = new RegExp(`((remov\\w*|haul\\w*|dispos\\w*|took out|take out|pulled out|swap\\w* out|disconnect\\w*|replac\\w*|demo\\w*)\\W+(\\w+\\W+){0,6}?(old|existing|pre-?existing|previous|failed|current|leaking)?\\W*(\\w+\\W+){0,3}?${UNIT}|(old|pre-?existing|previous|existing) (\\w+ ){0,3}?${UNIT}\\W+(\\w+\\W+){0,4}?(remov\\w*|haul\\w*|dispos\\w*|disconnect\\w*|replac\\w*|out))`, 'i');
+const SELL_NEW = /\b(install|new|add)\b/i, SELL_REPLACE = /\b(replac|swap|change ?out)/i;
+function replaceCheck(job, ctx) {
+  const pairs = ctx.replacePairs; if (!pairs) return [];
+  const items = job.invoices.flatMap((i) => i.items || []);
+  const writeUp = job.invoices.map((i) => i.summary || '').join('\n');
+  const sold = job.estimates.filter((e) => e.status === 'Sold').map((e) => e.name || '').concat(job.fromEstimate ? [job.fromEstimate.estimateName || ''] : []);
+  const ai = job.aiReview && job.aiReview.replace;
+  const out = [];
+  const money = (n) => '$' + Math.round(n).toLocaleString();
+  for (const x of items) {
+    const p = pairs.get(x.code); if (!p || !(x.price > 0)) continue;
+    const tier = tierOf(p.replace, x.price), twin = p.install[tier] || p.install.price, gap = twin - x.price;
+    if (gap < 100) continue;
+    const why = [];
+    let level = null;
+    if (ai && ai.code === x.code) {
+      if (ai.verdict === 'replaced') continue;           // Claude read the write-up: an old unit really came out
+      if (ai.verdict === 'new_install') { level = 'warn'; why.push(ai.evidence || 'write-up describes a new install'); }
+      if (ai.verdict === 'unclear') { level = 'info'; why.push(ai.evidence || 'write-up doesn\u2019t say whether an old unit came out'); }
+    }
+    const soldNew = sold.filter((n) => SELL_NEW.test(n) && !SELL_REPLACE.test(n));
+    if (soldNew.length) { level = 'warn'; if (!(ai && ai.code === x.code && ai.verdict === 'new_install')) why.push(`sold as "${soldNew[0]}"`); }
+    if (!(ai && ai.code === x.code)) {
+      const nw = writeUp.match(NEW_WORDS);
+      if (writeUp && nw && !REMOVE_WORDS.test(writeUp)) { level = level || 'warn'; why.push(`write-up describes new work ("${nw[0]}") and never mentions removing an old unit`); }
+      else if (writeUp && !REMOVE_WORDS.test(writeUp) && !level) { level = 'info'; why.push('write-up never mentions removing an old unit'); }
+    }
+    if (!level) continue;
+    out.push({ code: 'replace_vs_new', level, text: `Billed "${x.name}" at ${money(x.price)} — the "${p.install.name}" task is ${money(twin)} (${TIER_NAME[tier]} price), ${money(gap)} more. ${why.map((w) => w.replace(/[.\s]+$/, '')).join('; ').replace(/^./, (c) => c.toUpperCase())}.` });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- expected time on site
+// Typical hours for each pricebook task, from single-task visits (history + daily jobs); pricebook hours as a fallback.
+function taskHoursMap(taskTimes, live) {
+  const s = {};
+  Object.values((taskTimes && taskTimes.tasks) || {}).forEach((t) => { (t.samples || []).forEach((x) => { if (!x[4]) (s[t.code] = s[t.code] || []).push(x[2]); }); });
+  Object.values((live && live.jobs) || {}).forEach((x) => { if (!x[5]) (s[x[0]] = s[x[0]] || []).push(x[3]); });
+  const out = {};
+  for (const [k, a] of Object.entries(s)) if (a.length >= 5) out[k] = { hrs: median(a), n: a.length };
+  return out;
+}
+function expectedHours(job, ctx) {
+  const tasks = workTasks(job); if (!tasks.length) return null;
+  const pb = ctx.pbSvc || new Map();
+  const COUPON = /(\$\s?\d+\s*(off|or free)|% off|off any|coupon|special|gift)/i;
+  const parts = tasks.filter((t) => !(COUPON.test(t.name + ' ' + t.code) || ((t.price || 0) <= 0 && !(ctx.taskHours && ctx.taskHours[t.code]) && !((pb.get(t.code) || {}).hours > 0)))).map((t) => {
+    const h = ctx.taskHours && ctx.taskHours[t.code];
+    if (h) return { name: t.name, hrs: Math.round(h.hrs * 100) / 100, src: 'history' };
+    const p = pb.get(t.code);
+    if (p && p.hours > 0) return { name: t.name, hrs: p.hours, src: 'pricebook' };
+    return { name: t.name, hrs: null, src: null };
+  });
+  if (!parts.length || parts.some((x) => x.hrs == null)) return { parts, hrs: null };
+  const crew = Math.max(1, String((job.detail && job.detail.assignedTechs) || '').split(',').map((x) => x.trim()).filter(Boolean).length);
+  // a second tech adds ~70% more logged hours on average (combined crew time), not 100%
+  return { parts, hrs: Math.round(parts.reduce((a, x) => a + x.hrs, 0) * 100) / 100, crew, crewFactor: Math.round((1 + 0.7 * (crew - 1)) * 100) / 100 };
 }
 
 function computeFlags(job, ctx) {
@@ -478,7 +565,7 @@ function computeFlags(job, ctx) {
         level = m.diff > 25 && m.confidence !== 'low' ? 'warn' : 'info';
       } else if (m && m.reason === 'too_vague') { t += ' — description too vague to verify what was charged'; level = 'warn'; }
       else if (m && m.reason === 'not_work') { t += ' — not a work description (diagnosis/note)'; level = 'warn'; }
-      else if (m) t += ' — custom work, no matching pricebook task';
+      else if (m) return; // custom work with no comparable pricebook task: not an issue
       add('general_time', level, t);
     });
   }
@@ -498,7 +585,7 @@ function computeFlags(job, ctx) {
         t += ` — pricebook: ${m.taskName} = ${money(m.taskPrice)}; ` + (Math.abs(m.diff) < 1 ? 'same price' : m.diff > 0 ? `offered ${money(m.diff)} BELOW the task price` : `offered ${money(m.diff)} ABOVE the task price`) + (m.confidence === 'low' ? ' (low-confidence match)' : '');
         level = m.diff > 25 && m.confidence !== 'low' ? 'warn' : 'info';
       } else if (m && m.reason === 'too_vague') { t += ' — option description too vague to verify'; level = 'warn'; }
-      else if (m) t += ' — custom work, no matching pricebook task';
+      else if (m) return; // no comparable pricebook task: not an issue
       add('gt_option', level, t);
     });
   }
@@ -550,12 +637,24 @@ function computeFlags(job, ctx) {
     const hw = d.hoursWorked || 0;
     const med = ctx.medianHoursByType[type];
     if (hw > 0 && hw < 0.25 && revenue > 0) add('short_visit', 'info', `Only ${Math.round(hw * 60)} min on site for a billed job`);
-    if (med && hw >= 3 && hw > med * 3) {
+    // Hours worked are the whole crew's combined time, and cover every task done on the visit
+    // (a system check + the work sold on it), so the yardstick is the sum of each billed task's typical time × crew.
+    const ex = expectedHours(job, ctx);
+    if (ex && ex.hrs > 0) {
+      const allow = ex.hrs * ex.crewFactor;
+      if (hw >= 3 && hw > allow * 2.5 && hw - allow >= 2.5) {
+        const list = ex.parts.map((x) => `${x.name} ${x.hrs.toFixed(1)}h`).join(' + ');
+        add('long_visit', 'info', `${hw.toFixed(1)} hrs on site vs. about ${allow.toFixed(1)} hrs expected (${list}${ex.crew > 1 ? `, ${ex.crew} techs on the job` : ''})`);
+      }
+    } else if (med && hw >= 3 && hw > med * 3 && !(ex && ex.parts.length > 1)) {
       const crew = String(d.assignedTechs || '').split(',').map((x) => x.trim()).filter(Boolean).length;
-      const ctxt = [d.soldHours > 0 ? `${d.soldHours} hrs sold` : '', crew > 1 ? `${crew} techs on the job, hours may be combined` : ''].filter(Boolean).join('; ');
-      add('long_visit', 'info', `${hw.toFixed(1)} hrs on site — ${(hw / med).toFixed(1)}× typical for ${type}${ctxt ? ' · ' + ctxt : ''}`);
+      if (crew <= 1 || hw > med * 3 * crew) {
+        const ctxt = [d.soldHours > 0 ? `${d.soldHours} hrs sold` : '', crew > 1 ? `${crew} techs on the job` : ''].filter(Boolean).join('; ');
+        add('long_visit', 'info', `${hw.toFixed(1)} hrs on site — ${(hw / med).toFixed(1)}× typical for ${type}${ctxt ? ' · ' + ctxt : ''}`);
+      }
     }
   }
+  replaceCheck(job, ctx).forEach((x) => f.push(x));
   // sales-side flags on a job someone else sold go to the seller
   const seller = sellerOf(job);
   if (seller) f.forEach((x) => { if (SALES_FLAGS.has(x.code)) x.owner = seller; });
@@ -644,9 +743,9 @@ function recomputeMonth(monthData, pb) {
   const jobs = Object.values(monthData.jobs);
   const byType = {};
   jobs.forEach((j) => { if (j.detail && j.detail.hoursWorked > 0) (byType[j.jobType] = byType[j.jobType] || []).push(j.detail.hoursWorked); });
-  const ctx = { medianHoursByType: {}, gtPrice: gtPriceMap(pb), matRules: (pb && pb._matRules) || null };
+  const ctx = { medianHoursByType: {}, gtPrice: gtPriceMap(pb), matRules: (pb && pb._matRules) || null, replacePairs: replacePairs(pb), taskHours: (pb && pb._taskHours) || null, pbSvc: new Map(((pb && pb.services) || []).map((x) => [x.code, x])) };
   for (const [t, a] of Object.entries(byType)) if (a.length >= 5) ctx.medianHoursByType[t] = median(a);
-  jobs.forEach((j) => { const sl = sellerOf(j); if (sl) j.seller = sl; else delete j.seller; if (INSTALLERS.includes(j.primaryTech)) j.installer = true; else delete j.installer; j.flags = computeFlags(j, ctx); j.medianHours = ctx.medianHoursByType[j.jobType] || null; const tt = taskTimeOf(j); if (tt) j.taskTime = tt; else delete j.taskTime; });
+  jobs.forEach((j) => { const sl = sellerOf(j); if (sl) j.seller = sl; else delete j.seller; if (INSTALLERS.includes(j.primaryTech)) j.installer = true; else delete j.installer; j.flags = computeFlags(j, ctx); j.medianHours = ctx.medianHoursByType[j.jobType] || null; const tt = taskTimeOf(j); const ex = j.detail ? expectedHours(j, ctx) : null; if (tt && tt.multi && ex && ex.parts.length > 1) { const other = ex.parts.filter((x) => x.name !== tt.name).reduce((s2, x) => s2 + (x.hrs || 0), 0); if (other > 0) { tt.other = Math.round(other * 100) / 100; tt.adj = Math.max(0, Math.round((tt.hrs - other) * 100) / 100); } } if (tt) j.taskTime = tt; else delete j.taskTime; if (ex && ex.hrs) j.expectedHours = ex; else delete j.expectedHours; });
   monthData.updatedAt = new Date().toISOString();
   monthData.jobCount = jobs.length;
   monthData.flaggedCount = jobs.filter((j) => j.flags.some((x) => x.level === 'warn')).length;
@@ -841,6 +940,7 @@ async function main() {
     matRules = deriveRules(counts, pbData);
   }
   if (pbData) pbData._matRules = matRules;
+  if (pbData) pbData._taskHours = taskHoursMap((await store.read('data/baseline/task_times.json')).data, live);
   // 4a. link sold estimates to follow-up jobs across the touched months and their neighbours
   const touched = Object.keys(monthCache).filter((m) => monthCache[m].dirty);
   const near = (m, d) => { const [y, mm] = m.split('-').map(Number); const t = new Date(Date.UTC(y, mm - 1 + d, 1)); return t.toISOString().slice(0, 7); };
@@ -897,4 +997,4 @@ async function writeLog(store, log) {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e.stack || e.message); process.exit(1); });
 
-module.exports = { sellerOf, INSTALLERS, DEMAND_CALL, matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
+module.exports = { replacePairs, tierOf, expectedHours, taskHoursMap, isWrapper, sellerOf, INSTALLERS, DEMAND_CALL, matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
