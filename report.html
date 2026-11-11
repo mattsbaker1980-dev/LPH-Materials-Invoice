@@ -178,18 +178,29 @@ tr{page-break-inside:avoid;}
     j._gt = j._exGT ? [] : j.invoices.flatMap(function(i){return i.items||[];}).filter(function(x){return /^GT-\d{4}-\d{4}$/i.test(x.code||'');}).map(function(x){return {x:x,m:gm[x.code+'|'+x.price]};});
     j._nr = /non.?repair/i.test(j.jobType||''); // a non-repair visit isn't counted as a job
     j._warn = j.flags.filter(function(f){return f.level==='warn';});
-    // SPP (system check / maintenance) vs. Demand calls, for conversion rate and average sale
+    // SPP (system check) vs. Demand calls, counted the way the Nexstar C&T Mgr reports count them
+    // (the C&T is the source of truth for conversion and average sale):
+    //  - Calls run: opportunity calls in a System Check or Demand/Sewer Service business unit. COD system checks are a
+    //    separate C&T category and aren't counted. A $0 demand visit where nothing converted and no option was
+    //    presented isn't counted as a call run.
+    //  - Money calls: calls ServiceTitan marks converted, plus "Sold Work" follow-up jobs that brought in revenue
+    //    (the C&T counts those as money calls, not as calls run).
+    //  - Sales: invoiced revenue on all of the above, so average sale = revenue / money calls.
     var bu=String(j.businessUnit||'');
-    j._kind = !j._opp ? null : /system c|sys ck/i.test(bu) ? 'spp' : (/demand/i.test(bu) || /^sewer service/i.test(bu)) ? 'dem' : null;
+    var ctKind = (/system c|sys ck/i.test(bu) && !/cod/i.test(bu)) ? 'spp' : (/demand/i.test(bu) || /^sewer service/i.test(bu)) ? 'dem' : null;
+    j._soldWork = /sold work/i.test(j.jobType||'');
+    j._ctFollow = ctKind && j._soldWork && (j._rev||0) > 0 ? ctKind : null;
+    j._kind = !j._opp ? null : ctKind;
+    if(j._kind==='dem' && !(j._rev>0) && !d.converted && j._opts===0) j._kind = null;
     j._conv = !!d.converted;
-    // Sale = sold estimates, or the invoice when the work was sold straight onto the invoice (common on demand calls)
-    j._sale = Math.max(d.estimateSales!=null ? +d.estimateSales||0 : j._soldAmt, j._rev||0);
+    j._sale = j._rev||0;
   }
   function stats(list){
     var s={jobs:list.filter(function(j){return !j._nr;}).length, nr:list.length-list.filter(function(j){return !j._nr;}).length, rev:0, opp:0, optSum:0, noOpt:0, checks:0, checksNo:0, est:0, sold:0, soldAmt:0, hrs:0, flagged:0, reviewed:0, aiIssues:0,
       sppJobs:0, sppConv:0, sppSales:0, demJobs:0, demConv:0, demSales:0, gtLines:0, gtLinesQ:0, gtOptions:0, gtOptionsOk:0, gtBilled:0, gtUnder:0, gtVague:0, poIssues:0, writeupIssues:0, notBilled:0};
     list.forEach(function(j){
-      if(j._kind){ s[j._kind+'Jobs']++; if(j._conv){ s[j._kind+'Conv']++; s[j._kind+'Sales']+=j._sale; } }
+      if(j._kind){ s[j._kind+'Jobs']++; s[j._kind+'Sales']+=j._sale; if(j._conv) s[j._kind+'Conv']++; }
+      if(j._ctFollow){ s[j._ctFollow+'Conv']++; s[j._ctFollow+'Sales']+=j._sale; }
       s.rev+=j._rev; s.hrs+=j._hrs; if(j._warn.length) s.flagged++;
       if(j._opp){ s.opp++; s.optSum+=j._opts; if(j._opts===0) s.noOpt++; }
       if(j._check){ s.checks++; if(j._opts===0) s.checksNo++; }
@@ -242,7 +253,7 @@ tr{page-break-inside:avoid;}
       h+='<div class="kpis" style="margin-top:8px;">'+
         kk('SPP',S.sppJobs,S.sppRate,S.sppAvg,C.sppRate,C.sppAvg,C.sppJobs)+
         kk('Demand',S.demJobs,S.demRate,S.demAvg,C.demRate,C.demAvg,C.demJobs)+'</div>';
-      h+='<div class="muted" style="font-size:11px;margin-top:4px;">SPP: '+S.sppConv+' of '+S.sppJobs+' system checks converted, '+money(S.sppSales)+' sold · Demand: '+S.demConv+' of '+S.demJobs+' calls converted, '+money(S.demSales)+' sold. Opportunity calls only (warranty, recall, sold-work, non-repair and install jobs excluded).</div>';
+      h+='<div class="muted" style="font-size:11px;margin-top:4px;">SPP: '+S.sppConv+' money calls on '+S.sppJobs+' system checks, '+money(S.sppSales)+' revenue · Demand: '+S.demConv+' money calls on '+S.demJobs+' calls, '+money(S.demSales)+' revenue. Counted like the C&amp;T Mgr report: money calls include sold-work follow-ups; warranty, recall, non-repair, install and COD jobs, and $0 demand visits with no options, aren’t counted as calls run.</div>';
     }
 
     var pos=[], neg=[];
