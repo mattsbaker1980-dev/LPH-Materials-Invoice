@@ -14,6 +14,7 @@
 //   /api/materials-jobs-clear     {}                           reset data/jobs.json to []
 //
 //   /api/state, /api/state/status, /api/state/note, /api/state/log   Job Review marks + notes (Cloudflare D1, see below)
+//   /api/standards/get|save|settings|replace                         Minimum Standards shared data (data/standards/data.json)
 //
 // Required binding: DB — a Cloudflare D1 database (Settings -> Bindings -> D1 database, variable name DB).
 // Required secret: GITHUB_TOKEN — a fine-grained PAT scoped to just this repo,
@@ -331,7 +332,59 @@ const STATE_ROUTES = {
   '/api/state/log': handleStateLog,
 };
  
+// ---------------------------------------------------------------------------
+// Minimum Standards tool (standards/index.html): one shared data file so everyone who
+// opens the page sees the same C&T imports, goals and roster.
+//   /api/standards/get       {}                                         -> { ok, data }
+//   /api/standards/save      { dept:'P'|'S', month:'YYYY-MM', records:[...], note } replace that dept+month
+//   /api/standards/settings  { goals?, roster? }                         -> { ok, data }
+//   /api/standards/replace   { data:{ records, goals, roster, imports } } restore a backup
+// ---------------------------------------------------------------------------
+const STANDARDS_PATH = 'data/standards/data.json';
+const emptyStandards = () => ({ records: [], goals: null, roster: {}, imports: [] });
+function stdNorm(d) { const o = Object.assign(emptyStandards(), d || {}); o.records = asArray(o.records); o.imports = asArray(o.imports); return o; }
+
+async function handleStandardsGet(token) {
+  const { data } = await ghGet(token, STANDARDS_PATH);
+  return json({ ok: true, data: data ? stdNorm(data) : null });
+}
+async function handleStandardsSave(token, body) {
+  const dept = body.dept, month = String(body.month || '');
+  if (!['P', 'S'].includes(dept) || !/^\d{4}-\d{2}$/.test(month) || !Array.isArray(body.records)) return json({ ok: false, error: 'dept, month and records are required' }, 400);
+  const recs = body.records.filter((r) => r && typeof r.t === 'string' && typeof r.d === 'string' && r.d.slice(0, 7) === month).map((r) => {
+    const o = { p: dept, t: r.t.slice(0, 80), d: r.d.slice(0, 10) };
+    ['dc', 'dm', 'dr', 'sc', 'sm', 'sr'].forEach((k) => { if (typeof r[k] === 'number' && isFinite(r[k])) o[k] = r[k]; });
+    return o;
+  });
+  const out = await ghUpdate(token, STANDARDS_PATH, (d) => {
+    const s = stdNorm(d);
+    s.records = s.records.filter((r) => !(r.p === dept && String(r.d).slice(0, 7) === month)).concat(recs);
+    s.imports.unshift({ at: new Date().toISOString(), msg: String(body.note || `${dept} ${month}`).slice(0, 300) });
+    s.imports = s.imports.slice(0, 50);
+    return { data: s };
+  }, `Minimum Standards: import ${dept === 'P' ? 'Plumbing' : 'Sewer'} ${month} (${recs.length} day rows)`);
+  return json({ ok: true, data: out.data });
+}
+async function handleStandardsSettings(token, body) {
+  const out = await ghUpdate(token, STANDARDS_PATH, (d) => {
+    const s = stdNorm(d);
+    if (body.goals && typeof body.goals === 'object') s.goals = body.goals;
+    if (body.roster && typeof body.roster === 'object') s.roster = body.roster;
+    return { data: s };
+  }, 'Minimum Standards: update goals/roster');
+  return json({ ok: true, data: out.data });
+}
+async function handleStandardsReplace(token, body) {
+  if (!body.data || !Array.isArray(body.data.records)) return json({ ok: false, error: 'data.records is required' }, 400);
+  const out = await ghUpdate(token, STANDARDS_PATH, () => ({ data: stdNorm(body.data) }), `Minimum Standards: restore data (${body.data.records.length} day rows)`);
+  return json({ ok: true, data: out.data });
+}
+
 const ROUTES = {
+  '/api/standards/get': handleStandardsGet,
+  '/api/standards/save': handleStandardsSave,
+  '/api/standards/settings': handleStandardsSettings,
+  '/api/standards/replace': handleStandardsReplace,
   '/api/materials-jobs': handleJobsUpsert,
   '/api/materials-invoice-checks': handleInvoiceChecksUpsert,
   '/api/materials-invoice-status': handleInvoiceStatus,
