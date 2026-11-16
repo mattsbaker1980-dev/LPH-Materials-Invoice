@@ -832,7 +832,8 @@ $('btn-reset').addEventListener('click', () => {
   if (!confirm('Replace all data with the built-in 2026 data? Your goals are kept; imported months are removed.')) return;
   state.records = SEED.slice(); state.imports.unshift({at: new Date().toISOString(), msg: 'Reset to built-in 2026 data.'}); saveState(); applyPreset(ui.preset || 'ytd'); render(); renderData(); toast('Data reset');
 });
-let rT; window.addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { renderBars(); renderDetail(); }, 120); });
+let rT, lastW = window.innerWidth; window.printing = false;
+window.addEventListener('resize', () => { if (window.printing || window.innerWidth === lastW) return; lastW = window.innerWidth; clearTimeout(rT); rT = setTimeout(() => { if (!window.printing) { renderBars(); renderDetail(); } }, 150); });
 
 
 // ---------- report cards ----------
@@ -954,9 +955,29 @@ function printReportCards(techs) {
   const maxH = 10.1 * 96;
   host.querySelectorAll('.rc').forEach((c) => { c.style.zoom = ''; c.style.width = '7.7in'; const h = c.getBoundingClientRect().height; c.style.width = ''; if (h > maxH) c.style.zoom = (maxH / h).toFixed(3); });
   Object.assign(host.style, {display: '', position: '', left: '', top: ''});
-  const old = document.title;
-  document.title = techs.length === 1 ? `Report Card - ${techs[0]} - ${periodLabel(ui.from, ui.to)}` : `Report Cards - ${DEPT[ui.dept]} - ${periodLabel(ui.from, ui.to)}`;
-  setTimeout(() => { window.print(); document.title = old; }, 50);
+  const title = techs.length === 1 ? `Report Card - ${techs[0]} - ${periodLabel(ui.from, ui.to)}` : `Report Cards - ${DEPT[ui.dept]} - ${periodLabel(ui.from, ui.to)}`;
+  const css = [...document.querySelectorAll('style')].map((s) => s.textContent).join('\n');
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + css +
+    '\nbody{background:#fff;margin:0}#report{display:block}.rc{page-break-after:always;width:auto}.rc:last-child{page-break-after:auto}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}@media screen{.rc{max-width:7.7in;margin:0 auto 24px}}</style></head><body><div id="report">' + host.innerHTML + '</div></body></html>';
+  host.innerHTML = '';
+  document.querySelectorAll('iframe.rc-frame').forEach((f) => f.remove());
+  const frame = document.createElement('iframe');
+  frame.className = 'rc-frame';
+  frame.setAttribute('aria-hidden', 'true');
+  Object.assign(frame.style, {position: 'fixed', right: '0', bottom: '0', width: '8.5in', height: '11in', border: '0', opacity: '0', pointerEvents: 'none'});
+  document.body.appendChild(frame);
+  const done = () => { window.printing = false; setTimeout(() => frame.remove(), 1000); };
+  frame.onload = () => {
+    const w = frame.contentWindow;
+    w.addEventListener('afterprint', done);
+    window.printing = true;
+    setTimeout(() => {
+      try { w.focus(); w.print(); }
+      catch (e) { done(); toast('Could not open the print window: ' + e.message); return; }
+    }, 150);
+  };
+  frame.srcdoc = html;
+  setTimeout(() => { window.printing = false; }, 120000);
 }
 $('btn-rc').addEventListener('click', () => { if (ui.tech) printReportCards([ui.tech]); });
 $('btn-rc-all').addEventListener('click', () => {
