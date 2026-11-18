@@ -8,7 +8,7 @@
 // workbook (no truncation, no broken multi-line cells).
 //
 // Usage:
-//   node gmail_extract.js <outDir> <rawMessageFile1> [rawMessageFile2 ...]
+//   node gmail_extract.js <outDir> <rawMessageFile1 | xlsxPath::Original Name.xlsx> [...]
 // Prints one line per extracted file: EXTRACTED <path>
 
 const fs = require('fs');
@@ -18,7 +18,8 @@ function decodeRawMessage(filePath) {
   const txt = fs.readFileSync(filePath, 'utf8').trim();
   let raw;
   try {
-    const j = JSON.parse(txt);
+    let j = JSON.parse(txt);
+    if (Array.isArray(j) && j[0] && typeof j[0].text === 'string') j = JSON.parse(j[0].text);
     raw = j.raw || (j.message && j.message.raw);
   } catch (e) {
     raw = txt; // allow a bare base64url string
@@ -97,7 +98,23 @@ if (require.main === module) {
   }
   fs.mkdirSync(outDir, { recursive: true });
   let count = 0;
-  for (const f of files) {
+  for (const arg of files) {
+    // Direct attachment: "<path>::<original file name>" (or a bare .xlsx path), as saved by the
+    // Gmail download_gmail_attachment tool. Copied as-is, keeping the original name.
+    const sep = arg.indexOf('::');
+    const f = sep >= 0 ? arg.slice(0, sep) : arg;
+    let head = Buffer.alloc(0);
+    try { const fd = fs.openSync(f, 'r'); head = Buffer.alloc(2); fs.readSync(fd, head, 0, 2, 0); fs.closeSync(fd); } catch (e) { console.log(`ERROR ${f}: ${e.message}`); continue; }
+    if (head[0] === 0x50 && head[1] === 0x4b) {
+      const buf = fs.readFileSync(f);
+      const name = sep >= 0 ? arg.slice(sep + 2) : path.basename(f);
+      const safe = name.replace(/[^A-Za-z0-9._ -]/g, '_');
+      const dest = path.join(outDir, `${count}_${safe}`);
+      fs.writeFileSync(dest, buf);
+      count++;
+      console.log(`EXTRACTED ${dest} (${buf.length} bytes, direct attachment)`);
+      continue;
+    }
     try {
       const { subject, attachments } = extract(f);
       if (attachments.length === 0) { console.log(`NO_ATTACHMENT ${f} (subject: ${subject})`); continue; }
