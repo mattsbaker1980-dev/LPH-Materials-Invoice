@@ -185,6 +185,8 @@ td.low{opacity:.5}
         <input type="date" id="d-from" aria-label="From date"> <span style="color:var(--muted)">to</span> <input type="date" id="d-to" aria-label="To date">
       </div>
       <div class="presets" id="presets">
+        <button class="chip" data-p="yday" title="The last workday (Friday when today is Monday)">Yesterday</button>
+        <button class="chip" data-p="l3d" title="The last 3 workdays, Mon–Fri, not counting today">Last 3 days</button>
         <button class="chip" data-p="this">This month</button>
         <button class="chip" data-p="last">Last month</button>
         <button class="chip" data-p="l3">Last 3 months</button>
@@ -832,7 +834,10 @@ function applyPreset(p) {
   const last = latestDate(ui.dept) || iso(new Date());
   const L = parseIso(last); const y = L.getFullYear(), m = L.getMonth();
   let from, to = last;
-  if (p === 'this') from = iso(new Date(y, m, 1));
+  const workdaysBack = (n) => { const out = []; const d = new Date(); d.setHours(0, 0, 0, 0); while (out.length < n) { d.setDate(d.getDate() - 1); if (d.getDay() !== 0 && d.getDay() !== 6) out.push(new Date(d)); } return out; };
+  if (p === 'yday') { from = to = iso(workdaysBack(1)[0]); }
+  else if (p === 'l3d') { const w = workdaysBack(3); from = iso(w[2]); to = iso(w[0]); }
+  else if (p === 'this') from = iso(new Date(y, m, 1));
   else if (p === 'last') { from = iso(new Date(y, m - 1, 1)); to = iso(new Date(y, m, 0)); }
   else if (p === 'l3') { from = iso(new Date(y, m - 3, 1)); to = iso(new Date(y, m, 0)); }
   else if (p === 'ytd') from = iso(new Date(y, 0, 1));
@@ -1279,6 +1284,7 @@ window.addEventListener('resize', () => { if (window.printing || window.innerWid
 
 // ---------- report cards ----------
 function periodLabel(from, to) {
+  if (from === to) return prettyDate(from);
   const a = parseIso(from), b = parseIso(to);
   const endOfMonth = new Date(b.getFullYear(), b.getMonth() + 1, 0);
   if (a.getDate() === 1 && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) {
