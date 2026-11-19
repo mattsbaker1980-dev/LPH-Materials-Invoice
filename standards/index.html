@@ -41,6 +41,12 @@ button,input,select{font:inherit}
 .banner{margin-top:14px;background:var(--warn-bg);color:#7c3a06;border:1px solid #f7d58a;border-radius:10px;padding:10px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .banner.est{background:#eef4ff;color:#1e3a8a;border-color:#bfd3fb}
 .tag.est{color:#1d4ed8;font-weight:600}
+.trend{display:inline-block;width:22px;text-align:center;font-weight:800;margin-right:4px;cursor:help;font-size:13px}
+.trend.hot{color:#ea580c}.trend.up{color:var(--ok)}.trend.flat{color:#94a3b8}.trend.down{color:var(--bad)}.trend.cold{color:#1d4ed8}.trend.na{color:#cbd5e1}
+table.eq td{white-space:nowrap}table.eq td .r{font-weight:700}table.eq td .s{display:block;font-size:11px;color:var(--muted)}
+table.eq td.better{background:#ecfdf3}table.eq td.worse{background:#fef2f2}table.eq td.thin{opacity:.55}
+table.eq th{cursor:default;white-space:normal;vertical-align:bottom;min-width:84px;padding:8px}
+table.eq td{padding:8px;font-size:13px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:18px}
 .card{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;border-top:4px solid var(--line)}
 .card.ok{border-top-color:var(--ok)}.card.warn{border-top-color:#f59e0b}.card.bad{border-top-color:var(--bad)}
@@ -211,7 +217,7 @@ td.low{opacity:.5}
     <div class="ph">
       <div>
         <h2 id="team-title">Team</h2>
-        <div class="hint">Click a name to see that tech's month-by-month trend. Click a column header to sort. Faded numbers rest on fewer than 5 calls (or sales).</div>
+        <div class="hint"><b>Arrows = current stretch:</b> each tech's conversion over the last 10 workdays vs. the department over the same days — <span class="trend hot">🔥</span>on a heater (15+ pts above) · <span class="trend up">▲</span>above · <span class="trend flat">▶</span>even · <span class="trend down">▼</span>below · <span class="trend cold">❄</span>cold streak (15+ pts below). Hover an arrow for the numbers.<br>Click a name to see that tech's month-by-month trend. Click a column header to sort. Faded numbers rest on fewer than 5 calls (or sales).</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
       <button class="btn" id="btn-rc-all">⬇ Report cards (all techs)</button>
@@ -222,6 +228,14 @@ td.low{opacity:.5}
       </div></div>
     </div>
     <div class="tablewrap"><table class="grid" id="team-table"></table></div>
+  </div>
+
+  <div class="panel" id="equipment">
+    <div class="ph"><div>
+      <h2>Major equipment sales</h2>
+      <div class="hint" id="eq-hint">From ServiceTitan estimates. Each cell: jobs where it sold / jobs where it was quoted, with the close rate. Green = closing better than the department, red = worse. Faded = quoted fewer than 3 times.</div>
+    </div></div>
+    <div class="tablewrap"><table class="grid eq" id="eq-table"></table></div>
   </div>
 
   <div class="two">
@@ -928,7 +942,7 @@ function render() {
   const showEst = pi && pi.to >= ui.from && pi.from <= ui.to;
   $('prov-banner').style.display = showEst ? 'block' : 'none';
   if (showEst) $('prov-banner').textContent = 'ℹ Includes ServiceTitan estimates for ' + prettyDate(pi.from) + (pi.to !== pi.from ? ' – ' + prettyDate(pi.to) : '') + ', after the last ' + DEPT[ui.dept] + ' C&T import (' + prettyDate(pi.ct) + '). They\'re counted the C&T way and replaced automatically when you import the C&T. Report cards use C&T numbers only.';
-  renderCards(); renderTeam(); renderBars(); renderDetail();
+  renderCards(); renderTeam(); renderBars(); renderDetail(); renderEquip();
   $('foot').textContent = 'Conversion = money calls ÷ calls run. Average sale = revenue ÷ money calls. Source: Nexstar C&T Mgr workbooks (each tech\'s daily entries). Department totals include the Misc line, so they match your bonus sheet.';
 }
 
@@ -973,12 +987,13 @@ function renderTeam() {
   const cols = [['tech', 'Tech', 'l'], ['calls', 'Calls run'], ['sold', 'Money calls'], ['conv', 'Conversion'], ['avg', 'Avg sale'], ['rev', 'Revenue'], ['status', 'Standing', 'l']];
   const head = '<thead><tr>' + cols.map(([key, lbl, cls]) => `<th class="${cls || ''}" data-sort="${key}">${lbl}${ui.sort.key === key ? `<span class="arr">${ui.sort.dir > 0 ? '▲' : '▼'}</span>` : ''}</th>`).join('') + '</tr></thead>';
   if (!rows.length) { const ever = agg(deptRecords(ui.dept), ui.type).calls; $('team-table').innerHTML = head + `<tbody><tr><td colspan="7" class="empty">${ever ? 'No ' + TYPE[ui.type].toLowerCase() + ' in this date range.' : 'The ' + DEPT[ui.dept] + ' C&amp;T reports don\'t log any ' + TYPE[ui.type].toLowerCase() + ' — every call is entered as ' + (ui.type === 'S' ? 'a Demand call' : 'a System Check') + '.'}</td></tr></tbody>`; return; }
+  const streak = streakFor(ui.dept, ui.type).map;
   const body = rows.map((r) => {
     const lowC = r.calls < LOW ? ' low' : '', lowS = r.sold < LOW ? ' low' : '';
     const stand = (r.sc === 'none' && r.sa === 'none') ? '<span class="pill none">No goal set</span>' :
       `<span class="pill ${r.sc}">Conv: ${STATUS_TXT[r.sc]}</span> <span class="pill ${r.sa}">Avg: ${STATUS_TXT[r.sa]}</span>`;
     return `<tr class="tech${ui.tech === r.tech ? ' sel' : ''}" data-tech="${esc(r.tech)}">
-      <td class="l"><button class="rc-row" data-rc="${esc(r.tech)}" title="Download ${esc(r.tech)}'s report card (PDF)">⬇</button><span class="name">${esc(r.tech)}</span>${r.current ? '' : '<span class="tag">former</span>'}${r.est ? '<span class="tag est" title="Includes ServiceTitan estimates">incl. est.</span>' : ''}</td>
+      <td class="l">${trendHtml(streak.get(r.tech))}<button class="rc-row" data-rc="${esc(r.tech)}" title="Download ${esc(r.tech)}'s report card (PDF)">⬇</button><span class="name">${esc(r.tech)}</span>${r.current ? '' : '<span class="tag">former</span>'}${r.est ? '<span class="tag est" title="Includes ServiceTitan estimates">incl. est.</span>' : ''}</td>
       <td>${r.calls.toLocaleString()}</td><td>${fmtNum(r.sold)}</td>
       <td class="v-${r.sc}${lowC}">${fmtPct(r.conv)}</td><td class="v-${r.sa}${lowS}">${fmtUsd(r.avg)}</td>
       <td>${fmtUsd(r.rev)}</td><td class="l">${stand}</td></tr>`;
@@ -987,6 +1002,99 @@ function renderTeam() {
   const dsc = status(d.conv, g.conv, g.convMin), dsa = status(d.avg, g.avg, g.avgMin);
   const foot = `<tr class="dept"><td class="l">${DEPT[ui.dept]} department</td><td>${d.calls.toLocaleString()}</td><td>${fmtNum(d.sold)}</td><td class="v-${dsc}">${fmtPct(d.conv)}</td><td class="v-${dsa}">${fmtUsd(d.avg)}</td><td>${fmtUsd(d.rev)}</td><td class="l"></td></tr>`;
   $('team-table').innerHTML = head + '<tbody>' + body + foot + '</tbody>';
+}
+
+// ---------- current stretch (trend arrows) ----------
+function streakFor(dept, type) {
+  const last = latestDate(dept); if (!last) return {map: new Map()};
+  const days = []; const d = parseIso(last);
+  while (days.length < 10) { if (d.getDay() !== 0 && d.getDay() !== 6) days.push(iso(d)); d.setDate(d.getDate() - 1); }
+  const from = days[days.length - 1], to = days[0];
+  const rows = allRecs().filter((r) => r.p === dept && r.d >= from && r.d <= to);
+  const dep = agg(rows, type); const by = new Map();
+  for (const r of rows) { if (isPlaceholder(r.t)) continue; if (!by.has(r.t)) by.set(r.t, []); by.get(r.t).push(r); }
+  const map = new Map();
+  for (const [t, rs] of by) {
+    const a = agg(rs, type); let cls = 'na', icon = '·', diff = null;
+    if (a.calls >= 4 && a.conv != null && dep.conv != null) {
+      diff = a.conv - dep.conv;
+      [cls, icon] = diff >= 15 ? ['hot', '🔥'] : diff >= 5 ? ['up', '▲'] : diff > -5 ? ['flat', '▶'] : diff > -15 ? ['down', '▼'] : ['cold', '❄'];
+    }
+    map.set(t, {cls, icon, diff, a, dep, from, to});
+  }
+  return {map, from, to, dep};
+}
+function trendHtml(s) {
+  if (!s) return '<span class="trend na" title="No calls in the last 10 workdays">·</span>';
+  const ty = TYPE[ui.type].toLowerCase();
+  const tip = s.diff == null
+    ? `Last 10 workdays (${prettyDate(s.from)} – ${prettyDate(s.to)}): only ${s.a.calls} ${ty}, not enough to call a trend`
+    : `Last 10 workdays (${prettyDate(s.from)} – ${prettyDate(s.to)}): ${fmtNum(s.a.sold)} of ${s.a.calls} ${ty} = ${fmtPct(s.a.conv)} vs department ${fmtPct(s.dep.conv)} (${s.diff >= 0 ? '+' : '−'}${Math.abs(s.diff).toFixed(1)} pts) · avg sale ${fmtUsd(s.a.avg)} vs ${fmtUsd(s.dep.avg)}${s.a.sold > s.a.calls ? ' (over 100% because the C&T counts sold-work follow-ups as money calls)' : ''}`;
+  return `<span class="trend ${s.cls}" title="${esc(tip)}">${s.icon}</span>`;
+}
+
+// ---------- major equipment (ServiceTitan estimates) ----------
+const EQUIP = [
+  ['Tankless water heater', /tankless|navien|rinnai/i, /flush|descal|maint|clean|service|repair|valve kit|isolation/i],
+  ['Tank water heater', /water heater|powervent|power vent|marathon|hybrid|heat pump wh|\bwh\b/i, /tankless|repair|flush|element|thermo|anode|expansion|drain valve|relief|t&p|pilot|igniter|gas valve|leak/i],
+  ['Water softener', /softener/i, /salt|resin clean|service|repair|bypass/i],
+  ['Water treatment / RO', /water treatment|reverse osmosis|\bro\b|carbon (block|filter)|filtration|whole house filter|\buv\b|neutralizer|iron filter/i, /filter change|service|repair|salt/i],
+  ['Moen Flo / leak protection', /moen flo|flo by moen|leak (detect|protect)|smart (shut|water)/i, null],
+  ['Sump / ejector pump', /sump|ejector|sewage pump|grinder/i, /alarm only|check valve only/i],
+  ['Well pump / tank', /well (pump|tank)|booster pump|pressure tank/i, null],
+  ['Sewer line replacement', /sewer line (replace|repl|reroute|spot)|partial sewer|line replacement|excavat|lateral/i, /jett|camera|video|inspection|auger/i],
+];
+const equipCat = (name) => { for (const [n, a, b] of EQUIP) if (a.test(name) && !(b && b.test(name))) return n; return null; };
+let stIndex = null;
+async function stMonthsAvailable() {
+  if (!stIndex) stIndex = fetch('../data/review/index.json', {cache: 'no-cache'}).then((r) => r.ok ? r.json() : {months: []}).then((d) => (d.months || []).slice().sort()).catch(() => []);
+  return stIndex;
+}
+function stNameMapper(dept) {
+  const names = [...new Set(state.records.filter((r) => r.p === dept && !isPlaceholder(r.t)).map((r) => r.t))];
+  return (n) => { const m = String(n || '').trim().match(/^(\S+)\s+(\S)/); if (!m) return String(n || 'Unknown');
+    return names.find((t) => { const q = t.split(/\s+/); return q[0].toLowerCase() === m[1].toLowerCase() && q[q.length - 1][0].toLowerCase() === m[2].toLowerCase(); }) || String(n); };
+}
+let eqToken = 0;
+async function renderEquip() {
+  const my = ++eqToken; const tbl = $('eq-table');
+  const avail = await stMonthsAvailable();
+  const months = []; let m = new Date(parseIso(ui.from).getFullYear(), parseIso(ui.from).getMonth(), 1);
+  while (m <= parseIso(ui.to)) { const ym = iso(m).slice(0, 7); if (avail.includes(ym)) months.push(ym); m = new Date(m.getFullYear(), m.getMonth() + 1, 1); }
+  $('eq-hint').textContent = 'From ServiceTitan estimates' + (avail.length ? ' (available from ' + MONTHS[+avail[0].slice(5) - 1] + ' ' + avail[0].slice(0, 4) + ')' : '') + '. Each cell: jobs where it sold / jobs where it was quoted, with the close rate and dollars sold. Green = closing better than the department, red = worse. Faded = quoted fewer than 3 times.';
+  if (!months.length) { tbl.innerHTML = '<tbody><tr><td class="empty">No ServiceTitan job data for this date range.</td></tr></tbody>'; return; }
+  tbl.innerHTML = '<tbody><tr><td class="empty">Loading ServiceTitan estimates…</td></tr></tbody>';
+  let jobs = []; for (const ym of months) jobs = jobs.concat(await stMonth(ym));
+  if (my !== eqToken) return;
+  const dept = ui.dept, map = stNameMapper(dept), cur = currentTechs(dept);
+  const A = new Map(), D = new Map();
+  for (const j of jobs) {
+    const bu = String(j.businessUnit || ''); const d = String(j.completionDate || '').slice(0, 10);
+    if (d < ui.from || d > ui.to) continue;
+    if (dept === 'P' ? !/^plumbing/i.test(bu) : !/^sewer/i.test(bu)) continue;
+    const per = {};
+    for (const e of j.estimates || []) { const c = equipCat(e.name || ''); if (!c) continue; per[c] = per[c] || {sold: 0, amt: 0}; if (e.status === 'Sold') { per[c].sold = 1; per[c].amt += +e.subtotal || 0; } }
+    const tech = map(j.primaryTech);
+    for (const c in per) {
+      for (const [M, k] of [[A, tech + '|' + c], [D, c]]) { const o = M.get(k) || {q: 0, s: 0, amt: 0}; o.q++; o.s += per[c].sold; o.amt += per[c].amt; M.set(k, o); }
+    }
+  }
+  const cats = EQUIP.map((e) => e[0]).filter((c) => D.has(c));
+  if (!cats.length) { tbl.innerHTML = '<tbody><tr><td class="empty">No major equipment was quoted in this date range.</td></tr></tbody>'; return; }
+  const techs = [...new Set([...A.keys()].map((k) => k.split('|')[0]))].filter((t) => !isPlaceholder(t) && (ui.former || cur.has(t)))
+    .sort((a, b) => cats.reduce((s, c) => s + ((A.get(b + '|' + c) || {}).amt || 0), 0) - cats.reduce((s, c) => s + ((A.get(a + '|' + c) || {}).amt || 0), 0));
+  const cell = (o, dep, isDept) => {
+    if (!o) return '<td style="color:#cbd5e1">—</td>';
+    const rate = o.q ? o.s / o.q * 100 : 0, drate = dep && dep.q ? dep.s / dep.q * 100 : 0;
+    const cls = isDept ? '' : o.q < 3 ? 'thin' : rate > drate + 0.05 ? 'better' : rate < drate - 0.05 ? 'worse' : '';
+    return `<td class="${cls}" title="${o.s} sold of ${o.q} jobs quoted · ${fmtUsd(o.amt)} sold"><span class="r">${o.s}/${o.q}</span> · ${Math.round(rate)}%<span class="s">${o.amt ? fmtUsd(o.amt) : '$0'}</span></td>`;
+  };
+  const head = '<thead><tr><th class="l">Tech</th>' + cats.map((c) => `<th>${esc(c)}</th>`).join('') + '<th>Equipment sold</th></tr></thead>';
+  const body = techs.map((t) => '<tr class="tech" data-tech="' + esc(t) + '"><td class="l"><span class="name">' + esc(t) + '</span>' + (cur.has(t) ? '' : '<span class="tag">former</span>') + '</td>' +
+    cats.map((c) => cell(A.get(t + '|' + c), D.get(c), false)).join('') +
+    '<td><b>' + fmtUsd(cats.reduce((s, c) => s + ((A.get(t + '|' + c) || {}).amt || 0), 0)) + '</b></td></tr>').join('');
+  const foot = '<tr class="dept"><td class="l">' + DEPT[dept] + ' department</td>' + cats.map((c) => cell(D.get(c), null, true)).join('') + '<td>' + fmtUsd(cats.reduce((s, c) => s + D.get(c).amt, 0)) + '</td></tr>';
+  tbl.innerHTML = head + '<tbody>' + body + foot + '</tbody>';
 }
 
 // ---------- SVG helpers ----------
@@ -1322,6 +1430,7 @@ $('team-table').addEventListener('click', (e) => {
   const rb = e.target.closest('button.rc-row'); if (rb) { e.stopPropagation(); printReportCards([rb.dataset.rc]); return; }
   const tr = e.target.closest('tr.tech'); if (tr) selectTech(tr.dataset.tech);
 });
+$('eq-table').addEventListener('click', (e) => { const tr = e.target.closest('tr.tech'); if (tr) selectTech(tr.dataset.tech); });
 $('tech-select').addEventListener('change', (e) => { ui.tech = e.target.value || null; renderTeam(); renderDetail(); });
 $('btn-whole').addEventListener('click', () => { ui.tech = null; renderTeam(); renderDetail(); });
 $('btn-import').addEventListener('click', () => { $('import-log').innerHTML = ''; openModal('m-import'); });
