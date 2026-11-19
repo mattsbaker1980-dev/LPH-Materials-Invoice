@@ -39,6 +39,8 @@ button,input,select{font:inherit}
 .chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
 .check{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px;cursor:pointer;padding-bottom:9px}
 .banner{margin-top:14px;background:var(--warn-bg);color:#7c3a06;border:1px solid #f7d58a;border-radius:10px;padding:10px 14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.banner.est{background:#eef4ff;color:#1e3a8a;border-color:#bfd3fb}
+.tag.est{color:#1d4ed8;font-weight:600}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:18px}
 .card{background:var(--panel);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;border-top:4px solid var(--line)}
 .card.ok{border-top-color:var(--ok)}.card.warn{border-top-color:#f59e0b}.card.bad{border-top-color:var(--bad)}
@@ -197,6 +199,7 @@ td.low{opacity:.5}
     <label class="check"><input type="checkbox" id="former"> Show former techs</label>
   </div>
 
+  <div class="banner est" id="prov-banner" style="display:none"></div>
   <div class="banner" id="goal-banner" style="display:none">
     <span id="goal-banner-text"></span>
     <button class="btn" id="banner-goals">Set goals</button>
@@ -788,6 +791,7 @@ function adoptShared(d) {
   state.records = d.records; state.roster = d.roster || {}; state.imports = d.imports || [];
   if (d.goals) state.goals = d.goals;
   saveState();
+  setTimeout(loadPlaceholders, 0);
 }
 function setSync(kind, msg) { const s = $('sync'); if (!s) return; s.className = 'sync ' + (kind === 'ok' ? 'ok' : kind === 'warn' ? 'warn' : ''); s.textContent = msg; }
 function syncOk() { const last = state.imports && state.imports[0]; setSync('ok', '● Shared data' + (last ? ' · last update ' + new Date(last.at).toLocaleString([], {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'}) : '')); }
@@ -802,8 +806,69 @@ async function pushSettings(okMsg) {
 }
 const ui = {dept: 'P', type: 'D', from: null, to: null, preset: 'ytd', tech: null, former: false, sort: {key: 'conv', dir: -1}};
 
-function deptRecords(p) { return state.records.filter((r) => r.p === p); }
-function latestDate(p) { let m = null; for (const r of state.records) if (r.p === p && (!m || r.d > m)) m = r.d; return m; }
+// ---------- ServiceTitan placeholders ----------
+// Days after the last imported C&T day are filled from the Job Review site's daily ServiceTitan job pull,
+// counted the way the C&T counts (same rules as the Job Review technician report). Never saved; dropped
+// automatically once a C&T import covers those days. Report cards use C&T data only.
+let prov = [], provInfo = {};
+const allRecs = () => prov.length ? state.records.concat(prov) : state.records;
+function latestCT(p) { let m = null; for (const r of state.records) if (r.p === p && (!m || r.d > m)) m = r.d; return m; }
+const ST_EXEMPT = /(sold work|non-repair|install(?!.*estimate)|warranty|recall|callback|punch|permit|inspection only|follow up)/i;
+function stToRecords(jobs, dept, after, today) {
+  const names = [...new Set(state.records.filter((r) => r.p === dept && !isPlaceholder(r.t)).map((r) => r.t))];
+  const mapName = (n) => {
+    const m = String(n || '').trim().match(/^(\S+)\s+(\S)/); if (!m) return String(n || 'Unknown');
+    const hit = names.find((t) => { const q = t.split(/\s+/); return q[0].toLowerCase() === m[1].toLowerCase() && q[q.length - 1][0].toLowerCase() === m[2].toLowerCase(); });
+    return hit || String(n);
+  };
+  const days = new Map();
+  for (const j of jobs) {
+    const bu = String(j.businessUnit || ''); const d = String(j.completionDate || '').slice(0, 10);
+    if (!d || d <= after || d > today) continue;
+    let kind = null;
+    if (dept === 'P' && /^plumbing/i.test(bu)) kind = (/system c|sys ck/i.test(bu) && !/cod/i.test(bu)) ? 'S' : /demand/i.test(bu) ? 'D' : null;
+    if (dept === 'S' && /^sewer service/i.test(bu)) kind = 'D';
+    if (!kind) continue;
+    const det = j.detail || {}; const mt = j.materials || {};
+    const rev = (mt.revenue != null ? +mt.revenue : +(det.revenue || 0)) || 0;
+    const opts = Math.max((j.estimates || []).length, det.estimatesCount || 0);
+    const tech = mapName(j.primaryTech); const key = tech + '|' + d;
+    if (!days.has(key)) days.set(key, {p: dept, t: tech, d, prov: true});
+    const o = days.get(key); const f = F[kind];
+    if (/sold work/i.test(j.jobType || '')) { if (rev > 0) { o[f.s] = (o[f.s] || 0) + 1; o[f.r] = (o[f.r] || 0) + rev; } continue; }
+    if (!j.detail || ST_EXEMPT.test(j.jobType || '') || det.warranty || det.recall) continue;
+    if (kind === 'D' && !(rev > 0) && !det.converted && opts === 0) continue;
+    o[f.c] = (o[f.c] || 0) + 1; o[f.r] = (o[f.r] || 0) + rev; if (det.converted) o[f.s] = (o[f.s] || 0) + 1;
+  }
+  return [...days.values()];
+}
+const stCache = {};
+async function stMonth(ym) {
+  if (!stCache[ym]) stCache[ym] = (async () => {
+    for (const name of [ym + '.slim.json', ym + '.json']) {
+      try { const r = await fetch('../data/review/' + name, {cache: 'no-cache'}); if (r.ok) { const d = await r.json(); return Array.isArray(d.jobs) ? d.jobs : Object.values(d.jobs || {}); } } catch (e) {}
+    }
+    return [];
+  })();
+  return stCache[ym];
+}
+async function loadPlaceholders() {
+  const today = iso(new Date()); const out = []; const info = {};
+  for (const dept of ['P', 'S']) {
+    const last = latestCT(dept); if (!last || last >= today) continue;
+    const months = []; let m = new Date(parseIso(last).getFullYear(), parseIso(last).getMonth(), 1); const end = new Date();
+    while (m <= end) { months.push(iso(m).slice(0, 7)); m = new Date(m.getFullYear(), m.getMonth() + 1, 1); }
+    let recs = [];
+    for (const ym of months) recs = recs.concat(stToRecords(await stMonth(ym), dept, last, today));
+    recs = recs.filter((r) => (r.dc || 0) + (r.sc || 0) + (r.dm || 0) + (r.sm || 0) > 0);
+    if (recs.length) { const ds = recs.map((r) => r.d).sort(); info[dept] = {from: ds[0], to: ds[ds.length - 1], ct: last}; out.push(...recs); }
+  }
+  prov = out; provInfo = info;
+  if (ui.preset) applyPreset(ui.preset);
+  render();
+}
+function deptRecords(p) { return allRecs().filter((r) => r.p === p); }
+function latestDate(p) { let m = null; for (const r of allRecs()) if (r.p === p && (!m || r.d > m)) m = r.d; return m; }
 function isPlaceholder(t) { return /^misc$/i.test(t) || /^tech\s*\d+$/i.test(t); }
 function goalsFor() { return state.goals[ui.dept][ui.type]; }
 function status(v, goal, min) {
@@ -823,7 +888,7 @@ function currentTechs(p) {
   const last = latestDate(p); if (!last) return new Set();
   const cut = new Date(parseIso(last).getTime() - 10 * 864e5); const cutS = iso(cut);
   const set = new Set();
-  for (const r of state.records) if (r.p === p && r.d >= cutS && ((r.dc || 0) + (r.sc || 0)) > 0 && !isPlaceholder(r.t)) set.add(r.t);
+  for (const r of allRecs()) if (r.p === p && r.d >= cutS && ((r.dc || 0) + (r.sc || 0)) > 0 && !isPlaceholder(r.t)) set.add(r.t);
   const o = (state.roster || {})[p] || {};
   for (const k in o) { if (o[k] === 'former') set.delete(k); else if (o[k] === 'current') set.add(k); }
   return set;
@@ -854,16 +919,20 @@ function render() {
   $('d-from').value = ui.from; $('d-to').value = ui.to;
   $('former').checked = ui.former;
   const last = latestDate(ui.dept);
-  $('subline').textContent = DEPT[ui.dept] + ' · ' + TYPE[ui.type] + ' · ' + prettyDate(ui.from) + ' – ' + prettyDate(ui.to) + (last ? '   ·   Data through ' + prettyDate(last) : '');
+  $('subline').textContent = DEPT[ui.dept] + ' · ' + TYPE[ui.type] + ' · ' + prettyDate(ui.from) + ' – ' + prettyDate(ui.to) + (latestCT(ui.dept) ? '   ·   C&T through ' + prettyDate(latestCT(ui.dept)) : '') + (provInfo[ui.dept] ? ' · ServiceTitan estimates through ' + prettyDate(provInfo[ui.dept].to) : '');
   const g = goalsFor();
   const noGoals = g.conv == null && g.avg == null;
   $('goal-banner').style.display = noGoals ? 'flex' : 'none';
   $('goal-banner-text').textContent = 'No goals are set yet for ' + DEPT[ui.dept] + ' ' + TYPE[ui.type] + ', so nothing is colored. Set a goal and minimum to start scoring techs.';
+  const pi = provInfo[ui.dept];
+  const showEst = pi && pi.to >= ui.from && pi.from <= ui.to;
+  $('prov-banner').style.display = showEst ? 'block' : 'none';
+  if (showEst) $('prov-banner').textContent = 'ℹ Includes ServiceTitan estimates for ' + prettyDate(pi.from) + (pi.to !== pi.from ? ' – ' + prettyDate(pi.to) : '') + ', after the last ' + DEPT[ui.dept] + ' C&T import (' + prettyDate(pi.ct) + '). They\'re counted the C&T way and replaced automatically when you import the C&T. Report cards use C&T numbers only.';
   renderCards(); renderTeam(); renderBars(); renderDetail();
   $('foot').textContent = 'Conversion = money calls ÷ calls run. Average sale = revenue ÷ money calls. Source: Nexstar C&T Mgr workbooks (each tech\'s daily entries). Department totals include the Misc line, so they match your bonus sheet.';
 }
 
-function rangeRows(p) { return state.records.filter((r) => r.p === p && r.d >= ui.from && r.d <= ui.to); }
+function rangeRows(p) { return allRecs().filter((r) => r.p === p && r.d >= ui.from && r.d <= ui.to); }
 
 function renderCards() {
   const rows = rangeRows(ui.dept); const a = agg(rows, ui.type); const g = goalsFor();
@@ -886,7 +955,7 @@ function teamRows() {
     if (!current && !ui.former) continue;
     const a = agg(rs, ui.type);
     if (a.calls === 0 && a.sold === 0) continue;
-    a.tech = t; a.current = current;
+    a.tech = t; a.current = current; a.est = rs.some((r) => r.prov);
     a.sc = status(a.conv, g.conv, g.convMin); a.sa = status(a.avg, g.avg, g.avgMin);
     out.push(a);
   }
@@ -909,7 +978,7 @@ function renderTeam() {
     const stand = (r.sc === 'none' && r.sa === 'none') ? '<span class="pill none">No goal set</span>' :
       `<span class="pill ${r.sc}">Conv: ${STATUS_TXT[r.sc]}</span> <span class="pill ${r.sa}">Avg: ${STATUS_TXT[r.sa]}</span>`;
     return `<tr class="tech${ui.tech === r.tech ? ' sel' : ''}" data-tech="${esc(r.tech)}">
-      <td class="l"><button class="rc-row" data-rc="${esc(r.tech)}" title="Download ${esc(r.tech)}'s report card (PDF)">⬇</button><span class="name">${esc(r.tech)}</span>${r.current ? '' : '<span class="tag">former</span>'}</td>
+      <td class="l"><button class="rc-row" data-rc="${esc(r.tech)}" title="Download ${esc(r.tech)}'s report card (PDF)">⬇</button><span class="name">${esc(r.tech)}</span>${r.current ? '' : '<span class="tag">former</span>'}${r.est ? '<span class="tag est" title="Includes ServiceTitan estimates">incl. est.</span>' : ''}</td>
       <td>${r.calls.toLocaleString()}</td><td>${fmtNum(r.sold)}</td>
       <td class="v-${r.sc}${lowC}">${fmtPct(r.conv)}</td><td class="v-${r.sa}${lowS}">${fmtUsd(r.avg)}</td>
       <td>${fmtUsd(r.rev)}</td><td class="l">${stand}</td></tr>`;
@@ -1009,11 +1078,11 @@ function renderDetail() {
   const pts = list.map((m) => {
     const y = m.getFullYear(), mo = m.getMonth();
     const s = iso(new Date(y, mo, 1)), e = iso(new Date(y, mo + 1, 0));
-    const recs = state.records.filter((r) => r.p === ui.dept && r.d >= s && r.d <= e);
+    const recs = allRecs().filter((r) => r.p === ui.dept && r.d >= s && r.d <= e);
     const mine = deptMode ? agg(recs, ui.type) : agg(recs.filter((r) => r.t === ui.tech), ui.type);
     const dep = agg(recs, ui.type);
     const partial = lastD && lastD >= s && lastD < e;
-    return {label: MONTHS[mo] + (partial ? '*' : '') + (list.some((x) => x.getFullYear() !== y) ? " '" + String(y).slice(2) : ''), full: MONTHS[mo] + ' ' + y + (partial ? ' (through ' + prettyDate(lastD) + ')' : ''), mine, dep, hasData: recs.length > 0};
+    return {label: MONTHS[mo] + (partial ? '*' : '') + (list.some((x) => x.getFullYear() !== y) ? " '" + String(y).slice(2) : ''), full: MONTHS[mo] + ' ' + y + (partial ? ' (through ' + prettyDate(lastD) + ')' : '') + (recs.some((r) => r.prov) ? ' · incl. ServiceTitan est.' : ''), mine, dep, hasData: recs.length > 0};
   });
   $('detail-title').textContent = label + ' · ' + TYPE[ui.type];
   $('ckey-name').textContent = label;
@@ -1432,6 +1501,7 @@ $('btn-rc-all').addEventListener('click', () => {
 applyPreset('ytd');
 render();
 loadShared();
+loadPlaceholders();
 </script>
 </body>
 </html>
