@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sewer Install Opportunities</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B2430; --paper:#FFFFFF; --steel:#EEF2F5; --line:#D7DEE4; --line-soft:#E6EAED;
+  --accent:#E2620E; --accent-dark:#B94E09; --good:#2E7D4F; --good-bg:#E7F3EC;
+  --warn:#C6432D; --warn-bg:#FBEAE6; --muted:#667085; --muted-2:#8C93A0;
+  --info:#2F5D8A; --info-bg:#E8EFF6; --amber:#9A6200; --amber-bg:#FBF1DC;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--steel);color:var(--ink);font-family:'Inter',system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;font-size:14px;}
+a{color:var(--info);}
+.wrap{max-width:1500px;margin:0 auto;padding:0 32px 60px;}
+header.top{background:var(--ink);color:var(--paper);padding:22px 0;}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:0;}
+header.top .logo{background:#fff;border-radius:8px;padding:6px 10px;display:flex;align-items:center;}
+header.top .logo img{height:72px;width:auto;display:block;}
+header.top h1{font-size:34px;font-weight:700;margin:0;letter-spacing:-0.01em;color:#F3770C;line-height:1.1;}
+header.top .titleblock{text-align:right;}
+header.top p{font-size:13px;color:#AEB6C2;margin:4px 0 0;}
+.banner{margin:18px 0 0;padding:12px 16px;border-radius:8px;font-size:13.5px;line-height:1.5;display:none;}
+.banner.show{display:block;}
+.banner.warn{background:var(--warn-bg);color:var(--warn);border:1px solid #F1C7BE;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;}
+.controls{margin-top:20px;padding:16px 18px;display:flex;flex-wrap:wrap;gap:16px 26px;align-items:flex-end;}
+.field label,.field .lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{font-family:inherit;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;}
+.chip:hover{border-color:var(--muted-2);}
+.chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+.chip .n{opacity:.65;margin-left:4px;}
+select,input[type=date],input[type=text],textarea{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);}
+select:focus,input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent;}
+.range{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.btn{font-family:inherit;font-size:13px;font-weight:600;padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
+.btn:hover{border-color:var(--muted-2);}
+.btn-accent{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn-accent:hover{background:var(--accent-dark);border-color:var(--accent-dark);}
+.btn:disabled{opacity:.55;cursor:not-allowed;}
+.spacer{flex:1;}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);margin-top:18px;overflow:hidden;}
+.tile{padding:16px 18px;border-right:1px solid var(--line-soft);}
+.tile:last-child{border-right:none;}
+.tile .v{font-size:24px;font-weight:700;}
+.tile .k{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.35;}
+.tile.bad .v{color:var(--warn);} .tile.good .v{color:var(--good);}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;margin-top:18px;align-items:start;}
+.tabs{display:flex;gap:4px;padding:10px 12px 0;border-bottom:1px solid var(--line-soft);flex-wrap:wrap;}
+.tab{font-family:inherit;font-size:13.5px;font-weight:600;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:8px 10px 10px;cursor:pointer;}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent);}
+.tab .n{font-weight:500;color:var(--muted-2);margin-left:3px;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:11.5px;font-weight:600;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:#FAFBFC;white-space:nowrap;}
+td{padding:12px;border-bottom:1px solid var(--line-soft);vertical-align:top;font-size:13.5px;}
+tr.job{cursor:pointer;}
+tr.job:hover td{background:#FAFBFC;}
+tr.job.open td{background:#FFF8F2;}
+td.num,th.num{text-align:right;}
+.sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.techlink{font-family:inherit;font-size:13.5px;background:none;border:none;padding:0;color:var(--ink);font-weight:600;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px;}
+.techlink:hover{text-decoration-color:var(--ink);}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;}
+.st-presented{background:var(--info-bg);color:var(--info);}
+.st-contacted{background:var(--amber-bg);color:var(--amber);}
+.st-scheduled{background:#EEE8F7;color:#5B3E96;}
+.st-sold{background:var(--good-bg);color:var(--good);}
+.st-lost{background:var(--steel);color:var(--muted);}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--steel);color:var(--muted);margin-top:4px;}
+.due{color:var(--warn);font-weight:600;}
+.lastnote{max-width:280px;color:var(--muted);font-size:12.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.copy{font-family:inherit;font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:4px;border:1px solid var(--line);background:var(--paper);color:var(--muted);cursor:pointer;margin-left:6px;}
+tr.detail td{background:#FFFCF9;padding:0;}
+.det{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;padding:16px 18px 20px;}
+.box{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:14px 16px;}
+.box h4{margin:0 0 10px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.opt{padding:10px 0;border-top:1px solid var(--line-soft);}
+.opt:first-of-type{border-top:none;padding-top:0;}
+.opt .row{display:flex;justify-content:space-between;gap:12px;font-weight:600;}
+.opt details{margin-top:4px;font-size:12.5px;color:var(--muted);}
+.opt details p{white-space:pre-wrap;margin:6px 0 0;line-height:1.5;}
+.writeup{white-space:pre-wrap;font-size:12.5px;line-height:1.55;color:var(--ink);max-height:220px;overflow:auto;margin:0;}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;}
+.form .full{grid-column:1/-1;}
+.form select,.form input,.form textarea{width:100%;}
+.form textarea{min-height:80px;resize:vertical;line-height:1.5;}
+.formfoot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--muted);}
+.hist{margin-top:14px;border-top:1px solid var(--line-soft);padding-top:10px;max-height:300px;overflow:auto;}
+.hist .h{padding:7px 0;font-size:12.5px;line-height:1.5;border-bottom:1px dashed var(--line-soft);}
+.hist .h:last-child{border-bottom:none;}
+.hist .meta{color:var(--muted-2);font-size:11.5px;}
+.hist .chg{color:var(--muted);}
+.empty{padding:40px 20px;text-align:center;color:var(--muted);}
+.side .box{margin-bottom:18px;}
+.bar{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:12.5px;}
+.bar .lab{width:150px;flex-shrink:0;}
+.bar .track{flex:1;height:8px;background:var(--steel);border-radius:4px;overflow:hidden;}
+.bar .fill{display:block;height:100%;background:var(--accent);border-radius:4px;}
+.bar .c{width:26px;text-align:right;color:var(--muted);}
+.techrow{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:8px 0;border-top:1px solid var(--line-soft);font-size:13px;align-items:center;}
+.techrow:first-of-type{border-top:none;}
+.muted{color:var(--muted);}
+.foot{margin-top:18px;font-size:12px;color:var(--muted);line-height:1.6;}
+#printArea{display:none;}
+@media (max-width:1100px){ .split{grid-template-columns:1fr;} .tiles{grid-template-columns:repeat(3,1fr);} .tile:nth-child(3){border-right:none;} .tile:nth-child(-n+3){border-bottom:1px solid var(--line-soft);} }
+@media (max-width:760px){
+  .wrap{padding:0 16px 40px;} header.top h1{font-size:26px;} header.top .titleblock{text-align:left;} header.top .logo img{height:54px;}
+  .tiles{grid-template-columns:repeat(2,1fr);} .tile{border-right:none !important;border-bottom:1px solid var(--line-soft);}
+  .hide-m{display:none;} .det{grid-template-columns:1fr;padding:12px;} .form{grid-template-columns:1fr;}
+  .controls{gap:14px;} #search{width:100% !important;} .field{max-width:100%;}
+  thead{display:none;} table,tbody{display:block;}
+  tr.job{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;padding:12px 14px;border-bottom:1px solid var(--line-soft);}
+  tr.job td{display:block;padding:0;border:none;background:none !important;}
+  tr.job.open{background:#FFF8F2;}
+  tr.job td.c-date{grid-row:1;grid-column:1;color:var(--muted);font-size:12.5px;padding-top:2px;}
+  tr.job td.c-cust{grid-row:1;grid-column:2;font-weight:600;}
+  tr.job td.c-opt{grid-row:1/3;grid-column:3;}
+  tr.job td.c-job{grid-row:2;grid-column:1/3;font-size:12.5px;}
+  tr.job td.c-tech{grid-row:3;grid-column:1/3;font-size:12.5px;}
+  tr.job td.c-status{grid-row:4;grid-column:1/3;margin-top:6px;}
+  tr.job td.c-next{grid-row:4;grid-column:3;margin-top:6px;font-size:12.5px;text-align:right;}
+  tr.job td.c-tech::before{content:'Tech: ';color:var(--muted);}
+  tr.detail{display:block;} tr.detail td{display:block;}
+  tr.job td.hide-m{display:none;}
+}
+@media print{
+  body{background:#fff;font-size:11px;}
+  header.top,.controls,.split,.tiles,.banner,.foot,#appMain{display:none !important;}
+  #printArea{display:block;}
+  .p-h{border-bottom:3px solid var(--accent);padding-bottom:8px;margin-bottom:12px;}
+  .p-h h1{margin:0;font-size:20px;} .p-h p{margin:3px 0 0;color:var(--muted);}
+  .p-stats{display:flex;gap:22px;margin:10px 0 14px;flex-wrap:wrap;} .p-stats b{font-size:16px;display:block;}
+  .p-job{border:1px solid var(--line);border-radius:6px;padding:9px 11px;margin-bottom:9px;page-break-inside:avoid;}
+  .p-job .t{display:flex;justify-content:space-between;font-weight:700;}
+  .p-job ul{margin:4px 0 0 16px;padding:0;} .p-job .n{margin-top:5px;}
+  .p-lines div{border-bottom:1px solid #999;height:22px;}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="../review.html" title="Job Review"><img src="../assets/logo.png" alt="Lancaster Plumbing & Heating"></a>
+    <div class="titleblock">
+      <h1>Sewer Install Opportunities</h1>
+      <p id="subhead">Loading…</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap" id="appMain">
+  <div class="banner warn" id="saveBanner"></div>
+
+  <div class="card controls">
+    <div class="field"><span class="lbl">Technician</span><div class="chips" id="techChips"></div></div>
+    <div class="field"><span class="lbl">Completed</span>
+      <div class="range">
+        <div class="chips" id="rangeChips">
+          <button class="chip" data-r="this">This month</button><button class="chip" data-r="last">Last month</button><button class="chip" data-r="all">All</button>
+        </div>
+        <input type="date" id="fromDate" aria-label="From date"><span class="muted">to</span><input type="date" id="toDate" aria-label="To date">
+      </div>
+    </div>
+    <div class="field"><label for="search">Search</label><input type="text" id="search" placeholder="Job #, customer, option…" style="width:210px;"></div>
+    <div class="spacer"></div>
+    <div class="field who"><label for="whoSel" style="margin:0;">Updating as</label><select id="whoSel"></select></div>
+    <button class="btn btn-accent" id="printBtn" title="Print or save as PDF for a 1:1">Print for 1:1</button>
+  </div>
+
+  <div class="card tiles" id="tiles"></div>
+
+  <div class="split">
+    <div class="card">
+      <div class="tabs" id="tabs"></div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th>Completed</th><th>Job #</th><th>Customer</th><th>Technician</th><th class="hide-m">Job type</th>
+            <th class="num">Options</th><th>Status</th><th>Next follow-up</th><th class="hide-m">Latest note</th>
+          </tr></thead>
+          <tbody id="body"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card box" id="whyBox"></div>
+      <div class="card box" id="techBox"></div>
+    </div>
+  </div>
+
+  <p class="foot">Every Sewer Install visit since Nov 1 where options were presented, updated each morning from ServiceTitan. Jobs switch to <b>Sold</b> by themselves when ServiceTitan shows the estimate sold. Status, follow-up dates and notes are shared with everyone who opens this page. Customer phone and email are in ServiceTitan; use the job number link.</p>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+(function(){
+  var API = 'https://lph-materials-invoice.mattsbaker1980.workers.dev';
+  var ST = 'https://go.servicetitan.com/#/Job/Index/';
+  var STATUS = [
+    ['presented','Options Presented'],['contacted','Contacted – Waiting on Customer'],['scheduled','Follow-up Scheduled'],['sold','Sold'],['lost','Lost']
+  ];
+  var LABEL = {}; STATUS.forEach(function(s){ LABEL[s[0]]=s[1]; });
+  var OPEN = {presented:1, contacted:1, scheduled:1};
+  var REASONS = ['Price / too expensive','Needs financing','Getting other quotes','Not urgent / waiting','Waiting on spouse or decision maker','Insurance, landlord or HOA','No response from customer','Went with another company','Chose the repair / cheaper option','Other'];
+
+  var data = { jobs:[], updatedAt:null }, state = {}, notes = {}, saveOk = true;
+  var ui = { tech:'', tab:'open', from:'', to:'', q:'', open:null, rangeKey:'all' };
+  var drafts = {};
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function money(n){ return '$'+Math.round(n||0).toLocaleString(); }
+  function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
+  function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function today(){ return ymd(new Date()); }
+  function shortDate(s){ if(!s) return ''; var p=s.split('-'); return (+p[1])+'/'+(+p[2]); }
+  function when(ms){ return new Date(ms).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+
+  async function api(path, body){
+    var r = await fetch(API+path, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body||{})});
+    var j = null; try{ j = await r.json(); }catch(e){}
+    if(!r.ok || !j || !j.ok) throw new Error((j&&(j.message||j.error))||('HTTP '+r.status));
+    return j;
+  }
+
+  // ---------- derived per job ----------
+  function top(j){ return j.options.reduce(function(m,o){ return Math.max(m,o.amount||0); },0); }
+  function eff(j){ // effective status: ServiceTitan "sold" wins
+    var s = state[j.job] || {};
+    if(j.sold && j.sold.length) return 'sold';
+    return s.status || 'presented';
+  }
+  function autoSold(j){ return j.sold && j.sold.length; }
+  function soldAmt(j){ return (j.sold||[]).reduce(function(a,x){ return a+(x.amount||0); },0); }
+  function nextDate(j){ var s=state[j.job]; return s && s.nextDate || ''; }
+  function isDue(j){ var d=nextDate(j); return OPEN[eff(j)] && d && d<=today(); }
+  function lastNote(j){ var n=(notes[j.job]||[]).filter(function(x){return x.kind==='note';}); return n.length? n[n.length-1] : null; }
+
+  function inRange(j){ return (!ui.from || j.date>=ui.from) && (!ui.to || j.date<=ui.to); }
+  function matchQ(j){
+    if(!ui.q) return true; var q=ui.q.toLowerCase();
+    return (j.job+' '+j.customer+' '+j.tech+' '+j.jobType+' '+j.options.map(function(o){return o.name;}).join(' ')).toLowerCase().indexOf(q)>-1;
+  }
+  function base(){ return data.jobs.filter(function(j){ return inRange(j) && matchQ(j); }); }
+  function scoped(){ return base().filter(function(j){ return !ui.tech || j.tech===ui.tech; }); }
+  var TABS = [
+    ['open','Open',function(j){return !!OPEN[eff(j)];}],
+    ['due','Follow-up due',isDue],
+    ['sold','Sold',function(j){return eff(j)==='sold';}],
+    ['lost','Lost',function(j){return eff(j)==='lost';}],
+    ['all','All',function(){return true;}]
+  ];
+
+  // ---------- render ----------
+  function render(){
+    var b = base(), sc = scoped();
+    // tech chips
+    var tc = {}; b.forEach(function(j){ tc[j.tech]=(tc[j.tech]||0)+1; });
+    $('techChips').innerHTML = '<button class="chip'+(ui.tech?'':' active')+'" data-t="">All<span class="n">'+b.length+'</span></button>'+
+      Object.keys(tc).sort().map(function(t){ return '<button class="chip'+(ui.tech===t?' active':'')+'" data-t="'+esc(t)+'">'+esc(t)+'<span class="n">'+tc[t]+'</span></button>'; }).join('');
+    // tiles
+    var sold = sc.filter(function(j){return eff(j)==='sold';}), lost = sc.filter(function(j){return eff(j)==='lost';}), open = sc.filter(function(j){return OPEN[eff(j)];});
+    var due = sc.filter(isDue), decided = sold.length+lost.length;
+    var conv = sc.length ? Math.round(sold.length/sc.length*100) : null;
+    $('tiles').innerHTML = [
+      [sc.length, 'Opportunities (options presented)'],
+      [conv==null?'—':conv+'%', 'Converted ('+sold.length+' sold of '+sc.length+')', sold.length?'good':''],
+      [money(open.reduce(function(a,j){return a+top(j);},0)), 'Still open ('+open.length+' jobs, top option each)'],
+      [money(sold.reduce(function(a,j){return a+soldAmt(j);},0)), 'Sold'],
+      [lost.length, 'Lost'+(decided?' ('+Math.round(lost.length/decided*100)+'% of decided)':'')],
+      [due.length, 'Follow-ups due today or overdue', due.length?'bad':'']
+    ].map(function(t){ return '<div class="tile '+(t[2]||'')+'"><div class="v">'+t[0]+'</div><div class="k">'+t[1]+'</div></div>'; }).join('');
+    // tabs
+    $('tabs').innerHTML = TABS.map(function(t){ return '<button class="tab'+(ui.tab===t[0]?' active':'')+'" data-tab="'+t[0]+'">'+t[1]+'<span class="n">'+sc.filter(t[2]).length+'</span></button>'; }).join('');
+    // rows
+    var f = TABS.filter(function(t){return t[0]===ui.tab;})[0][2];
+    var list = sc.filter(f);
+    if(!list.length){ $('body').innerHTML = '<tr><td colspan="9" class="empty">'+(data.jobs.length?'Nothing here for these filters.':'No Sewer Install opportunities yet.')+'</td></tr>'; }
+    else $('body').innerHTML = list.map(rowHtml).join('');
+    sideHtml(sc);
+  }
+  function rowHtml(j){
+    var s = eff(j), st = state[j.job]||{}, nd = nextDate(j), ln = lastNote(j);
+    var amts = j.options.map(function(o){return o.amount||0;}).filter(Boolean), lo=Math.min.apply(null,amts), hi=Math.max.apply(null,amts);
+    var range = !amts.length ? '' : (lo===hi ? money(hi) : money(lo)+'–'+money(hi));
+    var h = '<tr class="job'+(ui.open===j.job?' open':'')+'" data-j="'+esc(j.job)+'">'+
+      '<td class="c-date">'+shortDate(j.date)+'</td>'+
+      '<td class="c-job"><a href="'+ST+esc(j.job)+'" target="_blank" rel="noopener" class="stlink">'+esc(j.job)+'</a><button class="copy" data-copy="'+esc(j.job)+'">Copy</button></td>'+
+      '<td class="c-cust">'+esc(j.customer)+'</td>'+
+      '<td class="c-tech"><button class="techlink" data-t="'+esc(j.tech)+'">'+esc(j.tech)+'</button></td>'+
+      '<td class="hide-m">'+esc(j.jobType.replace(/^Sewer Camera Video Inspection - /,'Camera Inspection – '))+'</td>'+
+      '<td class="num c-opt">'+j.options.length+'<div class="sub">'+range+'</div></td>'+
+      '<td class="c-status"><span class="pill st-'+s+'">'+esc(LABEL[s])+'</span>'+
+        (autoSold(j)?'<div class="sub">from ServiceTitan</div>':'')+
+        (st.reason && s!=='sold'?'<div class="sub">'+esc(st.reason)+'</div>':'')+
+        (j.dismissed && s!=='sold'?'<div><span class="tag">Dismissed in ServiceTitan</span></div>':'')+'</td>'+
+      '<td class="c-next">'+(OPEN[s]&&nd?'<span class="'+(nd<=today()?'due':'')+'">'+shortDate(nd)+(nd<today()?' · overdue':nd===today()?' · today':'')+'</span>':(OPEN[s]?'<span class="muted">Not set</span>':''))+'</td>'+
+      '<td class="hide-m"><div class="lastnote">'+(ln?esc(ln.text):'<span class="muted">No notes yet</span>')+'</div>'+(ln?'<div class="sub">'+esc(ln.by||'')+' · '+when(ln.at)+'</div>':'')+'</td>'+
+    '</tr>';
+    if(ui.open===j.job) h += '<tr class="detail"><td colspan="9">'+detailHtml(j)+'</td></tr>';
+    return h;
+  }
+  function detailHtml(j){
+    var s = eff(j), st = state[j.job]||{}, d = drafts[j.job]||{};
+    var cur = { status: d.status!=null?d.status:(st.status||'presented'), reason: d.reason!=null?d.reason:(st.reason||''), nextDate: d.nextDate!=null?d.nextDate:(st.nextDate||''), note: d.note||'' };
+    var opts = j.options.map(function(o){
+      return '<div class="opt"><div class="row"><span>'+esc(o.name)+'</span><span>'+money(o.amount)+'</span></div>'+
+        '<div class="sub">'+esc(o.status||'')+(o.opp&&o.opp!==o.status?' · '+esc(o.opp):'')+(o.created?' · built '+shortDate(o.created):'')+'</div>'+
+        (o.summary?'<details><summary>What was offered</summary><p>'+esc(o.summary)+'</p></details>':'')+'</div>';
+    }).join('');
+    var sold = (j.sold||[]).map(function(x){ return '<div class="sub" style="color:var(--good);font-weight:600;">Sold '+(x.soldOn?shortDate(x.soldOn)+' ':'')+'— '+esc(x.name||'')+' '+money(x.amount)+(x.job?' (job '+esc(x.job)+')':'')+'</div>'; }).join('');
+    var hist = (notes[j.job]||[]).slice().reverse().map(function(n){
+      var t = n.kind==='note' ? esc(n.text) :
+        '<span class="chg">'+(n.kind==='status'?'Status → <b>'+esc(LABEL[n.text]||n.text)+'</b>':n.kind==='reason'?'Reason → <b>'+esc(n.text||'(cleared)')+'</b>':n.kind==='next'?'Next follow-up → <b>'+(n.text?shortDate(n.text):'(cleared)')+'</b>':esc(n.text))+'</span>';
+      return '<div class="h">'+t+'<div class="meta">'+esc(n.by||'Someone')+' · '+when(n.at)+'</div></div>';
+    }).join('');
+    var dis = !saveOk ? ' disabled' : '';
+    return '<div class="det">'+
+      '<div>'+
+        '<div class="box"><h4>Options presented</h4>'+opts+sold+'</div>'+
+        (j.writeUp?'<div class="box" style="margin-top:14px;"><h4>Tech write-up</h4><p class="writeup">'+esc(j.writeUp)+'</p></div>':'')+
+      '</div>'+
+      '<div class="box"><h4>Follow-up</h4>'+
+        (autoSold(j)?'<p class="sub" style="margin:0 0 10px;color:var(--good);">ServiceTitan shows this sold, so it counts as Sold. Notes can still be added.</p>':'')+
+        '<div class="form" data-form="'+esc(j.job)+'">'+
+          '<div><label class="sub" for="st-'+esc(j.job)+'">Status</label><select id="st-'+esc(j.job)+'" data-k="status"'+(autoSold(j)?' disabled':'')+dis+'>'+STATUS.map(function(x){ return '<option value="'+x[0]+'"'+(cur.status===x[0]?' selected':'')+'>'+x[1]+'</option>'; }).join('')+'</select></div>'+
+          '<div><label class="sub" for="nd-'+esc(j.job)+'">Next follow-up</label><input type="date" id="nd-'+esc(j.job)+'" data-k="nextDate" value="'+esc(cur.nextDate)+'"'+dis+'></div>'+
+          '<div class="full"><label class="sub" for="rs-'+esc(j.job)+'">'+(cur.status==='lost'?'Why was it lost?':'What’s holding it up?')+'</label><select id="rs-'+esc(j.job)+'" data-k="reason"'+dis+'><option value="">—</option>'+REASONS.map(function(r){ return '<option'+(cur.reason===r?' selected':'')+'>'+esc(r)+'</option>'; }).join('')+'</select></div>'+
+          '<div class="full"><label class="sub" for="nt-'+esc(j.job)+'">Add a note</label><textarea id="nt-'+esc(j.job)+'" data-k="note" placeholder="e.g. Called 11/24, left voicemail. Customer wants to talk to his wife and get one more quote."'+dis+'>'+esc(cur.note)+'</textarea></div>'+
+        '</div>'+
+        '<div class="formfoot"><button class="btn btn-accent save" data-j="'+esc(j.job)+'"'+dis+'>Save</button><span class="savemsg" id="msg-'+esc(j.job)+'">'+(drafts[j.job]?'Not saved yet':'')+'</span></div>'+
+        '<div class="hist">'+(hist||'<div class="sub">No updates yet. Started as Options Presented on '+shortDate(j.date)+'.</div>')+'</div>'+
+      '</div>'+
+    '</div>';
+  }
+  function sideHtml(sc){
+    // why not converting: reasons on lost + open jobs
+    var rc = {}, withR = 0;
+    sc.forEach(function(j){ var s=eff(j), r=(state[j.job]||{}).reason; if(s!=='sold' && r){ rc[r]=(rc[r]||0)+1; withR++; } });
+    var keys = Object.keys(rc).sort(function(a,b){return rc[b]-rc[a];}), mx = keys.length? rc[keys[0]] : 1;
+    var unsold = sc.filter(function(j){return eff(j)!=='sold';}).length;
+    $('whyBox').innerHTML = '<h4>Why we’re not converting</h4>'+
+      (keys.length ? keys.map(function(k){ return '<div class="bar"><span class="lab">'+esc(k)+'</span><span class="track"><span class="fill" style="width:'+Math.round(rc[k]/mx*100)+'%"></span></span><span class="c">'+rc[k]+'</span></div>'; }).join('') : '<p class="sub" style="margin:0;">No reasons recorded yet.</p>')+
+      '<p class="sub" style="margin:10px 0 0;">'+withR+' of '+unsold+' unsold jobs have a reason. Pick one under “What’s holding it up?” on each job.</p>';
+    // by tech
+    var by = {}; base().forEach(function(j){ var t=by[j.tech]=by[j.tech]||{n:0,sold:0,open:0,due:0}; t.n++; var s=eff(j); if(s==='sold') t.sold++; if(OPEN[s]) t.open++; if(isDue(j)) t.due++; });
+    $('techBox').innerHTML = '<h4>By technician</h4>'+Object.keys(by).sort().map(function(t){ var x=by[t];
+      return '<div class="techrow"><button class="techlink" data-t="'+esc(t)+'">'+esc(t)+'</button><span class="muted">'+x.sold+' of '+x.n+' sold · '+x.open+' open</span><span>'+(x.due?'<span class="pill" style="background:var(--warn-bg);color:var(--warn);">'+x.due+' due</span>':'')+'</span></div>'; }).join('') || '<p class="sub" style="margin:0;">—</p>';
+  }
+
+  // ---------- 1:1 print ----------
+  function printView(){
+    var sc = scoped(), sold=sc.filter(function(j){return eff(j)==='sold';}), lost=sc.filter(function(j){return eff(j)==='lost';}), open=sc.filter(function(j){return OPEN[eff(j)];});
+    var rc={}; sc.forEach(function(j){ var r=(state[j.job]||{}).reason; if(eff(j)!=='sold'&&r) rc[r]=(rc[r]||0)+1; });
+    var h = '<div class="p-h"><h1>Sewer Install Opportunities — '+esc(ui.tech||'All technicians')+'</h1><p>Completed '+(ui.from?shortDate(ui.from):'Nov 1')+' to '+(ui.to?shortDate(ui.to):'today')+' · printed '+new Date().toLocaleDateString()+'</p></div>'+
+      '<div class="p-stats"><div><b>'+sc.length+'</b>opportunities</div><div><b>'+sold.length+' ('+(sc.length?Math.round(sold.length/sc.length*100):0)+'%)</b>sold</div><div><b>'+money(sold.reduce(function(a,j){return a+soldAmt(j);},0))+'</b>sold value</div><div><b>'+open.length+'</b>still open ('+money(open.reduce(function(a,j){return a+top(j);},0))+')</div><div><b>'+lost.length+'</b>lost</div></div>'+
+      (Object.keys(rc).length?'<p><b>Reasons recorded:</b> '+Object.keys(rc).sort(function(a,b){return rc[b]-rc[a];}).map(function(k){return esc(k)+' ('+rc[k]+')';}).join(' · ')+'</p>':'')+
+      sc.map(function(j){ var st=state[j.job]||{}, s=eff(j);
+        var ns=(notes[j.job]||[]).filter(function(n){return n.kind==='note';});
+        return '<div class="p-job"><div class="t"><span>'+shortDate(j.date)+' · '+esc(j.job)+' · '+esc(j.customer)+(ui.tech?'':' · '+esc(j.tech))+'</span><span>'+esc(LABEL[s])+(st.reason&&s!=='sold'?' — '+esc(st.reason):'')+'</span></div>'+
+          '<ul>'+j.options.map(function(o){return '<li>'+esc(o.name)+' — '+money(o.amount)+'</li>';}).join('')+'</ul>'+
+          (st.nextDate&&OPEN[s]?'<div class="n">Next follow-up: '+shortDate(st.nextDate)+'</div>':'')+
+          (ns.length?'<div class="n">'+ns.map(function(n){return '<div>'+shortDate(ymd(new Date(n.at)))+' '+esc(n.by||'')+': '+esc(n.text)+'</div>';}).join('')+'</div>':'<div class="n muted">No notes.</div>')+'</div>';
+      }).join('')+
+      '<h3 style="margin-top:18px;">1:1 notes</h3><div class="p-lines"><div></div><div></div><div></div><div></div></div>';
+    $('printArea').innerHTML = h; window.print();
+  }
+
+  // ---------- saving ----------
+  async function save(job, btn){
+    var who = $('whoSel').value;
+    if(!who){ alert('Pick your name next to “Updating as” first, so the history shows who made the change.'); $('whoSel').focus(); return; }
+    var d = drafts[job]||{}, st = state[job]||{}, body = {job:job, by:who};
+    if(d.status!=null && d.status!==(st.status||'presented')) body.status=d.status;
+    if(d.reason!=null && d.reason!==(st.reason||'')) body.reason=d.reason;
+    if(d.nextDate!=null && d.nextDate!==(st.nextDate||'')) body.nextDate=d.nextDate;
+    if(d.note && d.note.trim()) body.note=d.note.trim();
+    if(Object.keys(body).length<=2){ $('msg-'+job).textContent='Nothing changed.'; return; }
+    btn.disabled=true; btn.textContent='Saving…';
+    try{
+      var r = await api('/api/opps/save', body);
+      state[job]=r.state; notes[job]=r.notes; delete drafts[job]; render();
+      var m=$('msg-'+job); if(m) m.textContent='Saved';
+    }catch(e){ btn.disabled=false; btn.textContent='Save'; $('msg-'+job).textContent='Could not save ('+e.message+'). Your changes are still here — try again.'; }
+  }
+
+  // ---------- events ----------
+  document.addEventListener('click', function(e){
+    var t;
+    if((t=e.target.closest('[data-copy]'))){ e.stopPropagation(); try{ navigator.clipboard.writeText(t.dataset.copy); t.textContent='Copied'; setTimeout(function(){t.textContent='Copy';},1200);}catch(x){} return; }
+    if(e.target.closest('.stlink')) { e.stopPropagation(); return; }
+    if((t=e.target.closest('[data-t]'))){ ui.tech=t.dataset.t; ls('opp_tech', ui.tech); ui.open=null; render(); return; }
+    if((t=e.target.closest('[data-tab]'))){ ui.tab=t.dataset.tab; ui.open=null; render(); return; }
+    if((t=e.target.closest('#rangeChips .chip'))){ setRange(t.dataset.r); return; }
+    if((t=e.target.closest('.save'))){ save(t.dataset.j, t); return; }
+    if(e.target.closest('tr.detail')) return;
+    if((t=e.target.closest('tr.job'))){ ui.open = ui.open===t.dataset.j ? null : t.dataset.j; render(); }
+  });
+  function onField(e){
+    var f = e.target.closest('[data-form]'); if(!f || !e.target.dataset.k) return;
+    var job=f.dataset.form, d=drafts[job]=drafts[job]||{};
+    d[e.target.dataset.k]=e.target.value;
+    var m=$('msg-'+job); if(m) m.textContent='Not saved yet';
+    if(e.target.dataset.k==='status'){ var lab=f.querySelector('label[for="rs-'+job+'"]'); if(lab) lab.textContent = e.target.value==='lost'?'Why was it lost?':'What’s holding it up?'; }
+  }
+  document.addEventListener('input', onField); document.addEventListener('change', onField);
+  $('search').addEventListener('input', function(){ ui.q=this.value.trim(); render(); });
+  $('printBtn').addEventListener('click', printView);
+  $('whoSel').addEventListener('change', function(){ ls('opp_who', this.value); });
+  ['fromDate','toDate'].forEach(function(id){ $(id).addEventListener('change', function(){ ui.from=$('fromDate').value; ui.to=$('toDate').value; ui.rangeKey='custom'; paintRange(); render(); }); });
+  function setRange(k){
+    var d=new Date(); ui.rangeKey=k;
+    if(k==='this'){ ui.from=ymd(new Date(d.getFullYear(),d.getMonth(),1)); ui.to=''; }
+    else if(k==='last'){ ui.from=ymd(new Date(d.getFullYear(),d.getMonth()-1,1)); ui.to=ymd(new Date(d.getFullYear(),d.getMonth(),0)); }
+    else { ui.from=''; ui.to=''; }
+    paintRange(); render();
+  }
+  function paintRange(){ $('fromDate').value=ui.from; $('toDate').value=ui.to; document.querySelectorAll('#rangeChips .chip').forEach(function(c){ c.classList.toggle('active', c.dataset.r===ui.rangeKey); }); }
+
+  function fillWho(){
+    var names = {}; data.jobs.forEach(function(j){ if(j.tech) names[j.tech]=1; });
+    var list = Object.keys(names).sort().concat(['Matt B.','Office']), saved = ls('opp_who')||'';
+    if(saved && list.indexOf(saved)<0) list.push(saved);
+    $('whoSel').innerHTML = '<option value="">Choose your name…</option>'+list.map(function(n){ return '<option'+(n===saved?' selected':'')+'>'+esc(n)+'</option>'; }).join('');
+  }
+
+  async function init(){
+    try{
+      var r = await fetch('../data/opportunities/opps.json?t='+Date.now());
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      data = await r.json();
+      $('subhead').textContent = 'Updated '+new Date(data.updatedAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' · options presented since Nov 1';
+    }catch(e){ $('subhead').textContent='Could not load opportunities ('+e.message+')'; }
+    var t = ls('opp_tech'); if(t && data.jobs.some(function(j){return j.tech===t;})) ui.tech=t;
+    fillWho(); setRange('all');
+    try{ var s = await api('/api/opps'); state=s.state||{}; notes=s.notes||{}; }
+    catch(e){
+      saveOk=false;
+      $('saveBanner').innerHTML = /not found|404/i.test(e.message) ? 'Saving isn’t switched on yet: the save service needs its update installed. You can look around, but status changes and notes can’t be saved until then.' : 'Can’t reach the save service right now ('+esc(e.message)+'). Statuses and notes shown may be out of date, and saving is paused. Reload in a minute.';
+      $('saveBanner').classList.add('show');
+    }
+    render();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

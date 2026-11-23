@@ -978,12 +978,52 @@ async function main() {
   index.updatedAt = new Date().toISOString();
   index.lastSync = { at: index.updatedAt, context: opts.context, reports: log.reports };
   await store.write(`${DIR}/index.json`, idxRes.sha, index, `${msg} [index]`);
+  try { const n = await writeOpportunities(store, index, monthCache, msg); console.log(`Opportunities: ${n} Sewer Install job(s) with options`); }
+  catch (e) { console.log('opportunities not updated: ' + e.message); }
 
   log.stage = log.errors.length ? 'partial' : 'done';
   log.jobs = { touched: Object.keys(byJob).length, added, updated, pending: Object.keys(pending).length };
   await writeLog(store, log);
   console.log(`Review sync ${log.stage}: ${Object.keys(byJob).length} job(s) touched (+${added} new / ~${updated} updated), ${Object.keys(pending).length} waiting for a completion date.`);
   if (log.errors.length) process.exit(1);
+}
+
+// ---------------------------------------------------------------- Opportunity tracker (opportunities/index.html)
+// Every Sewer Install visit since OPP_SINCE where options were presented, with what was offered and whether it sold.
+// Status, follow-up dates and notes live in the Worker's database; this file is only the ServiceTitan side.
+const OPP_SINCE = '2026-11-01';
+const OPP_SKIP_TYPE = /^(sold work|warranty|recall|non-repair)/i;
+function buildOpportunities(allJobs) {
+  const soldFrom = {}; // jobNumber the estimate was built on -> sold work that came from it
+  allJobs.forEach((j) => { if (j.fromEstimate && j.fromEstimate.jobNumber) (soldFrom[j.fromEstimate.jobNumber] = soldFrom[j.fromEstimate.jobNumber] || []).push({ job: j.jobNumber, name: j.fromEstimate.estimateName, amount: j.fromEstimate.subtotal, soldOn: j.fromEstimate.soldOn, revenue: (j.materials && j.materials.revenue) || 0 }); });
+  const out = [];
+  allJobs.forEach((j) => {
+    if (deptOf(j.businessUnit) !== 'Sewer Install') return;
+    if (!j.completionDate || j.completionDate < OPP_SINCE || OPP_SKIP_TYPE.test(j.jobType || '')) return;
+    const est = (j.estimates || []).filter((e) => e && e.name);
+    if (!est.length) return;
+    const sold = est.filter((e) => e.status === 'Sold').map((e) => ({ name: e.name, amount: e.subtotal, soldOn: e.soldOn, job: null }))
+      .concat(soldFrom[j.jobNumber] || []);
+    out.push({
+      job: j.jobNumber, date: j.completionDate, tech: j.primaryTech || '', customer: j.customer || '', jobType: j.jobType || '',
+      options: est.map((e) => ({ name: e.name, amount: e.subtotal || 0, status: e.status || '', opp: e.opportunityStatus || '', created: e.created || '', by: e.createdBy || '', summary: String(e.summary || '').slice(0, 1500) })),
+      sold, dismissed: est.every((e) => e.status === 'Dismissed'),
+      writeUp: (j.invoices || []).map((i) => i.summary || '').filter(Boolean).join('\n\n').slice(0, 2500),
+    });
+  });
+  return out.sort((a, b) => b.date.localeCompare(a.date) || b.job.localeCompare(a.job));
+}
+async function writeOpportunities(store, index, monthCache, msg) {
+  const all = [];
+  for (const mo of (index.months || []).filter((m) => m >= OPP_SINCE.slice(0, 7))) {
+    const b = monthCache && monthCache[mo];
+    const data = b ? b.data : (await store.read(`${DIR}/${mo}.json`)).data;
+    if (data && data.jobs) Object.values(data.jobs).forEach((j) => all.push(j));
+  }
+  const path = 'data/opportunities/opps.json';
+  const jobs = buildOpportunities(all);
+  await store.write(path, await store.sha(path), { since: OPP_SINCE, updatedAt: new Date().toISOString(), jobs }, `${msg} [opportunities]`);
+  return jobs.length;
 }
 
 async function writeLog(store, log) {
@@ -997,4 +1037,4 @@ async function writeLog(store, log) {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e.stack || e.message); process.exit(1); });
 
-module.exports = { replacePairs, tierOf, expectedHours, taskHoursMap, isWrapper, sellerOf, INSTALLERS, DEMAND_CALL, matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
+module.exports = { buildOpportunities, writeOpportunities, replacePairs, tierOf, expectedHours, taskHoursMap, isWrapper, sellerOf, INSTALLERS, DEMAND_CALL, matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };

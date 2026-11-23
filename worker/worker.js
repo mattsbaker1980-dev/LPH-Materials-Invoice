@@ -15,6 +15,7 @@
 //
 //   /api/state, /api/state/status, /api/state/note, /api/state/log   Job Review marks + notes (Cloudflare D1, see below)
 //   /api/standards/get|save|settings|replace                         Minimum Standards shared data (data/standards/data.json)
+//   /api/opps, /api/opps/save                                       Opportunity tracker status + notes (Cloudflare D1)
 //
 // Required binding: DB — a Cloudflare D1 database (Settings -> Bindings -> D1 database, variable name DB).
 // Required secret: GITHUB_TOKEN — a fine-grained PAT scoped to just this repo,
@@ -184,6 +185,8 @@ async function ensureSchema(db) {
     db.prepare('CREATE TABLE IF NOT EXISTS job_state (job TEXT PRIMARY KEY, status TEXT, status_at INTEGER, concern TEXT, positive TEXT, excused TEXT, note_at INTEGER)'),
     db.prepare('CREATE TABLE IF NOT EXISTS change_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, job TEXT, field TEXT, value TEXT)'),
     db.prepare('CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS opp_state (job TEXT PRIMARY KEY, status TEXT, reason TEXT, next_date TEXT, updated_at INTEGER, updated_by TEXT)'),
+    db.prepare('CREATE TABLE IF NOT EXISTS opp_notes (id INTEGER PRIMARY KEY AUTOINCREMENT, job TEXT, at INTEGER, by TEXT, kind TEXT, text TEXT)'),
   ]);
   schemaReady = true;
 }
@@ -325,7 +328,71 @@ async function handleStateLog(env, body) {
   return json({ ok: true, rows: results || [] });
 }
 
+// ---------------------------------------------------------------------------
+// Opportunity tracker (opportunities/index.html): follow-up status, lost reason, next
+// follow-up date and a dated notes history per job. Same D1 database.
+//   /api/opps        {}                                                  -> { state, notes }
+//   /api/opps/save   { job, by?, status?, reason?, nextDate?, note? }    -> { ok, state, notes }
+// Every change is also written to opp_notes as a history line. Backed up to GitHub
+// (data/opportunities/state_backup.json) at most every 10 minutes.
+// ---------------------------------------------------------------------------
+const OPP_STATUSES = ['presented', 'contacted', 'scheduled', 'sold', 'lost'];
+const OPP_BACKUP = 'data/opportunities/state_backup.json';
+const clip = (v, n) => String(v === undefined || v === null ? '' : v).slice(0, n);
+function oppRow(r) { return { status: r.status || 'presented', reason: r.reason || '', nextDate: r.next_date || '', updatedAt: r.updated_at || null, updatedBy: r.updated_by || '' }; }
+async function oppAll(db) {
+  const st = await db.prepare('SELECT * FROM opp_state').all();
+  const nt = await db.prepare('SELECT * FROM opp_notes ORDER BY id').all();
+  const state = {}, notes = {};
+  (st.results || []).forEach((r) => { state[r.job] = oppRow(r); });
+  (nt.results || []).forEach((r) => { (notes[r.job] = notes[r.job] || []).push({ at: r.at, by: r.by || '', kind: r.kind || 'note', text: r.text || '' }); });
+  return { state, notes };
+}
+async function handleOpps(env) { return json(Object.assign({ ok: true }, await oppAll(env.DB))); }
+async function handleOppsSave(env, body, ctx) {
+  const job = jobOf(body);
+  if (!job) return json({ ok: false, error: 'job is required' }, 400);
+  const db = env.DB, now = Date.now(), by = clip(body.by, 60).trim();
+  const cur = await db.prepare('SELECT * FROM opp_state WHERE job = ?').bind(job).first();
+  const c = cur ? oppRow(cur) : oppRow({});
+  const next = Object.assign({}, c), changes = [];
+  if (body.status !== undefined) { if (!OPP_STATUSES.includes(body.status)) return json({ ok: false, error: 'bad status' }, 400); if (body.status !== c.status) { next.status = body.status; changes.push(['status', body.status]); } }
+  if (body.reason !== undefined && clip(body.reason, 200) !== c.reason) { next.reason = clip(body.reason, 200); changes.push(['reason', next.reason]); }
+  if (body.nextDate !== undefined) { const d = clip(body.nextDate, 10); if (d && !/^\d{4}-\d{2}-\d{2}$/.test(d)) return json({ ok: false, error: 'bad date' }, 400); if (d !== c.nextDate) { next.nextDate = d; changes.push(['next', d]); } }
+  const note = clip(body.note, 5000).trim();
+  const stmts = [];
+  if (changes.length) {
+    stmts.push(db.prepare('INSERT INTO opp_state (job, status, reason, next_date, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(job) DO UPDATE SET status = excluded.status, reason = excluded.reason, next_date = excluded.next_date, updated_at = excluded.updated_at, updated_by = excluded.updated_by')
+      .bind(job, next.status, next.reason, next.nextDate, now, by));
+    changes.forEach(([k, v]) => stmts.push(db.prepare('INSERT INTO opp_notes (job, at, by, kind, text) VALUES (?, ?, ?, ?, ?)').bind(job, now, by, k, v)));
+  } else if (note && cur) {
+    stmts.push(db.prepare('UPDATE opp_state SET updated_at = ?, updated_by = ? WHERE job = ?').bind(now, by, job));
+  } else if (note) {
+    stmts.push(db.prepare('INSERT INTO opp_state (job, status, reason, next_date, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?)').bind(job, c.status, c.reason, c.nextDate, now, by));
+  }
+  if (note) stmts.push(db.prepare('INSERT INTO opp_notes (job, at, by, kind, text) VALUES (?, ?, ?, ?, ?)').bind(job, now, by, 'note', note));
+  if (stmts.length) {
+    stmts.push(db.prepare("INSERT INTO meta (k, v) VALUES ('opp_last_change', ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(String(now)));
+    await db.batch(stmts);
+  }
+  const row = await db.prepare('SELECT * FROM opp_state WHERE job = ?').bind(job).first();
+  const nts = await db.prepare('SELECT * FROM opp_notes WHERE job = ? ORDER BY id').bind(job).all();
+  ctx.waitUntil(oppBackup(env));
+  return json({ ok: true, state: row ? oppRow(row) : oppRow({}), notes: (nts.results || []).map((r) => ({ at: r.at, by: r.by || '', kind: r.kind || 'note', text: r.text || '' })) });
+}
+async function oppBackup(env) {
+  try {
+    const db = env.DB, last = +(await getMeta(db, 'opp_last_backup')) || 0, dirty = +(await getMeta(db, 'opp_last_change')) || 0;
+    if (dirty <= last || Date.now() - last < BACKUP_EVERY_MS) return;
+    await setMeta(db, 'opp_last_backup', Date.now());
+    const all = await oppAll(db);
+    await ghUpdate(env.GITHUB_TOKEN, OPP_BACKUP, () => ({ data: Object.assign({ backedUpAt: new Date().toISOString() }, all) }), `Opportunities state backup: ${Object.keys(all.state).length} job(s)`);
+  } catch (e) { /* best effort */ }
+}
+
 const STATE_ROUTES = {
+  '/api/opps': handleOpps,
+  '/api/opps/save': handleOppsSave,
   '/api/state': handleState,
   '/api/state/status': handleStateStatus,
   '/api/state/note': handleStateNote,
