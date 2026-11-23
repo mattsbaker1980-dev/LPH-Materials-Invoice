@@ -180,7 +180,7 @@ tr.detail td{background:#FFFCF9;padding:0;}
     <div class="field"><label for="search">Search</label><input type="text" id="search" placeholder="Job #, customer, option…" style="width:210px;"></div>
     <div class="spacer"></div>
     <div class="field who"><label for="whoSel" style="margin:0;">Updating as</label><select id="whoSel"></select></div>
-    <button class="btn btn-accent" id="printBtn" title="Print or save as PDF for a 1:1">Print for 1:1</button>
+    <button class="btn btn-accent" id="printBtn" title="Download a PDF of what's on screen, for a 1:1">1:1 report (PDF)</button>
   </div>
 
   <div class="card tiles" id="tiles"></div>
@@ -361,22 +361,58 @@ tr.detail td{background:#FFFCF9;padding:0;}
       (!unsold.length?'<span class="muted">Everything here sold.</span>':'')+
       (ui.reason?'<button class="linkish" data-reason="">Clear</button>':'');
   }
-  // ---------- 1:1 print ----------
-  function printView(){
-    var sc = scoped(), sold=sc.filter(function(j){return eff(j)==='sold';}), lost=sc.filter(function(j){return eff(j)==='lost';}), open=sc.filter(function(j){return OPEN[eff(j)];});
-    var rc={}; sc.forEach(function(j){ var r=(stOf(j)||{}).reason; if(eff(j)!=='sold'&&r) rc[r]=(rc[r]||0)+1; });
-    var h = '<div class="p-h"><h1>Sewer Install Opportunities — '+esc(ui.tech||'All technicians')+'</h1><p>Completed '+(ui.from?shortDate(ui.from):'Nov 1')+' to '+(ui.to?shortDate(ui.to):'today')+' · printed '+new Date().toLocaleDateString()+'</p></div>'+
-      '<div class="p-stats"><div><b>'+sc.length+'</b>opportunities</div><div><b>'+sold.length+' ('+(sc.length?Math.round(sold.length/sc.length*100):0)+'%)</b>sold</div><div><b>'+money(sold.reduce(function(a,j){return a+soldAmt(j);},0))+'</b>sold value</div><div><b>'+open.length+'</b>still open ('+money(open.reduce(function(a,j){return a+top(j);},0))+')</div><div><b>'+lost.length+'</b>lost</div></div>'+
-      (Object.keys(rc).length?'<p><b>Reasons recorded:</b> '+Object.keys(rc).sort(function(a,b){return rc[b]-rc[a];}).map(function(k){return esc(k)+' ('+rc[k]+')';}).join(' · ')+'</p>':'')+
-      sc.map(function(j){ var st=stOf(j)||{}, s=eff(j);
-        var ns=(ntOf(j)||[]).filter(function(n){return n.kind==='note';});
-        return '<div class="p-job"><div class="t"><span>'+shortDate(j.date)+' · '+esc(j.visits.map(function(v){return v.job;}).join(', '))+' · '+esc(j.customer)+(ui.tech?'':' · '+esc(j.tech))+'</span><span>'+esc(LABEL[s])+(st.reason&&s!=='sold'?' — '+esc(st.reason):'')+'</span></div>'+
-          '<ul>'+j.options.map(function(o){return '<li>'+esc(o.name)+' — '+money(o.amount)+'</li>';}).join('')+'</ul>'+
-          ((j.sold||[]).length?'<div class="n">'+j.sold.map(function(x){return 'Sold '+shortDate(x.soldOn)+': '+esc(x.name)+' '+money(x.amount)+(x.job?' (job '+esc(x.job)+')':'');}).join('; ')+'</div>':'')+(st.nextDate&&OPEN[s]?'<div class="n">Next follow-up: '+shortDate(st.nextDate)+'</div>':'')+
-          (ns.length?'<div class="n">'+ns.map(function(n){return '<div>'+shortDate(ymd(new Date(n.at)))+' '+esc(n.by||'')+': '+esc(n.text)+'</div>';}).join('')+'</div>':'<div class="n muted">No notes.</div>')+'</div>';
-      }).join('')+
-      '<h3 style="margin-top:18px;">1:1 notes</h3><div class="p-lines"><div></div><div></div><div></div><div></div></div>';
-    $('printArea').innerHTML = h; window.print();
+  // ---------- 1:1 report: a downloaded PDF (no browser print dialog, which hangs in Edge) ----------
+  function loadScript(srcs){ return new Promise(function(ok,bad){ var i=0; (function next(){ if(i>=srcs.length) return bad(new Error('could not load the PDF library')); var el=document.createElement('script'); el.src=srcs[i++]; el.onload=ok; el.onerror=next; document.head.appendChild(el); })(); }); }
+  var pdfLib=null;
+  function getPdf(){
+    if(!pdfLib) pdfLib = loadScript(['https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js','https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'])
+      .then(function(){ return loadScript(['https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js']); })
+      .then(function(){ return window.jspdf.jsPDF; }).catch(function(e){ pdfLib=null; throw e; });
+    return pdfLib;
+  }
+  function clean(t){ return String(t==null?'':t).replace(/[‘’]/g,"'").replace(/[“”]/g,'"').replace(/[–—]/g,'-').replace(/…/g,'...').replace(/→/g,'->').replace(/[^\x09\x0A\x0D\x20-\x7E -ÿ]/g,''); }
+  async function printView(){
+    var btn=$('printBtn'), label=btn.textContent; btn.disabled=true; btn.textContent='Building PDF…';
+    try{
+      var jsPDF = await getPdf();
+      var sc = scoped(), sold=sc.filter(function(j){return eff(j)==='sold';}), lost=sc.filter(function(j){return eff(j)==='lost';}), open=sc.filter(function(j){return OPEN[eff(j)];});
+      var rc={}, none=0; sc.forEach(function(j){ if(eff(j)==='sold') return; var r=(stOf(j)||{}).reason; if(r) rc[r]=(rc[r]||0)+1; else none++; });
+      var doc=new jsPDF({unit:'pt',format:'letter'}), W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), M=40, y;
+      var INK=[27,36,48], MUTED=[102,112,133], ACC=[226,98,14], GOOD=[46,125,79], LINE=[215,222,228];
+      doc.setFillColor.apply(doc,INK); doc.rect(0,0,W,78,'F'); doc.setFillColor.apply(doc,ACC); doc.rect(0,78,W,3,'F');
+      doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(174,182,194); doc.text('LANCASTER PLUMBING & HEATING  -  SEWER INSTALL OPPORTUNITIES',M,26);
+      doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(255,255,255); doc.text(clean(ui.tech||'All technicians'),M,52);
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(215,222,228);
+      doc.text('Completed '+(ui.from?shortDate(ui.from):'11/1')+' to '+(ui.to?shortDate(ui.to):'today')+'   |   prepared '+new Date().toLocaleDateString(),M,68);
+      y=104;
+      var stats=[[String(sc.length),'opportunities'],[sold.length+' ('+(sc.length?Math.round(sold.length/sc.length*100):0)+'%)','sold'],[money(sold.reduce(function(a,j){return a+soldAmt(j);},0)),'sold value'],[String(open.length),'still open'],[money(open.reduce(function(a,j){return a+top(j);},0)),'open value (top option)'],[String(lost.length),'lost']];
+      var cw=(W-2*M)/stats.length;
+      stats.forEach(function(st,i){ doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor.apply(doc,INK); doc.text(st[0],M+i*cw,y); doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor.apply(doc,MUTED); doc.text(st[1],M+i*cw,y+13); });
+      y+=34;
+      var rs=Object.keys(rc).sort(function(a,b){return rc[b]-rc[a];}).map(function(k){return k+' ('+rc[k]+')';});
+      if(none) rs.push('No reason given ('+none+')');
+      if(rs.length){ doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor.apply(doc,INK); doc.text('Why it hasn\'t sold:',M,y); doc.setFont('helvetica','normal');
+        var ln=doc.splitTextToSize(clean(rs.join('   -   ')),W-2*M-100); doc.text(ln,M+100,y); y+=ln.length*13+8; }
+      var rows=sc.map(function(j){ var st=stOf(j)||{}, s=eff(j);
+        var opts=j.options.map(function(o){return o.name+' - '+money(o.amount);}).join('\n');
+        var stat=LABEL[s]+(st.reason&&s!=='sold'?'\n'+st.reason:'')+((j.sold||[]).length?'\n'+j.sold.map(function(x){return shortDate(x.soldOn)+' '+money(x.amount)+(x.job?' (job '+x.job+')':'');}).join('\n'):'');
+        var nts=(ntOf(j)||[]).filter(function(n){return n.kind==='note';}).map(function(n){return shortDate(ymd(new Date(n.at)))+' '+(n.by||'')+': '+n.text;}).join('\n');
+        return [shortDate(j.date), j.visits.map(function(v){return v.job;}).join('\n'), j.customer+(ui.tech?'':'\n'+j.tech), opts, stat, (OPEN[s]&&st.nextDate?shortDate(st.nextDate):''), nts||'-'].map(clean);
+      });
+      doc.autoTable({ head:[['Date','Job #','Customer','Options presented','Status','Next','Notes']], body:rows, startY:y, margin:{left:M,right:M,bottom:44},
+        styles:{font:'helvetica',fontSize:8.5,cellPadding:4,textColor:INK,lineColor:LINE,lineWidth:0.5,valign:'top',overflow:'linebreak'},
+        headStyles:{fillColor:[238,242,245],textColor:MUTED,fontStyle:'bold'},
+        columnStyles:{0:{cellWidth:34},1:{cellWidth:58},2:{cellWidth:78},3:{cellWidth:120},4:{cellWidth:86},5:{cellWidth:34}},
+        didParseCell:function(d){ if(d.section==='body'&&d.column.index===4&&/^Sold/.test(String(d.cell.raw))){ d.cell.styles.textColor=GOOD; d.cell.styles.fontStyle='bold'; } } });
+      y=doc.lastAutoTable.finalY+24;
+      if(y>H-150){ doc.addPage(); y=M; }
+      doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor.apply(doc,INK); doc.text('1:1 notes and next steps',M,y); y+=10;
+      doc.setDrawColor.apply(doc,LINE); for(var i=0;i<5;i++){ y+=22; doc.line(M,y,W-M,y); }
+      var pages=doc.internal.getNumberOfPages();
+      for(var p=1;p<=pages;p++){ doc.setPage(p); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor.apply(doc,MUTED); doc.text('Sewer Install Opportunities  |  '+clean(ui.tech||'All technicians'),M,H-22); doc.text('Page '+p+' of '+pages,W-M,H-22,{align:'right'}); }
+      doc.save(('Sewer Opportunities - '+(ui.tech||'All')+' - '+ymd(new Date())).replace(/[\\/:*?"<>|.]+/g,' ').replace(/\s+/g,' ').trim()+'.pdf');
+    }catch(e){ alert('Could not build the PDF ('+e.message+').'); }
+    btn.disabled=false; btn.textContent=label;
   }
 
   // ---------- saving ----------
