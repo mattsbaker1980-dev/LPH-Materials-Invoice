@@ -52,7 +52,16 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .tile .v{font-size:24px;font-weight:700;}
 .tile .k{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.35;}
 .tile.bad .v{color:var(--warn);} .tile.good .v{color:var(--good);}
-.split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;margin-top:18px;align-items:start;}
+.mainlist{margin-top:18px;}
+.reasons{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:12px 14px;border-bottom:1px solid var(--line-soft);background:#FAFBFC;font-size:13px;}
+.reasons .rlab{font-weight:600;margin-right:4px;}
+.rchip{font-family:inherit;font-size:12.5px;padding:4px 10px;border-radius:999px;border:1px solid #F0C9A9;background:#FFF4EA;color:var(--accent-dark);cursor:pointer;}
+.rchip b{margin-left:3px;}
+.rchip.none{border-color:var(--line);background:var(--paper);color:var(--muted);}
+.rchip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.linkish{font-family:inherit;font-size:12.5px;background:none;border:none;color:var(--info);text-decoration:underline;cursor:pointer;}
+.soldbox{margin-top:12px;padding:10px 12px;border-radius:6px;background:var(--good-bg);color:var(--good);font-size:13px;}
+.soldbox .sub{color:var(--good);opacity:.9;}
 .tabs{display:flex;gap:4px;padding:10px 12px 0;border-bottom:1px solid var(--line-soft);flex-wrap:wrap;}
 .tab{font-family:inherit;font-size:13.5px;font-weight:600;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:8px 10px 10px;cursor:pointer;}
 .tab.active{color:var(--ink);border-bottom-color:var(--accent);}
@@ -109,7 +118,7 @@ tr.detail td{background:#FFFCF9;padding:0;}
 .muted{color:var(--muted);}
 .foot{margin-top:18px;font-size:12px;color:var(--muted);line-height:1.6;}
 #printArea{display:none;}
-@media (max-width:1100px){ .split{grid-template-columns:1fr;} .tiles{grid-template-columns:repeat(3,1fr);} .tile:nth-child(3){border-right:none;} .tile:nth-child(-n+3){border-bottom:1px solid var(--line-soft);} }
+@media (max-width:1100px){ .tiles{grid-template-columns:repeat(3,1fr);} .tile:nth-child(3){border-right:none;} .tile:nth-child(-n+3){border-bottom:1px solid var(--line-soft);} }
 @media (max-width:760px){
   .wrap{padding:0 16px 40px;} header.top h1{font-size:26px;} header.top .titleblock{text-align:left;} header.top .logo img{height:54px;}
   .tiles{grid-template-columns:repeat(2,1fr);} .tile{border-right:none !important;border-bottom:1px solid var(--line-soft);}
@@ -132,7 +141,7 @@ tr.detail td{background:#FFFCF9;padding:0;}
 }
 @media print{
   body{background:#fff;font-size:11px;}
-  header.top,.controls,.split,.tiles,.banner,.foot,#appMain{display:none !important;}
+  header.top,.controls,.mainlist,.tiles,.banner,.foot,#appMain{display:none !important;}
   #printArea{display:block;}
   .p-h{border-bottom:3px solid var(--accent);padding-bottom:8px;margin-bottom:12px;}
   .p-h h1{margin:0;font-size:20px;} .p-h p{margin:3px 0 0;color:var(--muted);}
@@ -176,9 +185,9 @@ tr.detail td{background:#FFFCF9;padding:0;}
 
   <div class="card tiles" id="tiles"></div>
 
-  <div class="split">
-    <div class="card">
+  <div class="card mainlist">
       <div class="tabs" id="tabs"></div>
+      <div class="reasons" id="reasons"></div>
       <div style="overflow-x:auto;">
         <table>
           <thead><tr>
@@ -188,14 +197,9 @@ tr.detail td{background:#FFFCF9;padding:0;}
           <tbody id="body"><tr><td colspan="9" class="empty">Loading…</td></tr></tbody>
         </table>
       </div>
-    </div>
-    <div class="side">
-      <div class="card box" id="whyBox"></div>
-      <div class="card box" id="techBox"></div>
-    </div>
   </div>
 
-  <p class="foot">Every Sewer Install visit since Nov 1 where options were presented, updated each morning from ServiceTitan. Jobs switch to <b>Sold</b> by themselves when ServiceTitan shows the estimate sold. Status, follow-up dates and notes are shared with everyone who opens this page. Customer phone and email are in ServiceTitan; use the job number link.</p>
+  <p class="foot">Every Sewer Install visit since Nov 1 where options were presented, updated each morning from ServiceTitan. Several visits for the same customer count as one opportunity, and it switches to <b>Sold</b> by itself when ServiceTitan shows a sale for that customer, even if the estimate was rebuilt and sold on a different job. Status, follow-up dates and notes are shared with everyone who opens this page. Customer phone and email are in ServiceTitan; use the job number link.</p>
 </div>
 
 <div id="printArea"></div>
@@ -212,7 +216,7 @@ tr.detail td{background:#FFFCF9;padding:0;}
   var REASONS = ['Price / too expensive','Needs financing','Getting other quotes','Not urgent / waiting','Waiting on spouse or decision maker','Insurance, landlord or HOA','No response from customer','Went with another company','Chose the repair / cheaper option','Other'];
 
   var data = { jobs:[], updatedAt:null }, state = {}, notes = {}, saveOk = true;
-  var ui = { tech:'', tab:'open', from:'', to:'', q:'', open:null, rangeKey:'all' };
+  var ui = { reason:'', tech:'', tab:'open', from:'', to:'', q:'', open:null, rangeKey:'all' };
   var drafts = {};
 
   function $(id){ return document.getElementById(id); }
@@ -231,23 +235,25 @@ tr.detail td{background:#FFFCF9;padding:0;}
     return j;
   }
 
-  // ---------- derived per job ----------
+  // ---------- derived per opportunity (one per customer; may span several visits) ----------
+  function stOf(j){ if(state[j.key]) return state[j.key]; for(var i=0;i<(j.visits||[]).length;i++){ var s=state[j.visits[i].job]; if(s) return s; } return undefined; }
+  function ntOf(j){ if(notes[j.key]) return notes[j.key]; for(var i=0;i<(j.visits||[]).length;i++){ var n=notes[j.visits[i].job]; if(n) return n; } return undefined; }
   function top(j){ return j.options.reduce(function(m,o){ return Math.max(m,o.amount||0); },0); }
   function eff(j){ // effective status: ServiceTitan "sold" wins
-    var s = state[j.job] || {};
+    var s = stOf(j) || {};
     if(j.sold && j.sold.length) return 'sold';
     return s.status || 'presented';
   }
   function autoSold(j){ return j.sold && j.sold.length; }
   function soldAmt(j){ return (j.sold||[]).reduce(function(a,x){ return a+(x.amount||0); },0); }
-  function nextDate(j){ var s=state[j.job]; return s && s.nextDate || ''; }
+  function nextDate(j){ var s=stOf(j); return s && s.nextDate || ''; }
   function isDue(j){ var d=nextDate(j); return OPEN[eff(j)] && d && d<=today(); }
-  function lastNote(j){ var n=(notes[j.job]||[]).filter(function(x){return x.kind==='note';}); return n.length? n[n.length-1] : null; }
+  function lastNote(j){ var n=(ntOf(j)||[]).filter(function(x){return x.kind==='note';}); return n.length? n[n.length-1] : null; }
 
   function inRange(j){ return (!ui.from || j.date>=ui.from) && (!ui.to || j.date<=ui.to); }
   function matchQ(j){
     if(!ui.q) return true; var q=ui.q.toLowerCase();
-    return (j.job+' '+j.customer+' '+j.tech+' '+j.jobType+' '+j.options.map(function(o){return o.name;}).join(' ')).toLowerCase().indexOf(q)>-1;
+    return (j.visits.map(function(v){return v.job+' '+v.customer;}).join(' ')+' '+j.customer+' '+j.tech+' '+j.jobType+' '+j.options.map(function(o){return o.name;}).join(' ')).toLowerCase().indexOf(q)>-1;
   }
   function base(){ return data.jobs.filter(function(j){ return inRange(j) && matchQ(j); }); }
   function scoped(){ return base().filter(function(j){ return !ui.tech || j.tech===ui.tech; }); }
@@ -282,18 +288,18 @@ tr.detail td{background:#FFFCF9;padding:0;}
     $('tabs').innerHTML = TABS.map(function(t){ return '<button class="tab'+(ui.tab===t[0]?' active':'')+'" data-tab="'+t[0]+'">'+t[1]+'<span class="n">'+sc.filter(t[2]).length+'</span></button>'; }).join('');
     // rows
     var f = TABS.filter(function(t){return t[0]===ui.tab;})[0][2];
-    var list = sc.filter(f);
+    var list = sc.filter(f).filter(function(j){ if(!ui.reason) return true; if(eff(j)==='sold') return false; var r=(stOf(j)||{}).reason||''; return ui.reason==='__none' ? !r : r===ui.reason; });
     if(!list.length){ $('body').innerHTML = '<tr><td colspan="9" class="empty">'+(data.jobs.length?'Nothing here for these filters.':'No Sewer Install opportunities yet.')+'</td></tr>'; }
     else $('body').innerHTML = list.map(rowHtml).join('');
-    sideHtml(sc);
+    reasonsHtml(sc);
   }
   function rowHtml(j){
-    var s = eff(j), st = state[j.job]||{}, nd = nextDate(j), ln = lastNote(j);
+    var s = eff(j), st = stOf(j)||{}, nd = nextDate(j), ln = lastNote(j);
     var amts = j.options.map(function(o){return o.amount||0;}).filter(Boolean), lo=Math.min.apply(null,amts), hi=Math.max.apply(null,amts);
     var range = !amts.length ? '' : (lo===hi ? money(hi) : money(lo)+'–'+money(hi));
-    var h = '<tr class="job'+(ui.open===j.job?' open':'')+'" data-j="'+esc(j.job)+'">'+
+    var h = '<tr class="job'+(ui.open===j.key?' open':'')+'" data-j="'+esc(j.key)+'">'+
       '<td class="c-date">'+shortDate(j.date)+'</td>'+
-      '<td class="c-job"><a href="'+ST+esc(j.job)+'" target="_blank" rel="noopener" class="stlink">'+esc(j.job)+'</a><button class="copy" data-copy="'+esc(j.job)+'">Copy</button></td>'+
+      '<td class="c-job"><a href="'+ST+esc(j.job)+'" target="_blank" rel="noopener" class="stlink">'+esc(j.job)+'</a><button class="copy" data-copy="'+esc(j.job)+'">Copy</button>'+(j.visits.length>1?'<div class="sub">+'+(j.visits.length-1)+' earlier visit'+(j.visits.length>2?'s':'')+'</div>':'')+'</td>'+
       '<td class="c-cust">'+esc(j.customer)+'</td>'+
       '<td class="c-tech"><button class="techlink" data-t="'+esc(j.tech)+'">'+esc(j.tech)+'</button></td>'+
       '<td class="hide-m">'+esc(j.jobType.replace(/^Sewer Camera Video Inspection - /,'Camera Inspection – '))+'</td>'+
@@ -305,19 +311,21 @@ tr.detail td{background:#FFFCF9;padding:0;}
       '<td class="c-next">'+(OPEN[s]&&nd?'<span class="'+(nd<=today()?'due':'')+'">'+shortDate(nd)+(nd<today()?' · overdue':nd===today()?' · today':'')+'</span>':(OPEN[s]?'<span class="muted">Not set</span>':''))+'</td>'+
       '<td class="hide-m"><div class="lastnote">'+(ln?esc(ln.text):'<span class="muted">No notes yet</span>')+'</div>'+(ln?'<div class="sub">'+esc(ln.by||'')+' · '+when(ln.at)+'</div>':'')+'</td>'+
     '</tr>';
-    if(ui.open===j.job) h += '<tr class="detail"><td colspan="9">'+detailHtml(j)+'</td></tr>';
+    if(ui.open===j.key) h += '<tr class="detail"><td colspan="9">'+detailHtml(j)+'</td></tr>';
     return h;
   }
   function detailHtml(j){
-    var s = eff(j), st = state[j.job]||{}, d = drafts[j.job]||{};
-    var cur = { status: d.status!=null?d.status:(st.status||'presented'), reason: d.reason!=null?d.reason:(st.reason||''), nextDate: d.nextDate!=null?d.nextDate:(st.nextDate||''), note: d.note||'' };
+    var s = eff(j), st = stOf(j)||{}, d = drafts[j.key]||{};
+    var cur = { status: autoSold(j)?'sold':(d.status!=null?d.status:(st.status||'presented')), reason: d.reason!=null?d.reason:(st.reason||''), nextDate: d.nextDate!=null?d.nextDate:(st.nextDate||''), note: d.note||'' };
     var opts = j.options.map(function(o){
       return '<div class="opt"><div class="row"><span>'+esc(o.name)+'</span><span>'+money(o.amount)+'</span></div>'+
-        '<div class="sub">'+esc(o.status||'')+(o.opp&&o.opp!==o.status?' · '+esc(o.opp):'')+(o.created?' · built '+shortDate(o.created):'')+'</div>'+
+        '<div class="sub">'+esc(o.status||'')+(o.opp&&o.opp!==o.status?' · '+esc(o.opp):'')+(o.created?' · built '+shortDate(o.created):'')+(j.visits.length>1?' · job '+esc(o.job):'')+'</div>'+
         (o.summary?'<details><summary>What was offered</summary><p>'+esc(o.summary)+'</p></details>':'')+'</div>';
     }).join('');
-    var sold = (j.sold||[]).map(function(x){ return '<div class="sub" style="color:var(--good);font-weight:600;">Sold '+(x.soldOn?shortDate(x.soldOn)+' ':'')+'— '+esc(x.name||'')+' '+money(x.amount)+(x.job?' (job '+esc(x.job)+')':'')+'</div>'; }).join('');
-    var hist = (notes[j.job]||[]).slice().reverse().map(function(n){
+    var sold = (j.sold||[]).map(function(x){ return '<div class="soldbox">Sold'+(x.soldOn?' '+shortDate(x.soldOn):'')+(x.soldBy?' by '+esc(x.soldBy):'')+': <b>'+esc(x.name||'')+'</b> '+money(x.amount)+
+      (x.job?'<div class="sub">Estimate on job <a href="'+ST+esc(x.job)+'" target="_blank" rel="noopener">'+esc(x.job)+'</a>'+(x.elsewhere?' (a different visit for this customer)':'')+'</div>':'')+
+      (x.workJob?'<div class="sub">Work done on job <a href="'+ST+esc(x.workJob)+'" target="_blank" rel="noopener">'+esc(x.workJob)+'</a>'+(x.revenue?', '+money(x.revenue)+' invoiced':'')+'</div>':'')+'</div>'; }).join('');
+    var hist = (ntOf(j)||[]).slice().reverse().map(function(n){
       var t = n.kind==='note' ? esc(n.text) :
         '<span class="chg">'+(n.kind==='status'?'Status → <b>'+esc(LABEL[n.text]||n.text)+'</b>':n.kind==='reason'?'Reason → <b>'+esc(n.text||'(cleared)')+'</b>':n.kind==='next'?'Next follow-up → <b>'+(n.text?shortDate(n.text):'(cleared)')+'</b>':esc(n.text))+'</span>';
       return '<div class="h">'+t+'<div class="meta">'+esc(n.by||'Someone')+' · '+when(n.at)+'</div></div>';
@@ -326,48 +334,45 @@ tr.detail td{background:#FFFCF9;padding:0;}
     return '<div class="det">'+
       '<div>'+
         '<div class="box"><h4>Options presented</h4>'+opts+sold+'</div>'+
-        (j.writeUp?'<div class="box" style="margin-top:14px;"><h4>Tech write-up</h4><p class="writeup">'+esc(j.writeUp)+'</p></div>':'')+
+        j.visits.slice().reverse().map(function(v){ return '<div class="box" style="margin-top:14px;"><h4>'+(j.visits.length>1?'Visit '+shortDate(v.date)+' · job '+esc(v.job)+' · '+esc(v.tech)+' — write-up':'Tech write-up')+'</h4>'+(v.writeUp?'<p class="writeup">'+esc(v.writeUp)+'</p>':'<p class="sub" style="margin:0;">No write-up.</p>')+'</div>'; }).join('')+
       '</div>'+
       '<div class="box"><h4>Follow-up</h4>'+
-        (autoSold(j)?'<p class="sub" style="margin:0 0 10px;color:var(--good);">ServiceTitan shows this sold, so it counts as Sold. Notes can still be added.</p>':'')+
-        '<div class="form" data-form="'+esc(j.job)+'">'+
-          '<div><label class="sub" for="st-'+esc(j.job)+'">Status</label><select id="st-'+esc(j.job)+'" data-k="status"'+(autoSold(j)?' disabled':'')+dis+'>'+STATUS.map(function(x){ return '<option value="'+x[0]+'"'+(cur.status===x[0]?' selected':'')+'>'+x[1]+'</option>'; }).join('')+'</select></div>'+
-          '<div><label class="sub" for="nd-'+esc(j.job)+'">Next follow-up</label><input type="date" id="nd-'+esc(j.job)+'" data-k="nextDate" value="'+esc(cur.nextDate)+'"'+dis+'></div>'+
-          '<div class="full"><label class="sub" for="rs-'+esc(j.job)+'">'+(cur.status==='lost'?'Why was it lost?':'What’s holding it up?')+'</label><select id="rs-'+esc(j.job)+'" data-k="reason"'+dis+'><option value="">—</option>'+REASONS.map(function(r){ return '<option'+(cur.reason===r?' selected':'')+'>'+esc(r)+'</option>'; }).join('')+'</select></div>'+
-          '<div class="full"><label class="sub" for="nt-'+esc(j.job)+'">Add a note</label><textarea id="nt-'+esc(j.job)+'" data-k="note" placeholder="e.g. Called 11/24, left voicemail. Customer wants to talk to his wife and get one more quote."'+dis+'>'+esc(cur.note)+'</textarea></div>'+
+        (autoSold(j)?'<p class="sub" style="margin:0 0 10px;color:var(--good);">ServiceTitan shows a sale for this customer, so it counts as Sold. Notes can still be added.</p>':'')+
+        '<div class="form" data-form="'+esc(j.key)+'">'+
+          '<div><label class="sub" for="st-'+esc(j.key)+'">Status</label><select id="st-'+esc(j.key)+'" data-k="status"'+(autoSold(j)?' disabled':'')+dis+'>'+STATUS.map(function(x){ return '<option value="'+x[0]+'"'+(cur.status===x[0]?' selected':'')+'>'+x[1]+'</option>'; }).join('')+'</select></div>'+
+          '<div><label class="sub" for="nd-'+esc(j.key)+'">Next follow-up</label><input type="date" id="nd-'+esc(j.key)+'" data-k="nextDate" value="'+esc(cur.nextDate)+'"'+dis+'></div>'+
+          '<div class="full"><label class="sub" for="rs-'+esc(j.key)+'">'+(cur.status==='lost'?'Why was it lost?':'What’s holding it up?')+'</label><select id="rs-'+esc(j.key)+'" data-k="reason"'+dis+'><option value="">—</option>'+REASONS.map(function(r){ return '<option'+(cur.reason===r?' selected':'')+'>'+esc(r)+'</option>'; }).join('')+'</select></div>'+
+          '<div class="full"><label class="sub" for="nt-'+esc(j.key)+'">Add a note</label><textarea id="nt-'+esc(j.key)+'" data-k="note" placeholder="e.g. Called 11/24, left voicemail. Customer wants to talk to his wife and get one more quote."'+dis+'>'+esc(cur.note)+'</textarea></div>'+
         '</div>'+
-        '<div class="formfoot"><button class="btn btn-accent save" data-j="'+esc(j.job)+'"'+dis+'>Save</button><span class="savemsg" id="msg-'+esc(j.job)+'">'+(drafts[j.job]?'Not saved yet':'')+'</span></div>'+
+        '<div class="formfoot"><button class="btn btn-accent save" data-j="'+esc(j.key)+'"'+dis+'>Save</button><span class="savemsg" id="msg-'+esc(j.key)+'">'+(drafts[j.key]?'Not saved yet':'')+'</span></div>'+
         '<div class="hist">'+(hist||'<div class="sub">No updates yet. Started as Options Presented on '+shortDate(j.date)+'.</div>')+'</div>'+
       '</div>'+
     '</div>';
   }
-  function sideHtml(sc){
-    // why not converting: reasons on lost + open jobs
-    var rc = {}, withR = 0;
-    sc.forEach(function(j){ var s=eff(j), r=(state[j.job]||{}).reason; if(s!=='sold' && r){ rc[r]=(rc[r]||0)+1; withR++; } });
-    var keys = Object.keys(rc).sort(function(a,b){return rc[b]-rc[a];}), mx = keys.length? rc[keys[0]] : 1;
-    var unsold = sc.filter(function(j){return eff(j)!=='sold';}).length;
-    $('whyBox').innerHTML = '<h4>Why we’re not converting</h4>'+
-      (keys.length ? keys.map(function(k){ return '<div class="bar"><span class="lab">'+esc(k)+'</span><span class="track"><span class="fill" style="width:'+Math.round(rc[k]/mx*100)+'%"></span></span><span class="c">'+rc[k]+'</span></div>'; }).join('') : '<p class="sub" style="margin:0;">No reasons recorded yet.</p>')+
-      '<p class="sub" style="margin:10px 0 0;">'+withR+' of '+unsold+' unsold jobs have a reason. Pick one under “What’s holding it up?” on each job.</p>';
-    // by tech
-    var by = {}; base().forEach(function(j){ var t=by[j.tech]=by[j.tech]||{n:0,sold:0,open:0,due:0}; t.n++; var s=eff(j); if(s==='sold') t.sold++; if(OPEN[s]) t.open++; if(isDue(j)) t.due++; });
-    $('techBox').innerHTML = '<h4>By technician</h4>'+Object.keys(by).sort().map(function(t){ var x=by[t];
-      return '<div class="techrow"><button class="techlink" data-t="'+esc(t)+'">'+esc(t)+'</button><span class="muted">'+x.sold+' of '+x.n+' sold · '+x.open+' open</span><span>'+(x.due?'<span class="pill" style="background:var(--warn-bg);color:var(--warn);">'+x.due+' due</span>':'')+'</span></div>'; }).join('') || '<p class="sub" style="margin:0;">—</p>';
+  // "What's holding them up": one row of chips above the list; click one to see those jobs
+  function reasonsHtml(sc){
+    var unsold = sc.filter(function(j){ return eff(j)!=='sold'; }), rc = {}, none = 0;
+    unsold.forEach(function(j){ var r=(stOf(j)||{}).reason; if(r) rc[r]=(rc[r]||0)+1; else none++; });
+    var keys = Object.keys(rc).sort(function(a,b){return rc[b]-rc[a];});
+    if(ui.reason && ui.reason!=='__none' && !rc[ui.reason]) ui.reason='';
+    $('reasons').innerHTML = '<span class="rlab">Why it hasn’t sold'+(unsold.length?' <span class="muted">('+unsold.length+' unsold)</span>':'')+':</span>'+
+      keys.map(function(k){ return '<button class="rchip'+(ui.reason===k?' active':'')+'" data-reason="'+esc(k)+'">'+esc(k)+' <b>'+rc[k]+'</b></button>'; }).join('')+
+      (none?'<button class="rchip none'+(ui.reason==='__none'?' active':'')+'" data-reason="__none">No reason given <b>'+none+'</b></button>':'')+
+      (!unsold.length?'<span class="muted">Everything here sold.</span>':'')+
+      (ui.reason?'<button class="linkish" data-reason="">Clear</button>':'');
   }
-
   // ---------- 1:1 print ----------
   function printView(){
     var sc = scoped(), sold=sc.filter(function(j){return eff(j)==='sold';}), lost=sc.filter(function(j){return eff(j)==='lost';}), open=sc.filter(function(j){return OPEN[eff(j)];});
-    var rc={}; sc.forEach(function(j){ var r=(state[j.job]||{}).reason; if(eff(j)!=='sold'&&r) rc[r]=(rc[r]||0)+1; });
+    var rc={}; sc.forEach(function(j){ var r=(stOf(j)||{}).reason; if(eff(j)!=='sold'&&r) rc[r]=(rc[r]||0)+1; });
     var h = '<div class="p-h"><h1>Sewer Install Opportunities — '+esc(ui.tech||'All technicians')+'</h1><p>Completed '+(ui.from?shortDate(ui.from):'Nov 1')+' to '+(ui.to?shortDate(ui.to):'today')+' · printed '+new Date().toLocaleDateString()+'</p></div>'+
       '<div class="p-stats"><div><b>'+sc.length+'</b>opportunities</div><div><b>'+sold.length+' ('+(sc.length?Math.round(sold.length/sc.length*100):0)+'%)</b>sold</div><div><b>'+money(sold.reduce(function(a,j){return a+soldAmt(j);},0))+'</b>sold value</div><div><b>'+open.length+'</b>still open ('+money(open.reduce(function(a,j){return a+top(j);},0))+')</div><div><b>'+lost.length+'</b>lost</div></div>'+
       (Object.keys(rc).length?'<p><b>Reasons recorded:</b> '+Object.keys(rc).sort(function(a,b){return rc[b]-rc[a];}).map(function(k){return esc(k)+' ('+rc[k]+')';}).join(' · ')+'</p>':'')+
-      sc.map(function(j){ var st=state[j.job]||{}, s=eff(j);
-        var ns=(notes[j.job]||[]).filter(function(n){return n.kind==='note';});
-        return '<div class="p-job"><div class="t"><span>'+shortDate(j.date)+' · '+esc(j.job)+' · '+esc(j.customer)+(ui.tech?'':' · '+esc(j.tech))+'</span><span>'+esc(LABEL[s])+(st.reason&&s!=='sold'?' — '+esc(st.reason):'')+'</span></div>'+
+      sc.map(function(j){ var st=stOf(j)||{}, s=eff(j);
+        var ns=(ntOf(j)||[]).filter(function(n){return n.kind==='note';});
+        return '<div class="p-job"><div class="t"><span>'+shortDate(j.date)+' · '+esc(j.visits.map(function(v){return v.job;}).join(', '))+' · '+esc(j.customer)+(ui.tech?'':' · '+esc(j.tech))+'</span><span>'+esc(LABEL[s])+(st.reason&&s!=='sold'?' — '+esc(st.reason):'')+'</span></div>'+
           '<ul>'+j.options.map(function(o){return '<li>'+esc(o.name)+' — '+money(o.amount)+'</li>';}).join('')+'</ul>'+
-          (st.nextDate&&OPEN[s]?'<div class="n">Next follow-up: '+shortDate(st.nextDate)+'</div>':'')+
+          ((j.sold||[]).length?'<div class="n">'+j.sold.map(function(x){return 'Sold '+shortDate(x.soldOn)+': '+esc(x.name)+' '+money(x.amount)+(x.job?' (job '+esc(x.job)+')':'');}).join('; ')+'</div>':'')+(st.nextDate&&OPEN[s]?'<div class="n">Next follow-up: '+shortDate(st.nextDate)+'</div>':'')+
           (ns.length?'<div class="n">'+ns.map(function(n){return '<div>'+shortDate(ymd(new Date(n.at)))+' '+esc(n.by||'')+': '+esc(n.text)+'</div>';}).join('')+'</div>':'<div class="n muted">No notes.</div>')+'</div>';
       }).join('')+
       '<h3 style="margin-top:18px;">1:1 notes</h3><div class="p-lines"><div></div><div></div><div></div><div></div></div>';
@@ -397,6 +402,7 @@ tr.detail td{background:#FFFCF9;padding:0;}
     var t;
     if((t=e.target.closest('[data-copy]'))){ e.stopPropagation(); try{ navigator.clipboard.writeText(t.dataset.copy); t.textContent='Copied'; setTimeout(function(){t.textContent='Copy';},1200);}catch(x){} return; }
     if(e.target.closest('.stlink')) { e.stopPropagation(); return; }
+    if((t=e.target.closest('[data-reason]'))){ ui.reason = ui.reason===t.dataset.reason ? '' : t.dataset.reason; if(ui.reason && ui.tab==='sold') ui.tab='all'; ui.open=null; render(); return; }
     if((t=e.target.closest('[data-t]'))){ ui.tech=t.dataset.t; ls('opp_tech', ui.tech); ui.open=null; render(); return; }
     if((t=e.target.closest('[data-tab]'))){ ui.tab=t.dataset.tab; ui.open=null; render(); return; }
     if((t=e.target.closest('#rangeChips .chip'))){ setRange(t.dataset.r); return; }

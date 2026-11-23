@@ -993,25 +993,58 @@ async function main() {
 // Status, follow-up dates and notes live in the Worker's database; this file is only the ServiceTitan side.
 const OPP_SINCE = '2026-11-01';
 const OPP_SKIP_TYPE = /^(sold work|warranty|recall|non-repair)/i;
+// Same customer = same name, or same last name + first initial (ServiceTitan spellings drift: "Rohar Shover" / "Roly Shover").
+const custWords = (n) => String(n || '').toLowerCase().replace(/[^a-z0-9& ]+/g, ' ').split(/\s+/).filter((w) => w && !/^\d+$/.test(w));
+function sameCustomer(a, b) {
+  const x = custWords(a), y = custWords(b);
+  if (!x.length || !y.length) return false;
+  if (x.join(' ') === y.join(' ')) return true;
+  return x[x.length - 1] === y[y.length - 1] && x[0][0] === y[0][0] && x[x.length - 1].length > 2;
+}
 function buildOpportunities(allJobs) {
-  const soldFrom = {}; // jobNumber the estimate was built on -> sold work that came from it
-  allJobs.forEach((j) => { if (j.fromEstimate && j.fromEstimate.jobNumber) (soldFrom[j.fromEstimate.jobNumber] = soldFrom[j.fromEstimate.jobNumber] || []).push({ job: j.jobNumber, name: j.fromEstimate.estimateName, amount: j.fromEstimate.subtotal, soldOn: j.fromEstimate.soldOn, revenue: (j.materials && j.materials.revenue) || 0 }); });
-  const out = [];
+  // 1. visits with options presented, grouped by customer (several visits for one customer = one opportunity)
+  const visits = allJobs.filter((j) => deptOf(j.businessUnit) === 'Sewer Install' && j.completionDate && j.completionDate >= OPP_SINCE
+    && !OPP_SKIP_TYPE.test(j.jobType || '') && (j.estimates || []).some((e) => e && e.name))
+    .sort((a, b) => a.completionDate.localeCompare(b.completionDate) || a.jobNumber.localeCompare(b.jobNumber));
+  const groups = [];
+  visits.forEach((j) => { const g = groups.find((x) => sameCustomer(x.customer, j.customer)); if (g) g.visits.push(j); else groups.push({ customer: j.customer, visits: [j] }); });
+  // 2. sales anywhere for that customer, on or after the first visit: a sold estimate on any job
+  //    (often rebuilt on a later visit) or a Sold Work sewer job
+  const sales = [];
   allJobs.forEach((j) => {
-    if (deptOf(j.businessUnit) !== 'Sewer Install') return;
-    if (!j.completionDate || j.completionDate < OPP_SINCE || OPP_SKIP_TYPE.test(j.jobType || '')) return;
-    const est = (j.estimates || []).filter((e) => e && e.name);
-    if (!est.length) return;
-    const sold = est.filter((e) => e.status === 'Sold').map((e) => ({ name: e.name, amount: e.subtotal, soldOn: e.soldOn, job: null }))
-      .concat(soldFrom[j.jobNumber] || []);
-    out.push({
-      job: j.jobNumber, date: j.completionDate, tech: j.primaryTech || '', customer: j.customer || '', jobType: j.jobType || '',
-      options: est.map((e) => ({ name: e.name, amount: e.subtotal || 0, status: e.status || '', opp: e.opportunityStatus || '', created: e.created || '', by: e.createdBy || '', summary: String(e.summary || '').slice(0, 1500) })),
-      sold, dismissed: est.every((e) => e.status === 'Dismissed'),
-      writeUp: (j.invoices || []).map((i) => i.summary || '').filter(Boolean).join('\n\n').slice(0, 2500),
-    });
+    (j.estimates || []).forEach((e) => { if (e && e.status === 'Sold') sales.push({ customer: j.customer, name: e.name, amount: e.subtotal || 0, soldOn: e.soldOn || j.completionDate, job: j.jobNumber, dept: deptOf(j.businessUnit), soldBy: e.soldBy || '' }); });
+    if (/^sold work/i.test(j.jobType || '') && /^Sewer/.test(deptOf(j.businessUnit))) {
+      const f = j.fromEstimate || {};
+      sales.push({ customer: j.customer, name: f.estimateName || j.jobType, amount: f.subtotal || (j.materials && j.materials.revenue) || 0, soldOn: f.soldOn || j.completionDate, job: f.jobNumber || null, workJob: j.jobNumber, dept: deptOf(j.businessUnit), revenue: (j.materials && j.materials.revenue) || 0 });
+    }
   });
-  return out.sort((a, b) => b.date.localeCompare(a.date) || b.job.localeCompare(a.job));
+  return groups.map((g) => {
+    const first = g.visits[0], last = g.visits[g.visits.length - 1];
+    const opts = [];
+    g.visits.forEach((v) => (v.estimates || []).filter((e) => e && e.name).forEach((e) => {
+      if (opts.some((o) => o.name === e.name && Math.abs(o.amount - (e.subtotal || 0)) < 1)) return;
+      opts.push({ name: e.name, amount: e.subtotal || 0, status: e.status || '', opp: e.opportunityStatus || '', created: e.created || '', by: e.createdBy || '', job: v.jobNumber, summary: String(e.summary || '').slice(0, 1500) });
+    }));
+    const matchesOption = (x) => opts.some((o) => o.name.toLowerCase() === String(x.name || '').toLowerCase() || (o.amount > 0 && Math.abs(o.amount - x.amount) / o.amount <= 0.15));
+    const sold = [];
+    sales.filter((x) => sameCustomer(x.customer, g.customer) && (x.soldOn || '') >= first.completionDate
+      && (matchesOption(x) || (/^Sewer/.test(x.dept) && x.amount >= 2000)))
+      .forEach((x) => {
+        // a sold estimate and the Sold Work job it became are one sale
+        const dup = sold.find((y) => (x.job && y.job === x.job && y.name === x.name) || (x.workJob && y.workJob === x.workJob));
+        if (dup) { if (x.workJob) { dup.workJob = x.workJob; dup.revenue = x.revenue; } return; }
+        sold.push({ name: x.name, amount: x.amount, soldOn: x.soldOn, job: x.job, workJob: x.workJob || null, revenue: x.revenue || 0, soldBy: x.soldBy || '', elsewhere: !g.visits.some((v) => v.jobNumber === x.job) });
+      });
+    sold.forEach((x) => { if (!x.workJob) { const w = sales.find((y) => y.workJob && y.job === x.job && y.name === x.name); if (w) { x.workJob = w.workJob; x.revenue = w.revenue; } } });
+    return {
+      key: first.jobNumber, job: last.jobNumber, date: last.completionDate, firstDate: first.completionDate,
+      tech: last.primaryTech || '', customer: last.customer || '',
+      jobType: last.jobType || '',
+      visits: g.visits.map((v) => ({ job: v.jobNumber, date: v.completionDate, tech: v.primaryTech || '', jobType: v.jobType || '', customer: v.customer || '',
+        writeUp: (v.invoices || []).map((i) => i.summary || '').filter(Boolean).join('\n\n').slice(0, 2500) })),
+      options: opts, sold, dismissed: opts.every((o) => o.status === 'Dismissed'),
+    };
+  }).sort((a, b) => b.date.localeCompare(a.date) || b.job.localeCompare(a.job));
 }
 async function writeOpportunities(store, index, monthCache, msg) {
   const all = [];
