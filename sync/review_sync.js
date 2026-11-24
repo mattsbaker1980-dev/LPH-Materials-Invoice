@@ -495,21 +495,53 @@ function taskHoursMap(taskTimes, live) {
   for (const [k, a] of Object.entries(s)) if (a.length >= 5) out[k] = { hrs: median(a), n: a.length };
   return out;
 }
+// Expected time on site.
+// - A system check is counted at its own typical time (from past visits), and the work sold and done on the
+//   same visit is added on top: the larger of the typical time for the billed tasks and ServiceTitan's sold
+//   hours for that work. Sold hours also cover Grid Task lines, which have no pricebook task.
+// - Other visits: typical time for each billed task (unchanged).
+const r2 = (n) => Math.round(n * 100) / 100;
 function expectedHours(job, ctx) {
-  const tasks = workTasks(job); if (!tasks.length) return null;
+  const tasks = workTasks(job);
   const pb = ctx.pbSvc || new Map();
   const COUPON = /(\$\s?\d+\s*(off|or free)|% off|off any|coupon|special|gift)/i;
-  const parts = tasks.filter((t) => !(COUPON.test(t.name + ' ' + t.code) || ((t.price || 0) <= 0 && !(ctx.taskHours && ctx.taskHours[t.code]) && !((pb.get(t.code) || {}).hours > 0)))).map((t) => {
+  const typical = (t) => {
     const h = ctx.taskHours && ctx.taskHours[t.code];
-    if (h) return { name: t.name, hrs: Math.round(h.hrs * 100) / 100, src: 'history' };
+    if (h) return { name: t.name, hrs: r2(h.hrs), src: 'history' };
     const p = pb.get(t.code);
     if (p && p.hours > 0) return { name: t.name, hrs: p.hours, src: 'pricebook' };
     return { name: t.name, hrs: null, src: null };
-  });
+  };
+  const real = tasks.filter((t) => !COUPON.test(t.name + ' ' + t.code));
+  const isCheck = (t) => isWrapper(t) && /check|inspection|evaluation/i.test(t.name);
+  const checks = real.filter(isCheck).map(typical).filter((x) => x.hrs != null);
+  const work = real.filter((t) => !isCheck(t) && !((t.price || 0) <= 0 && typical(t).hrs == null)).map(typical);
+  const gtBilled = job.invoices.flatMap((i) => i.items || []).some((x) => x.code && isGTcode(x.code) && (x.price || 0) > 0);
+  // sold hours = pricebook hours of everything billed; take out the check's own pricebook hours
+  const checkPbHrs = real.filter(isCheck).reduce((a, t) => a + ((pb.get(t.code) || {}).hours || 0), 0);
+  const soldWork = Math.max(0, r2(((job.detail && job.detail.soldHours) || 0) - checkPbHrs));
+  const workKnown = work.every((x) => x.hrs != null);
+  const workTypical = r2(work.reduce((a, x) => a + (x.hrs || 0), 0));
+  let parts;
+  if (checks.length) {
+    // the check itself: its task's typical time, or the typical for this job type if that is longer
+    const typeMed = ctx.medianHoursByType && ctx.medianHoursByType[job.jobType];
+    const ck = r2(checks.reduce((a, x) => a + x.hrs, 0));
+    parts = (typeMed && /check|inspection/i.test(job.jobType || '') && typeMed > ck)
+      ? [{ name: `${job.jobType} (typical visit)`, hrs: r2(typeMed), src: 'history' }] : checks.slice();
+    if (work.length || gtBilled || soldWork > 0) {
+      const useSold = soldWork > 0 && (!workKnown || gtBilled || soldWork > workTypical);
+      if (useSold) parts.push({ name: 'sold work done on the visit', hrs: soldWork, src: 'sold hours' });
+      else if (work.length) parts.push(...work);
+    }
+  } else {
+    if (!work.length) return null; // no system check: billed tasks only (falls back to the job-type typical when unknown)
+    parts = work;
+  }
   if (!parts.length || parts.some((x) => x.hrs == null)) return { parts, hrs: null };
   const crew = Math.max(1, String((job.detail && job.detail.assignedTechs) || '').split(',').map((x) => x.trim()).filter(Boolean).length);
   // a second tech adds ~70% more logged hours on average (combined crew time), not 100%
-  return { parts, hrs: Math.round(parts.reduce((a, x) => a + x.hrs, 0) * 100) / 100, crew, crewFactor: Math.round((1 + 0.7 * (crew - 1)) * 100) / 100 };
+  return { parts, hrs: r2(parts.reduce((a, x) => a + x.hrs, 0)), crew, crewFactor: r2(1 + 0.7 * (crew - 1)) };
 }
 
 function computeFlags(job, ctx) {
