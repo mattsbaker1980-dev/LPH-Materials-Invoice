@@ -1,0 +1,1789 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pricebook Review — Plumbing &amp; Sewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#12161b; --panel:#191f26; --panel-alt:#1f2730; --raised:#232c36;
+    --border:#2a323c; --border-strong:#3a4552;
+    --text:#e7ecf1; --text-dim:#94a2af; --text-faint:#5c6773;
+    --accent:#4487c4; --accent-dim:#2f6491; --accent-soft:rgba(68,135,196,.14);
+    --warn:#d9564a; --warn-soft:rgba(217,86,74,.13);
+    --good:#4f9d6e; --good-soft:rgba(79,157,110,.14);
+    --amber:#c9903f; --amber-soft:rgba(201,144,63,.14);
+    --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+    --sans:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif;
+    --radius:5px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--sans);
+    font-size:13.5px; line-height:1.45; -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);}
+  a{color:var(--accent);}
+
+  /* ---------- header ---------- */
+  header.top{
+    position:sticky; top:0; z-index:30;
+    background:
+      linear-gradient(var(--panel),var(--panel)) padding-box,
+      repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 28px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 28px);
+    border-bottom:1px solid var(--border);
+    padding:16px 22px 14px;
+  }
+  .top-row{display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  h1{font-size:17px; font-weight:600; margin:0; letter-spacing:.1px;}
+  h1 span{color:var(--text-dim); font-weight:400;}
+  .stats{display:flex; gap:18px; font-family:var(--mono); font-size:12px; color:var(--text-dim); flex-wrap:wrap;}
+  .stats b{color:var(--text); font-weight:600;}
+  .stats .warn-num{color:var(--warn);}
+
+  /* ---------- department tabs (primary navigation) ---------- */
+  .dept-tabs{
+    display:flex; gap:2px; padding:0 22px; background:var(--panel);
+    border-bottom:1px solid var(--border); overflow-x:auto;
+  }
+  .dept-tabs button{
+    background:transparent; border:none; border-bottom:2.5px solid transparent; color:var(--text-dim);
+    font-family:var(--sans); font-size:13px; font-weight:600; padding:12px 16px 10px; cursor:pointer;
+    white-space:nowrap;
+  }
+  .dept-tabs button:hover{color:var(--text);}
+  .dept-tabs button.on{color:var(--text); border-bottom-color:var(--accent);}
+
+  /* ---------- vendor round-trip bar ---------- */
+  .vendor-bar{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:11px 22px; border-bottom:1px solid var(--border); background:var(--panel);
+  }
+  .vendor-bar-label{font-size:12px; font-weight:600; color:var(--text-dim);}
+  .vendor-bar-hint{font-size:11.5px; color:var(--text-faint); max-width:560px;}
+  .file-btn{position:relative; cursor:pointer;}
+
+  /* ---------- toolbar ---------- */
+  .toolbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:14px 22px; border-bottom:1px solid var(--border); background:var(--panel-alt);
+  }
+  .seg{display:flex; border:1px solid var(--border-strong); border-radius:var(--radius); overflow:hidden;}
+  .seg button{
+    background:transparent; border:none; color:var(--text-dim); font-family:var(--sans);
+    font-size:12.5px; font-weight:500; padding:7px 13px; cursor:pointer; border-right:1px solid var(--border-strong);
+  }
+  .seg button:last-child{border-right:none;}
+  .seg button.on{background:var(--accent); color:#fff;}
+  .seg button:hover:not(.on){background:var(--raised); color:var(--text);}
+
+  input[type=search], select.filter{
+    background:var(--raised); border:1px solid var(--border-strong); color:var(--text);
+    font-family:var(--sans); font-size:12.5px; padding:7px 10px; border-radius:var(--radius);
+  }
+  input[type=search]{min-width:230px;}
+  input[type=search]:focus, select.filter:focus{outline:1.5px solid var(--accent); outline-offset:-1px;}
+  .spacer{flex:1;}
+
+  .btn{
+    font-family:var(--sans); font-size:12.5px; font-weight:600; padding:8px 14px;
+    border-radius:var(--radius); border:1px solid var(--border-strong); background:var(--raised);
+    color:var(--text); cursor:pointer;
+  }
+  .btn:hover{border-color:var(--accent);}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .btn.primary:hover{background:var(--accent-dim);}
+  .btn.primary:disabled{background:var(--raised); border-color:var(--border-strong); color:var(--text-faint); cursor:default;}
+  .btn.ghost{background:transparent;}
+  .btn.small{padding:5px 9px; font-size:11.5px;}
+
+  .export-count{font-family:var(--mono); font-size:12px; color:var(--text-dim);}
+  .export-count b{color:var(--good);}
+
+  /* ---------- help strip (collapsed by default) ---------- */
+  .help{
+    padding:0 22px; font-size:12px; color:var(--text-dim); border-bottom:1px solid var(--border);
+    background:var(--panel);
+  }
+  .help summary{
+    padding:9px 0; cursor:pointer; font-weight:600; color:var(--text-dim); list-style:none;
+    display:flex; align-items:center; gap:6px; user-select:none;
+  }
+  .help summary::-webkit-details-marker{display:none;}
+  .help summary::before{content:"▸"; font-size:10px; color:var(--text-faint); transition:transform .12s;}
+  .help[open] summary::before{transform:rotate(90deg);}
+  .help summary:hover{color:var(--text);}
+  .help-body{padding:0 0 14px; max-width:900px;}
+  .help-body p{margin:0 0 8px;}
+  .help-body p:last-child{margin-bottom:0;}
+  .help b{color:var(--text-dim); font-weight:600;}
+  .help code{font-family:var(--mono); background:var(--raised); padding:1px 5px; border-radius:3px; color:var(--text);}
+
+  /* ---------- table ---------- */
+  .table-wrap{padding:0 22px 40px; overflow-x:auto; overflow-y:auto; max-height:72vh;}
+  table{border-collapse:collapse; width:100%; min-width:1670px; margin-top:16px;}
+  thead th{
+    position:sticky; top:0; background:var(--panel-alt); z-index:15;
+    text-align:left; font-size:11.5px; font-weight:600; color:var(--text-dim);
+    padding:9px 10px; border-bottom:1px solid var(--border-strong); white-space:nowrap;
+    cursor:pointer; user-select:none;
+  }
+  thead th:hover{color:var(--text);}
+  thead th.sorted{color:var(--accent);}
+  thead th .arrow{font-family:var(--mono); font-size:10px; margin-left:3px; opacity:.85;}
+  thead th.nosort{cursor:default;}
+
+  tbody td{padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top;}
+  tbody tr:hover{background:rgba(255,255,255,.015);}
+  tbody tr.row-dirty{box-shadow:inset 3px 0 0 var(--amber);}
+  tbody tr.row-saved{box-shadow:inset 3px 0 0 var(--good);}
+  tbody tr.row-reviewed{box-shadow:inset 3px 0 0 var(--border-strong);}
+  tbody tr.row-inactive td{opacity:.62;}
+
+  .group-row td{
+    padding:9px 10px; background:var(--panel-alt); border-bottom:1px solid var(--border-strong);
+    font-family:var(--mono); font-size:11.5px; color:var(--text-dim); font-weight:600;
+  }
+  .group-row td span{color:var(--text);}
+
+  .code{font-family:var(--mono); font-size:12px; color:var(--text-dim); white-space:nowrap;}
+  .name-input{
+    width:100%; min-width:190px; background:transparent; border:1px solid transparent; color:var(--text);
+    font-family:var(--sans); font-size:13px; font-weight:500; padding:5px 6px; border-radius:4px;
+  }
+  .name-input:hover{border-color:var(--border-strong);}
+  .name-input:focus{outline:none; border-color:var(--accent); background:var(--raised);}
+
+  textarea.desc-input{
+    width:100%; min-width:250px; min-height:44px; background:transparent; border:1px solid transparent;
+    color:var(--text-dim); font-family:var(--sans); font-size:12.5px; padding:5px 6px; border-radius:4px;
+    resize:vertical;
+  }
+  textarea.desc-input:hover{border-color:var(--border-strong);}
+  textarea.desc-input:focus{outline:none; border-color:var(--accent); background:var(--raised); color:var(--text);}
+
+  input.type-input, input.brand-input{
+    width:100%; min-width:130px; background:var(--raised); border:1px solid var(--border-strong); color:var(--text);
+    font-family:var(--sans); font-size:12px; padding:6px 7px; border-radius:4px;
+  }
+  input.type-input:focus, input.brand-input:focus{outline:1.5px solid var(--accent); outline-offset:-1px;}
+  .brand-input{background:transparent; border-color:transparent;}
+  .brand-input:hover{border-color:var(--border-strong);}
+
+  select.dept-input{
+    width:100%; min-width:96px; background:var(--raised); border:1px solid var(--border-strong); color:var(--text);
+    font-family:var(--sans); font-size:11.5px; padding:6px 5px; border-radius:4px;
+  }
+  select.dept-input:focus{outline:1.5px solid var(--accent); outline-offset:-1px;}
+
+  input.vendor-input{
+    width:100%; min-width:140px; background:var(--raised); border:1px solid var(--border-strong); color:var(--text);
+    font-family:var(--sans); font-size:12px; padding:6px 7px; border-radius:4px;
+  }
+  input.vendor-input:focus{outline:1.5px solid var(--accent); outline-offset:-1px;}
+  input.vendor-sub{
+    display:block; width:100%; margin-top:4px; background:transparent; border:1px solid transparent;
+    color:var(--text-faint); font-family:var(--mono); font-size:10.5px; padding:3px 5px; border-radius:4px;
+  }
+  input.vendor-sub:hover{border-color:var(--border-strong);}
+  input.vendor-sub:focus{outline:none; border-color:var(--accent); background:var(--raised); color:var(--text);}
+  .vendor-na{color:var(--text-faint);}
+  input.vendor-input.vendor-generic{color:var(--text-faint); font-style:italic; border-color:transparent; background:transparent;}
+  .vendor-generic-tag{font-size:10px; color:var(--text-faint); margin-top:2px;}
+  .last-reviewed{font-family:var(--mono); font-size:11.5px; color:var(--text-dim);}
+  .last-reviewed-never{font-family:var(--mono); font-size:11.5px; color:var(--text-faint); font-style:italic;}
+
+  .uncategorized{color:var(--text-faint); font-style:italic;}
+
+  input.num-input{
+    width:80px; background:var(--raised); border:1px solid var(--border-strong); color:var(--text);
+    font-family:var(--mono); font-size:12.5px; padding:6px 7px; border-radius:4px; text-align:right;
+  }
+  input.num-input:focus{outline:1.5px solid var(--accent); outline-offset:-1px;}
+  .num-ro{font-family:var(--mono); font-size:12.5px; text-align:right; color:var(--text-dim); white-space:nowrap;}
+
+  .img-badge{
+    font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; white-space:nowrap; display:inline-block;
+    border:none; font-family:var(--sans);
+  }
+  .img-badge.needed{background:var(--warn-soft); color:var(--warn); cursor:pointer;}
+  .img-badge.needed:hover{background:var(--warn); color:#fff;}
+  .img-badge.ready{background:var(--amber-soft); color:var(--amber);}
+  .img-badge.ok{background:var(--good-soft); color:var(--good);}
+  .img-note{
+    display:block; margin-top:5px; width:100%; min-width:100px; background:var(--raised);
+    border:1px solid var(--border-strong); color:var(--text); font-family:var(--sans); font-size:11px;
+    padding:4px 6px; border-radius:4px;
+  }
+  .img-note:focus{outline:1.5px solid var(--accent); outline-offset:-1px;}
+  .img-thumb{
+    display:block; width:56px; height:56px; object-fit:cover; border-radius:4px; border:1px solid var(--border-strong);
+  }
+  .img-size-label{font-size:10.5px; color:var(--text-faint); margin-top:4px; font-family:var(--mono);}
+  .img-file-btn{
+    display:inline-block; margin-top:5px; font-size:11px; font-weight:600; color:var(--accent);
+    cursor:pointer; text-decoration:underline;
+  }
+  .img-file-btn:hover{color:var(--text);}
+  .img-file-input{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+    clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+
+  .toggle{position:relative; display:inline-block; width:34px; height:19px; vertical-align:middle;}
+  .toggle input{opacity:0; width:0; height:0;}
+  .toggle .slider{position:absolute; inset:0; background:var(--border-strong); border-radius:20px; cursor:pointer; transition:.15s;}
+  .toggle .slider::before{content:""; position:absolute; width:14px; height:14px; left:2.5px; top:2.5px; background:#fff; border-radius:50%; transition:.15s;}
+  .toggle input:checked + .slider{background:var(--good);}
+  .toggle input:checked + .slider::before{transform:translateX(15px);}
+
+  .row-actions{display:flex; flex-direction:column; gap:5px; align-items:flex-start;}
+  .badge-saved, .badge-reviewed{font-size:11px; font-weight:600; padding:2px 0;}
+  .badge-saved{color:var(--good);}
+  .badge-reviewed{color:var(--text-faint);}
+  .undo-link{background:none; border:none; color:var(--text-faint); font-size:11px; cursor:pointer; padding:0; text-decoration:underline;}
+  .undo-link:hover{color:var(--text-dim);}
+
+  .empty-state{padding:60px 22px; text-align:center; color:var(--text-faint);}
+  .load-more-wrap{display:flex; justify-content:center; padding:22px;}
+
+  /* ---------- bulk edit panel ---------- */
+  .bulk-panel{
+    padding:14px 22px; border-bottom:1px solid var(--border); background:var(--panel);
+  }
+  .bulk-panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;}
+  .bulk-panel-head strong{font-size:13px; font-weight:600;}
+  .bulk-sheet-hint{
+    font-size:12px; color:var(--amber); background:var(--amber-soft); border-radius:4px;
+    padding:8px 10px; margin:8px 0;
+  }
+  .bulk-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:10px 0;}
+  .bulk-row label{font-size:12px; color:var(--text-dim); font-weight:600; min-width:44px;}
+  .bulk-row select, .bulk-row input[type=text], .bulk-row input[type=number]{
+    background:var(--raised); border:1px solid var(--border-strong); color:var(--text);
+    font-family:var(--sans); font-size:12.5px; padding:6px 9px; border-radius:4px;
+  }
+  .bulk-row input[type=number]{width:110px;}
+  .bulk-row textarea{
+    background:var(--raised); border:1px solid var(--border-strong); color:var(--text);
+    font-family:var(--sans); font-size:12.5px; padding:7px 9px; border-radius:4px;
+    min-width:320px; flex:1; resize:vertical;
+  }
+  .bulk-check{font-size:12px; color:var(--text-dim); display:flex; align-items:center; gap:5px; font-weight:400;}
+  .bulk-note{font-size:12px; color:var(--text-dim); margin:0;}
+  .bulk-actions{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:6px;}
+  .bulk-hint{font-size:11.5px; color:var(--text-faint); max-width:520px;}
+  .bulk-checklist{
+    margin-top:14px; padding-top:14px; border-top:1px solid var(--border);
+    font-size:12.5px; color:var(--text-dim);
+  }
+  .bulk-checklist b{color:var(--text);}
+  .code-list{
+    display:block; width:100%; max-width:520px; margin:8px 0; background:var(--raised);
+    border:1px solid var(--border-strong); color:var(--text); font-family:var(--mono); font-size:11.5px;
+    padding:8px; border-radius:4px;
+  }
+
+  footer.note{padding:16px 22px 40px; color:var(--text-faint); font-size:11.5px; max-width:820px;}
+  .note-footer{border-bottom:none; border-top:1px solid var(--border); margin-top:8px;}
+
+  /* ---------- top-level view switch ---------- */
+  .view-switch{display:flex; border:1px solid var(--border-strong); border-radius:var(--radius); overflow:hidden;}
+  .view-switch button{
+    background:transparent; border:none; color:var(--text-dim); font-family:var(--sans);
+    font-size:12px; font-weight:600; padding:7px 14px; cursor:pointer; border-right:1px solid var(--border-strong);
+  }
+  .view-switch button:last-child{border-right:none;}
+  .view-switch button.on{background:var(--accent); color:#fff;}
+  .view-switch button:hover:not(.on){background:var(--raised); color:var(--text);}
+
+  /* ---------- vendor costs view (separate from the main review tool) ---------- */
+  .vc-toolbar{padding:14px 22px; border-bottom:1px solid var(--border); background:var(--panel-alt);}
+  .vc-panel{padding:18px 22px 30px;}
+  .vc-search-row{margin-bottom:16px;}
+  .vc-search-row input{
+    width:100%; max-width:480px; background:var(--raised); border:1px solid var(--border-strong); color:var(--text);
+    font-family:var(--sans); font-size:13px; padding:9px 12px; border-radius:var(--radius);
+  }
+  .vc-search-row input:focus{outline:1.5px solid var(--accent); outline-offset:-1px;}
+  .vc-empty{color:var(--text-faint); font-size:13px; padding:30px 0;}
+  .vc-more-hint{color:var(--text-faint); font-size:12px; padding:10px 0;}
+
+  .vc-card{border:1px solid var(--border); border-radius:var(--radius); margin-bottom:16px; overflow:hidden;}
+  .vc-card-head{
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:10px 14px;
+    background:var(--panel-alt); border-bottom:1px solid var(--border);
+  }
+  .vc-card-code{font-family:var(--mono); font-size:12.5px; color:var(--text-dim);}
+  .vc-card-name{font-weight:600; font-size:13.5px;}
+  .vc-pb-tag{margin-left:auto; font-size:11.5px; font-weight:600; color:var(--good); background:var(--good-soft); padding:3px 9px; border-radius:20px;}
+  .vc-pb-tag-missing{color:var(--text-faint); background:var(--raised);}
+
+  .vc-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .vc-table th{
+    text-align:left; font-size:11px; font-weight:600; color:var(--text-dim); padding:7px 14px;
+    border-bottom:1px solid var(--border-strong); background:var(--panel);
+  }
+  .vc-table td{padding:7px 14px; border-bottom:1px solid var(--border);}
+  .vc-table tr:last-child td{border-bottom:none;}
+  .vc-num{font-family:var(--mono);}
+  .vc-mono{font-family:var(--mono); color:var(--text-dim);}
+  .vc-memo{color:var(--text-faint); font-size:11.5px;}
+  tr.vc-primary-row td{background:var(--accent-soft);}
+  .vc-primary-badge{font-size:9.5px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.3px;}
+
+  .vc-vendor-layout{display:flex; gap:0; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; min-height:420px;}
+  .vc-vendor-list{width:260px; flex-shrink:0; border-right:1px solid var(--border); overflow-y:auto; max-height:640px; background:var(--panel);}
+  .vc-vendor-item{
+    display:flex; justify-content:space-between; align-items:center; width:100%; text-align:left;
+    background:transparent; border:none; border-bottom:1px solid var(--border); color:var(--text-dim);
+    font-family:var(--sans); font-size:12.5px; padding:10px 14px; cursor:pointer;
+  }
+  .vc-vendor-item:hover{background:var(--raised); color:var(--text);}
+  .vc-vendor-item.on{background:var(--accent-soft); color:var(--text); font-weight:600;}
+  .vc-vendor-count{font-family:var(--mono); font-size:11px; color:var(--text-faint);}
+  .vc-vendor-detail{flex:1; padding:18px 20px; overflow-x:auto;}
+  .vc-vendor-detail-head{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px;}
+  .vc-vendor-detail-head h2{font-size:16px; margin:0;}
+  .vc-contact{font-size:12px; color:var(--text-dim);}
+  .vc-contact a{color:var(--accent);}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-row">
+    <h1>Pricebook Review</h1>
+    <div class="view-switch" id="viewSwitch">
+      <button data-view="review" class="on">Pricebook Review</button>
+      <button data-view="vendorCosts">Vendor Costs</button>
+    </div>
+    <div class="stats" id="statsBar"></div>
+  </div>
+</header>
+
+<div id="reviewView">
+
+<nav class="dept-tabs" id="deptTabs">
+  <button data-dept="all" class="on">All Departments</button>
+  <button data-dept="Plumbing">Plumbing</button>
+  <button data-dept="Sewer">Sewer</button>
+  <button data-dept="HVAC">HVAC</button>
+  <button data-dept="Electrical">Electrical</button>
+  <button data-dept="Unassigned">Unassigned</button>
+</nav>
+
+<div class="toolbar">
+  <div class="seg" id="statusSeg">
+    <button data-status="active" class="on">Active</button>
+    <button data-status="inactive">Inactive</button>
+    <button data-status="all">Combined</button>
+  </div>
+  <div class="seg" id="sheetSeg">
+    <button data-sheet="all" class="on">All</button>
+    <button data-sheet="material">Materials</button>
+    <button data-sheet="service">Services</button>
+    <button data-sheet="equipment">Equipment</button>
+  </div>
+  <select class="filter" id="typeFilter"><option value="">All item types</option></select>
+  <select class="filter" id="vendorFilter"><option value="">All vendors</option></select>
+  <select class="filter" id="imageFilter">
+    <option value="">All images</option>
+    <option value="needed">Image Needed</option>
+    <option value="ready">Ready to upload</option>
+    <option value="on-file">On file</option>
+  </select>
+  <input type="search" id="searchBox" placeholder="Search code, name, description, brand, vendor…">
+  <button class="btn" id="bulkPlanBtn">Plan Bulk Edit</button>
+  <div class="spacer"></div>
+  <span class="export-count" id="exportCount">0 rows changed</span>
+  <button class="btn primary" id="exportBtn" disabled>Download Changes List (.xlsx)</button>
+  <button class="btn" id="downloadImagesBtn" disabled>Download Images (.zip) — 0</button>
+</div>
+
+<div class="vendor-bar">
+  <span class="vendor-bar-label">Vendor pricing round trip:</span>
+  <button class="btn" id="vendorExportBtn" disabled>Export Price List for Selected Vendor</button>
+  <label class="btn ghost file-btn">Import Updated Vendor Pricing<input type="file" id="vendorImportInput" accept=".xlsx,.xls" class="img-file-input"></label>
+  <span class="vendor-bar-hint">Pick a vendor from the filter above to export their current items and prices; when they send pricing back, import that same file here and it fills in New Price/Cost for you to Save.</span>
+</div>
+
+<div class="bulk-panel" id="bulkPanel" hidden>
+  <div class="bulk-panel-head">
+    <strong id="bulkPanelTitle">Bulk edit plan</strong>
+    <button class="btn ghost small" id="bulkPanelClose">Close</button>
+  </div>
+  <div class="bulk-sheet-hint" id="bulkSheetHint">Pick <b>Materials</b>, <b>Services</b>, or <b>Equipment</b> above — ServiceTitan's bulk editor works one tab at a time, so "All" can't map to a single plan.</div>
+  <div class="bulk-body" id="bulkBody">
+    <div class="bulk-row">
+      <label>Field</label>
+      <select id="bulkField">
+        <option value="price">Price</option>
+        <option value="description">Description</option>
+        <option value="name">Name</option>
+        <option value="active">Active status</option>
+        <option value="image">Images</option>
+      </select>
+    </div>
+    <div class="bulk-row" id="bulkControls"></div>
+    <div class="bulk-actions">
+      <button class="btn primary" id="bulkApplyBtn" disabled>Apply to <span id="bulkApplyCount">0</span> items</button>
+      <span class="bulk-hint">Updates this tool's local copy and marks these rows reviewed — it does not touch ServiceTitan. Make the matching change there yourself; a checklist appears below once you apply.</span>
+    </div>
+    <div class="bulk-checklist" id="bulkChecklist" hidden></div>
+  </div>
+</div>
+
+<details class="help">
+  <summary>How this tool works</summary>
+  <div class="help-body">
+    <p><b>Item Type</b> and <b>Department</b> start as keyword guesses (or a real ServiceTitan category, where one exists) — correct them as you review; they drive grouping and sort.</p>
+    <p><code>Save</code> commits a row and stamps <b>Last Reviewed</b> — the only "when was this touched" record that exists, since ServiceTitan's export has no modified-date field. It only knows about reviews done here.</p>
+    <p><b>Images</b> upload directly in ServiceTitan (per-item media icon, or Bulk edit pricebook items) — not through this file. <b>Attach file</b> resizes/compresses a photo to ServiceTitan's spec (450×450px, under 100KB) automatically; download the zip before switching machines, since photos live only in this browser tab.</p>
+    <p><b>Vendor</b> shown faded and italic ("Default Replenishment Vendor") is ServiceTitan's generic fallback, not a real supplier.</p>
+    <p><b>Plan Bulk Edit</b> gives you a code list + exact settings to replicate a batch change in ServiceTitan's own Bulk Edit screen.</p>
+    <p>The <b>Changes List</b> and <b>Vendor Pricing</b> downloads are tracking/reference files, not ServiceTitan-ready imports — bring them back here when you're ready to push a batch live and I'll merge it into a full untouched copy of your original export.</p>
+  </div>
+</details>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th data-sort="imgstatus" style="width:190px;">Image</th>
+        <th data-sort="department" style="width:100px;">Dept</th>
+        <th data-sort="type" style="width:150px;">Type</th>
+        <th data-sort="brand" style="width:100px;">Brand</th>
+        <th data-sort="vendor" style="width:170px;">Vendor</th>
+        <th data-sort="code" style="width:110px;">Code</th>
+        <th data-sort="name" style="width:200px;">Name</th>
+        <th class="nosort" style="width:260px;">Current Description</th>
+        <th data-sort="price" style="width:90px;">Price</th>
+        <th data-sort="cost" style="width:90px;">Cost</th>
+        <th data-sort="hours" style="width:80px;">Hours</th>
+        <th data-sort="ttJobs" style="width:70px;" title="Number of completed jobs billed under this code, from Job Review's own job history">Jobs</th>
+        <th data-sort="ttMin" style="width:85px;" title="Shortest actual on-site time seen for this code">Shortest</th>
+        <th data-sort="ttMax" style="width:85px;" title="Longest actual on-site time seen for this code">Longest</th>
+        <th data-sort="ttAvg" style="width:85px;" title="Average actual on-site time seen for this code">Avg Actual</th>
+        <th data-sort="active" style="width:60px;">Active</th>
+        <th data-sort="lastReviewed" style="width:110px;">Last Reviewed</th>
+        <th class="nosort" style="width:100px;">Save</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty-state" id="emptyState" style="display:none;">No items match the current filters.</div>
+  <div class="load-more-wrap" id="loadMoreWrap" style="display:none;">
+    <button class="btn" id="loadMoreBtn"></button>
+  </div>
+</div>
+
+<details class="help note-footer">
+  <summary>About this data</summary>
+  <div class="help-body">
+    <p>Rebuilt 2026-11-24, now from a complete export (inactive items included) — 27,488 items across Materials, Services and Equipment: 3,782 active, 23,706 inactive. This confirms the earlier active-only export wasn't a sign anything got deleted — every one of the 27,415 items from the last full build is still here (0 removed), plus 73 new codes. Since that last build: 807 items had a price or cost change, 23 were reactivated (inactive → active), and 12 services got genuinely reworded (mostly electrical install descriptions — "CF-55", "FXH-001", "SUBP-100" and others now read as proper customer-facing text instead of internal notes). "Faucet Repairs" (FR001/002/003/004/012/044) are still present and still have no Business Unit checked on their category — that original mystery is unchanged.</p>
+    <p>This page now lives alongside Job Review in the same site, and loads its data from files in this repo instead of being baked into the file you download. For Services, the <b>Jobs / Shortest / Longest / Avg Actual</b> columns are pulled live from Job Review's own job-history data, matched by Code — so you can see what a task is booked for (Hours) right next to what it actually takes in the field.</p>
+    <p>Edits and reviewed-marks save automatically to this browser as you work, the same as before — but since this is now a real website rather than a downloaded file, that storage is per-browser: edits made here won't show up if you open this page on another computer or in another browser. Use the Changes List / Vendor Pricing exports to move work between devices or hand it off. <b>Changes List and Vendor Pricing downloads are tracking/reference files, not ServiceTitan-ready imports</b> — bring them back here when you're ready to push a batch live and I'll merge them into a full copy of your original export. Images upload directly in ServiceTitan (per-item, or Bulk edit) — not through this file.</p>
+  </div>
+</details>
+
+</div>
+
+<div id="vendorCostView" hidden>
+  <div class="vc-toolbar">
+    <div class="seg" id="vcModeSeg">
+      <button data-vcmode="material" class="on">Look up by Material</button>
+      <button data-vcmode="vendor">Look up by Vendor</button>
+    </div>
+  </div>
+
+  <div id="vcMaterialMode" class="vc-panel">
+    <div class="vc-search-row">
+      <input type="search" id="vcMaterialSearch" placeholder="Search material code or name…">
+    </div>
+    <div id="vcMaterialResults"></div>
+  </div>
+
+  <div id="vcVendorMode" class="vc-panel" hidden>
+    <div class="vc-vendor-layout">
+      <div class="vc-vendor-list" id="vcVendorList"></div>
+      <div class="vc-vendor-detail" id="vcVendorDetail">
+        <div class="vc-empty">Pick a vendor on the left to see their material list and contact info.</div>
+      </div>
+    </div>
+  </div>
+
+  <details class="help note-footer">
+    <summary>About this data</summary>
+    <div class="help-body">
+      <p>Rebuilt 2026-11-24 from the new Vendor-Material Cost Export — 4,405 vendor/material cost records across 35 vendors (Amazon is newly added), covering 2,505 distinct materials — now a 1:1 match with the new Materials & Other Costs sheet — 1,386 of them supplied by more than one vendor. 91 vendor/material price pairs are new since the last build, 6 were removed. This data now loads from a file in the site instead of being baked into a downloaded copy, same as the Pricebook view.</p>
+      <p>Kept entirely separate from Pricebook Review — doesn't feed the Save/Changes List flow, doesn't touch the Vendor column over there, and nothing here edits your pricebook data. Cross-checked against the primary-vendor data already in the tool with zero price mismatches. Use Pricebook Review's Vendor filter/export/import for actually updating prices.</p>
+    </div>
+  </details>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- load data ----------
+  // This page lives in the same GitHub repo as Job Review, so data comes from
+  // plain JSON files fetched at load time (same pattern review.html already
+  // uses for data/baseline/task_times.json) instead of being baked into the page.
+  var RAW, SCHEMA, IDX, ROWS, BY_KEY;
+  var SHEET_NAMES = {0:'material',1:'service',2:'equipment'};
+  var SHEET_LABEL = {material:'Materials & Other Costs', service:'Services', equipment:'Equipment'};
+  var DEPARTMENTS = ['Plumbing','Sewer','HVAC','Electrical','Unassigned'];
+
+  // code -> {n, min, max, avg} of real job hours, from Job Review's own task-time
+  // data (data/baseline/task_times.json + task_live.json) -- same two files its
+  // own "Task times" tab reads. Only Services get a code match; n===0 means no
+  // job history yet for that code.
+  var TASK_TIME = {};
+  function buildTaskTimeMap(taskTimes, live){
+    var byCode = {};
+    Object.values((taskTimes && taskTimes.tasks) || {}).forEach(function(t){
+      (t.samples || []).forEach(function(x){ if(!x[4]) (byCode[t.code] = byCode[t.code] || []).push(x[2]); });
+    });
+    Object.values((live && live.jobs) || {}).forEach(function(x){
+      if(!x[5]) (byCode[x[0]] = byCode[x[0]] || []).push(x[3]);
+    });
+    var out = {};
+    Object.keys(byCode).forEach(function(code){
+      var a = byCode[code];
+      var sum = a.reduce(function(s,v){ return s+v; }, 0);
+      out[code] = { n:a.length, min:Math.min.apply(null,a), max:Math.max.apply(null,a), avg:sum/a.length };
+    });
+    return out;
+  }
+
+  function loadAll(){
+    Promise.all([
+      fetch('data/pricebook_review.json').then(function(r){ return r.json(); }),
+      fetch('data/baseline/task_times.json').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }),
+      fetch('data/baseline/task_live.json').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+    ]).then(function(res){
+      RAW = res[0];
+      SCHEMA = RAW.schema;
+      IDX = {}; SCHEMA.forEach(function(k,i){ IDX[k]=i; });
+      ROWS = RAW.rows.map(function(r){
+        return {
+          uid:r[IDX.uid], sheet:SHEET_NAMES[r[IDX.sheet]], id:r[IDX.id], buId:r[IDX.buId],
+          code:r[IDX.code]||'', name:r[IDX.name]||'', description:r[IDX.description]||'',
+          cost:r[IDX.cost], price:r[IDX.price], memberPrice:r[IDX.memberPrice], hours:r[IDX.hours],
+          active: r[IDX.active]===1, image:r[IDX.image]||'', type:r[IDX.type]||'Uncategorized',
+          brand:r[IDX.brand]||'', department:r[IDX.department]||'Unassigned', vendor:r[IDX.vendor]||'',
+          vendorPartNum:r[IDX.vendorPartNum]||'', vendorPrice:r[IDX.vendorPrice]
+        };
+      });
+      BY_KEY = {};
+      ROWS.forEach(function(r){ BY_KEY[r.sheet+':'+r.id] = r; });
+      TASK_TIME = buildTaskTimeMap(res[1], res[2]);
+      loadPersisted();
+    }).catch(function(err){
+      document.body.innerHTML = '<div style="padding:40px;font-family:var(--sans,sans-serif);color:#e7ecf1;background:#12161b;min-height:100vh;">' +
+        '<h2>Could not load pricebook data</h2><p>'+String(err && err.message || err)+'</p>' +
+        '<p>Make sure <code>data/pricebook_review.json</code> exists in this repo next to this page.</p></div>';
+    });
+  }
+
+  // ---------- persisted state (edits + reviewed markers) ----------
+  var edits = {};      // key -> {fields:{...}, changedKeys:[...], savedAt}
+  var reviewed = {};   // key -> true  (saved with no changes)
+  var imageReady = {}; // key -> {note:'', markedAt}  -- "found an image, ready to upload in ServiceTitan"
+  var storageReady = false;
+
+  // Plain browser localStorage -- per-browser only, same as before, but no
+  // Claude-artifact runtime needed. Edits made here stay on this one computer;
+  // they are not shared with anyone else who opens this page (same limitation
+  // the downloaded-file version always had).
+  function lsGet(key){ try{ return localStorage.getItem(key); }catch(e){ return null; } }
+  function lsSet(key, val){ try{ localStorage.setItem(key, val); }catch(e){ /* quota or private mode -- edits still work this session, just won't persist */ } }
+  function lsRemove(key){ try{ localStorage.removeItem(key); }catch(e){} }
+
+  function persist(){
+    lsSet('pb-edits', JSON.stringify(edits));
+    lsSet('pb-reviewed', JSON.stringify(reviewed));
+    // fileData is stored separately per-image (see persistImageFile) so this stays small
+    // regardless of how many photos are attached — one big blob would hit localStorage's cap.
+    var light = {};
+    Object.keys(imageReady).forEach(function(k){
+      var e = imageReady[k];
+      light[k] = {note:e.note, markedAt:e.markedAt, fileSize:e.fileSize, fileName:e.fileName, hasFile: !!e.fileData};
+    });
+    lsSet('pb-image-ready', JSON.stringify(light));
+  }
+
+  function persistImageFile(key){
+    var e = imageReady[key];
+    if(!e || !e.fileData) return;
+    lsSet('pb-img-file:'+key, e.fileData);
+  }
+
+  function removePersistedImageFile(key){
+    lsRemove('pb-img-file:'+key);
+  }
+
+  function loadPersisted(){
+    try{ var e = lsGet('pb-edits'); if(e) edits = JSON.parse(e); }catch(err){}
+    try{ var r = lsGet('pb-reviewed'); if(r) reviewed = JSON.parse(r); }catch(err){}
+    try{
+      var light = JSON.parse(lsGet('pb-image-ready') || '{}');
+      imageReady = light;
+      Object.keys(imageReady).forEach(function(k){
+        if(imageReady[k].hasFile){
+          var fd = lsGet('pb-img-file:'+k);
+          if(fd) imageReady[k].fileData = fd;
+        }
+      });
+    }catch(err){ imageReady = {}; }
+    afterLoad();
+  }
+
+  // 'on-file' (export already had an image) | 'ready' (you've sourced one) | 'needed'
+  function imageStatus(r){
+    if(r.image) return 'on-file';
+    return imageReady[r.sheet+':'+r.id] ? 'ready' : 'needed';
+  }
+  var IMG_STATUS_ORDER = {'needed':0, 'ready':1, 'on-file':2};
+
+  // committed value for a row: edited fields if present, else original
+  function committed(r){
+    var e = edits[r.sheet+':'+r.id];
+    if(e) return {
+      name:e.fields.name, description:e.fields.description, price:e.fields.price,
+      cost:e.fields.cost, hours:e.fields.hours, type:e.fields.type, brand:e.fields.brand, active:e.fields.active,
+      department:e.fields.department, vendor:e.fields.vendor,
+      vendorPartNum:e.fields.vendorPartNum, vendorPrice:e.fields.vendorPrice
+    };
+    return {
+      name:r.name, description:r.description, price:r.price, cost:r.cost, hours:r.hours, type:r.type,
+      brand:r.brand, active:r.active, department:r.department, vendor:r.vendor,
+      vendorPartNum:r.vendorPartNum, vendorPrice:r.vendorPrice
+    };
+  }
+
+  // ---------- filter state ----------
+  // A filtered list this size or smaller renders in full immediately, same as a
+  // plain list. Past it, rendering everything at once risks freezing or crashing
+  // the tab (verified: ~11k+ interactive rows can OOM a browser tab), so those
+  // views render a first chunk with a Load More button instead -- this only
+  // triggers on genuinely large result sets (today: Inactive, Combined), not on
+  // any particular filter by name.
+  var AUTO_RENDER_LIMIT = 1000;
+  var RENDER_CHUNK = 300;
+  var state = { department:'all', status:'active', sheet:'all', type:'', vendor:'', imageFilter:'', search:'', sortCol:'type', sortDir:'asc', visible:AUTO_RENDER_LIMIT };
+
+  function esc(s){
+    s = (s===null||s===undefined) ? '' : String(s);
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function money(v){ return (v===null||v===undefined||isNaN(v)) ? '' : Number(v).toFixed(2); }
+  function formatShortDate(iso){
+    if(!iso) return '';
+    var d = new Date(iso);
+    if(isNaN(d.getTime())) return '';
+    return (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);
+  }
+  // same short format Job Review's own Task times tab uses, so the numbers read consistently in both places
+  function hrsFmt(h){ if(h===null||h===undefined||isNaN(h)) return '—'; return h<1 ? Math.round(h*60)+'m' : h.toFixed(1)+'h'; }
+  function taskTimeFor(r){
+    if(r.sheet!=='service' || !r.code) return null;
+    return TASK_TIME[r.code] || null;
+  }
+
+  function computeFilteredSorted(){
+    var q = state.search.trim().toLowerCase();
+    var out = ROWS.filter(function(r){
+      if(state.sheet!=='all' && r.sheet!==state.sheet) return false;
+      var c = committed(r);
+      if(state.department!=='all' && c.department!==state.department) return false;
+      if(state.status==='active' && !c.active) return false;
+      if(state.status==='inactive' && c.active) return false;
+      if(state.type && c.type!==state.type) return false;
+      if(state.vendor && c.vendor!==state.vendor) return false;
+      if(state.imageFilter && imageStatus(r)!==state.imageFilter) return false;
+      if(q){
+        var hay = (r.code+' '+c.name+' '+c.description+' '+c.brand+' '+c.vendor).toLowerCase();
+        if(hay.indexOf(q)===-1) return false;
+      }
+      return true;
+    });
+    var col = state.sortCol, dir = state.sortDir==='asc'?1:-1;
+    out.sort(function(a,b){
+      var ca=committed(a), cb=committed(b);
+      var va, vb;
+      if(col==='price'||col==='cost'||col==='hours'){ va=ca[col]||0; vb=cb[col]||0; }
+      else if(col==='ttJobs'||col==='ttMin'||col==='ttMax'||col==='ttAvg'){
+        var ta=taskTimeFor(a), tb=taskTimeFor(b);
+        var field = col==='ttJobs'?'n':col==='ttMin'?'min':col==='ttMax'?'max':'avg';
+        va = ta ? ta[field] : -1; vb = tb ? tb[field] : -1;
+      }
+      else if(col==='active'){ va=ca.active?1:0; vb=cb.active?1:0; }
+      else if(col==='imgstatus'){ va=IMG_STATUS_ORDER[imageStatus(a)]; vb=IMG_STATUS_ORDER[imageStatus(b)]; }
+      else if(col==='lastReviewed'){ va=lastReviewedAt(a)||''; vb=lastReviewedAt(b)||''; }
+      else { va=(ca[col]||'').toString().toLowerCase(); vb=(cb[col]||'').toString().toLowerCase(); }
+      if(va<vb) return -1*dir;
+      if(va>vb) return 1*dir;
+      return (a.name||'').localeCompare(b.name||'');
+    });
+    return out;
+  }
+
+  function groupBoundaries(list){
+    if(state.sortCol!=='type') return null;
+    var counts = {};
+    list.forEach(function(r){ var t=committed(r).type; counts[t]=(counts[t]||0)+1; });
+    return {counts:counts};
+  }
+
+  // ---------- rendering ----------
+  var tbody = document.getElementById('tbody');
+  var emptyState = document.getElementById('emptyState');
+  var loadMoreWrap = document.getElementById('loadMoreWrap');
+  var loadMoreBtn = document.getElementById('loadMoreBtn');
+
+  function rowKey(r){ return r.sheet+':'+r.id; }
+
+  function rowClass(r){
+    var key = rowKey(r);
+    var cls = [];
+    if(!committed(r).active) cls.push('row-inactive');
+    if(edits[key]) cls.push('row-saved');
+    else if(reviewed[key]) cls.push('row-reviewed');
+    return cls.join(' ');
+  }
+
+  function renderRow(r){
+    var c = committed(r);
+    var key = rowKey(r);
+    var imgStat = imageStatus(r);
+    var fileInputHtml = '<label class="img-file-btn">Attach file<input type="file" accept="image/*" class="img-file-input" data-action="image-file" data-key="'+esc(key)+'"></label>';
+    var imgCell;
+    if(imgStat==='on-file'){
+      imgCell = '<span class="img-badge ok" title="'+esc(r.image)+'">On file</span>';
+    } else if(imgStat==='ready'){
+      var entry = imageReady[key] || {};
+      var note = entry.note || '';
+      if(entry.fileData){
+        imgCell =
+          '<img class="img-thumb" src="'+entry.fileData+'" alt="">' +
+          '<div class="img-size-label">450×450 &middot; '+Math.round(entry.fileSize/1024)+' KB</div>' +
+          '<button class="btn small" data-action="download-image" data-key="'+esc(key)+'">Download</button>' +
+          '<input class="img-note" data-action="image-note" data-key="'+esc(key)+'" placeholder="note (optional)" value="'+esc(note)+'">' +
+          '<button class="undo-link" data-action="unmark-image" data-key="'+esc(key)+'">remove</button>';
+      } else {
+        imgCell =
+          '<span class="img-badge ready">Ready to upload</span>' +
+          '<input class="img-note" data-action="image-note" data-key="'+esc(key)+'" placeholder="note (optional)" value="'+esc(note)+'">' +
+          fileInputHtml +
+          '<button class="undo-link" data-action="unmark-image" data-key="'+esc(key)+'">undo</button>';
+      }
+    } else {
+      imgCell =
+        '<button class="img-badge needed" data-action="mark-image-ready" data-key="'+esc(key)+'" title="Click once you\'ve found an image for this item">Image Needed</button>' +
+        fileInputHtml;
+    }
+    var typeCls = (c.type==='Uncategorized') ? ' uncategorized' : '';
+    var savedBadge = edits[key]
+      ? '<span class="badge-saved">✓ Saved — in export</span>'
+      : (reviewed[key] ? '<span class="badge-reviewed">✓ Reviewed, no change</span>' : '');
+    var undo = (edits[key]||reviewed[key]) ? '<button class="undo-link" data-action="undo" data-key="'+esc(key)+'">undo</button>' : '';
+    var reviewedIso = lastReviewedAt(r);
+    var reviewedCell = reviewedIso
+      ? '<span class="last-reviewed" title="'+esc(reviewedIso)+'">'+esc(formatShortDate(reviewedIso))+'</span>'
+      : '<span class="last-reviewed-never">never</span>';
+
+    var deptOptions = DEPARTMENTS.map(function(d){
+      return '<option value="'+esc(d)+'"'+(d===c.department?' selected':'')+'>'+esc(d)+'</option>';
+    }).join('');
+    var deptCell = '<select class="dept-input" data-field="department">'+deptOptions+'</select>';
+
+    var vendorCell;
+    if(r.sheet==='service'){
+      vendorCell = '<span class="vendor-na">—</span>';
+    } else {
+      var isGenericVendor = c.vendor === 'Default Replenishment Vendor';
+      vendorCell =
+        '<input class="vendor-input'+(isGenericVendor?' vendor-generic':'')+'" data-field="vendor" value="'+esc(c.vendor)+'" list="vendorList" placeholder="vendor" title="'+(isGenericVendor?'ServiceTitan\'s generic fallback vendor -- not a real supplier to contact':'')+'">' +
+        (isGenericVendor ? '<div class="vendor-generic-tag">no real vendor set</div>' : '') +
+        '<input class="vendor-sub" data-field="vendorPartNum" value="'+esc(c.vendorPartNum)+'" placeholder="part #">' +
+        '<input class="vendor-sub" data-field="vendorPrice" value="'+money(c.vendorPrice)+'" placeholder="vendor $">';
+    }
+
+    var hoursCell;
+    if(r.sheet==='service'){
+      hoursCell = '<input class="num-input" data-field="hours" value="'+(c.hours===null||c.hours===undefined?'':c.hours)+'" title="Hours this service is booked for -- ServiceTitan\'s own labor-time field, not something this tool calculates">';
+    } else {
+      hoursCell = '<span class="vendor-na" title="ServiceTitan only tracks hours on Services, not on Materials or Equipment">—</span>';
+    }
+    var tt = taskTimeFor(r); // actual job history from Job Review, by Code -- null if no match or not a service
+
+    return '' +
+    '<tr data-key="'+esc(key)+'" class="'+rowClass(r)+'">' +
+      '<td>'+imgCell+'</td>' +
+      '<td>'+deptCell+'</td>' +
+      '<td><input class="type-input'+typeCls+'" data-field="type" value="'+esc(c.type)+'" list="typeList"></td>' +
+      '<td><input class="brand-input" data-field="brand" value="'+esc(c.brand)+'"></td>' +
+      '<td>'+vendorCell+'</td>' +
+      '<td class="code">'+esc(r.code)+'</td>' +
+      '<td><input class="name-input" data-field="name" value="'+esc(c.name)+'"></td>' +
+      '<td><textarea class="desc-input" data-field="description" rows="2">'+esc(c.description)+'</textarea></td>' +
+      '<td><input class="num-input" data-field="price" value="'+money(c.price)+'"></td>' +
+      '<td><input class="num-input" data-field="cost" value="'+money(c.cost)+'"></td>' +
+      '<td>'+hoursCell+'</td>' +
+      '<td class="num-ro">'+(tt?tt.n.toLocaleString():'<span class="vendor-na">—</span>')+'</td>' +
+      '<td class="num-ro">'+(tt?hrsFmt(tt.min):'')+'</td>' +
+      '<td class="num-ro">'+(tt?hrsFmt(tt.max):'')+'</td>' +
+      '<td class="num-ro">'+(tt?hrsFmt(tt.avg):'')+'</td>' +
+      '<td><label class="toggle"><input type="checkbox" data-field="active" '+(c.active?'checked':'')+'><span class="slider"></span></label></td>' +
+      '<td>'+reviewedCell+'</td>' +
+      '<td><div class="row-actions"><button class="btn small" data-action="save" data-key="'+esc(key)+'">Save</button>'+savedBadge+undo+'</div></td>' +
+    '</tr>';
+  }
+
+  function render(){
+    var list = computeFilteredSorted();
+    var gb = groupBoundaries(list);
+    document.getElementById('statsBar').innerHTML = statsHtml();
+
+    if(list.length===0){
+      tbody.innerHTML=''; emptyState.style.display='block'; loadMoreWrap.style.display='none';
+      return;
+    }
+    emptyState.style.display='none';
+
+    // Small/typical lists render whole; only a list past AUTO_RENDER_LIMIT gets
+    // chunked, and only up to however much the viewer has chosen to load.
+    var visible = (list.length <= AUTO_RENDER_LIMIT) ? list : list.slice(0, state.visible);
+
+    var html = [];
+    visible.forEach(function(r,i){
+      if(gb && (i===0 || committed(visible[i-1]).type!==committed(r).type)){
+        var t2 = committed(r).type;
+        var cnt = gb.counts[t2];
+        html.push('<tr class="group-row"><td colspan="18"><span>'+esc(t2)+'</span> — '+cnt+' item'+(cnt===1?'':'s')+'</td></tr>');
+      }
+      html.push(renderRow(r));
+    });
+    tbody.innerHTML = html.join('');
+
+    if(list.length > AUTO_RENDER_LIMIT && state.visible < list.length){
+      loadMoreWrap.style.display='flex';
+      loadMoreBtn.textContent = 'Load '+Math.min(RENDER_CHUNK, list.length-state.visible)+' more (' + (list.length-state.visible) + ' remaining)';
+    } else {
+      loadMoreWrap.style.display='none';
+      loadMoreBtn.textContent = '';
+    }
+  }
+
+  function statsHtml(){
+    var totalActive = ROWS.filter(function(r){return committed(r).active;}).length;
+    var totalInactive = ROWS.length - totalActive;
+    var noImage = ROWS.filter(function(r){ return committed(r).active && imageStatus(r)==='needed'; }).length;
+    var readyCount = ROWS.filter(function(r){ return committed(r).active && imageStatus(r)==='ready'; }).length;
+    var filesAttached = Object.keys(imageReady).filter(function(k){ return imageReady[k].fileData; }).length;
+    var changedCount = Object.keys(edits).length;
+    return 'Active <b>'+totalActive.toLocaleString()+'</b>' +
+      ' &middot; Inactive <b>'+totalInactive.toLocaleString()+'</b>' +
+      ' &middot; Active needing image <b class="warn-num">'+noImage.toLocaleString()+'</b>' +
+      ' &middot; Ready to upload <b>'+readyCount.toLocaleString()+'</b> ('+filesAttached+' with a file attached)' +
+      ' &middot; Changed <b>'+changedCount.toLocaleString()+'</b>';
+  }
+
+  function refreshTypeFilterOptions(){
+    var sel = document.getElementById('typeFilter');
+    var current = state.type;
+    var counts = {};
+    ROWS.forEach(function(r){
+      if(state.sheet!=='all' && r.sheet!==state.sheet) return;
+      var c = committed(r);
+      if(state.department!=='all' && c.department!==state.department) return;
+      if(state.status==='active' && !c.active) return;
+      if(state.status==='inactive' && c.active) return;
+      counts[c.type] = (counts[c.type]||0)+1;
+    });
+    var types = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
+    var html = ['<option value="">All item types</option>'];
+    types.forEach(function(t){ html.push('<option value="'+esc(t)+'">'+esc(t)+' ('+counts[t]+')</option>'); });
+    sel.innerHTML = html.join('');
+    sel.value = types.indexOf(current)>=0 ? current : '';
+    state.type = sel.value;
+  }
+
+  function refreshVendorFilterOptions(){
+    var sel = document.getElementById('vendorFilter');
+    var current = state.vendor;
+    var counts = {};
+    ROWS.forEach(function(r){
+      if(r.sheet==='service') return; // services have no vendor
+      if(state.sheet!=='all' && r.sheet!==state.sheet) return;
+      var c = committed(r);
+      if(state.department!=='all' && c.department!==state.department) return;
+      if(state.status==='active' && !c.active) return;
+      if(state.status==='inactive' && c.active) return;
+      if(!c.vendor) return;
+      counts[c.vendor] = (counts[c.vendor]||0)+1;
+    });
+    var vendors = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; });
+    var html = ['<option value="">All vendors</option>'];
+    vendors.forEach(function(v){ html.push('<option value="'+esc(v)+'">'+esc(v)+' ('+counts[v]+')</option>'); });
+    sel.innerHTML = html.join('');
+    sel.value = vendors.indexOf(current)>=0 ? current : '';
+    state.vendor = sel.value;
+    updateVendorExportButton();
+  }
+
+  function refreshTypeDatalist(){
+    var dl = document.getElementById('typeList');
+    if(!dl){
+      dl = document.createElement('datalist'); dl.id='typeList'; document.body.appendChild(dl);
+    }
+    var all = {};
+    ROWS.forEach(function(r){ all[committed(r).type]=1; });
+    dl.innerHTML = Object.keys(all).sort().map(function(t){ return '<option value="'+esc(t)+'">'; }).join('');
+  }
+
+  function refreshVendorDatalist(){
+    var dl = document.getElementById('vendorList');
+    if(!dl){
+      dl = document.createElement('datalist'); dl.id='vendorList'; document.body.appendChild(dl);
+    }
+    var all = {};
+    ROWS.forEach(function(r){ if(r.sheet!=='service'){ var v=committed(r).vendor; if(v) all[v]=1; } });
+    dl.innerHTML = Object.keys(all).sort().map(function(v){ return '<option value="'+esc(v)+'">'; }).join('');
+  }
+
+  function refreshFilterOptions(){
+    refreshTypeFilterOptions();
+    refreshVendorFilterOptions();
+  }
+
+  // ---------- events ----------
+  document.getElementById('deptTabs').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(this.querySelectorAll('button'), function(x){x.classList.remove('on');});
+    b.classList.add('on'); state.department = b.dataset.dept; state.visible=AUTO_RENDER_LIMIT;
+    refreshFilterOptions(); render();
+  });
+  document.getElementById('statusSeg').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(this.querySelectorAll('button'), function(x){x.classList.remove('on');});
+    b.classList.add('on'); state.status = b.dataset.status; state.visible=AUTO_RENDER_LIMIT;
+    refreshFilterOptions(); render();
+  });
+  document.getElementById('sheetSeg').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(this.querySelectorAll('button'), function(x){x.classList.remove('on');});
+    b.classList.add('on'); state.sheet = b.dataset.sheet; state.visible=AUTO_RENDER_LIMIT;
+    refreshFilterOptions(); render();
+  });
+  document.getElementById('typeFilter').addEventListener('change', function(){
+    state.type = this.value; state.visible=AUTO_RENDER_LIMIT; render();
+  });
+  document.getElementById('vendorFilter').addEventListener('change', function(){
+    state.vendor = this.value; state.visible=AUTO_RENDER_LIMIT; render();
+    updateVendorExportButton();
+  });
+  document.getElementById('imageFilter').addEventListener('change', function(){
+    state.imageFilter = this.value; state.visible=AUTO_RENDER_LIMIT; render();
+  });
+  var searchDebounce;
+  document.getElementById('searchBox').addEventListener('input', function(){
+    var v = this.value;
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(function(){ state.search=v; state.visible=AUTO_RENDER_LIMIT; render(); }, 180);
+  });
+  document.querySelectorAll('thead th[data-sort]').forEach(function(th){
+    th.addEventListener('click', function(){
+      var col = th.dataset.sort;
+      if(state.sortCol===col){ state.sortDir = state.sortDir==='asc'?'desc':'asc'; }
+      else { state.sortCol=col; state.sortDir='asc'; }
+      document.querySelectorAll('thead th').forEach(function(x){x.classList.remove('sorted'); var a=x.querySelector('.arrow'); if(a) a.remove();});
+      th.classList.add('sorted');
+      var arrow = document.createElement('span'); arrow.className='arrow'; arrow.textContent = state.sortDir==='asc'?'▲':'▼';
+      th.appendChild(arrow);
+      render();
+    });
+  });
+  loadMoreBtn.addEventListener('click', function(){ state.visible += RENDER_CHUNK; render(); });
+
+  tbody.addEventListener('click', function(e){
+    var saveBtn = e.target.closest('[data-action="save"]');
+    if(saveBtn){ saveRow(saveBtn.dataset.key); return; }
+    var undoBtn = e.target.closest('[data-action="undo"]');
+    if(undoBtn){ undoRow(undoBtn.dataset.key); return; }
+    var markBtn = e.target.closest('[data-action="mark-image-ready"]');
+    if(markBtn){ markImageReady(markBtn.dataset.key); return; }
+    var unmarkBtn = e.target.closest('[data-action="unmark-image"]');
+    if(unmarkBtn){ unmarkImageReady(unmarkBtn.dataset.key); return; }
+    var dlBtn = e.target.closest('[data-action="download-image"]');
+    if(dlBtn){ downloadOneImage(dlBtn.dataset.key); return; }
+  });
+  tbody.addEventListener('input', function(e){
+    if(e.target.dataset.action==='image-note') return;
+    var tr = e.target.closest('tr[data-key]'); if(!tr) return;
+    tr.classList.add('row-dirty');
+  });
+  tbody.addEventListener('change', function(e){
+    if(e.target.dataset.field==='active'){
+      var tr = e.target.closest('tr[data-key]'); if(tr) tr.classList.add('row-dirty');
+    }
+    if(e.target.dataset.action==='image-file' && e.target.files && e.target.files[0]){
+      handleImageFile(e.target.dataset.key, e.target.files[0]);
+      e.target.value = ''; // allow re-selecting the same filename later
+    }
+  });
+  var noteDebounce;
+  tbody.addEventListener('input', function(e){
+    if(e.target.dataset.action!=='image-note') return;
+    var key = e.target.dataset.key, val = e.target.value;
+    clearTimeout(noteDebounce);
+    noteDebounce = setTimeout(function(){
+      if(imageReady[key]){ imageReady[key].note = val; persist(); }
+    }, 300);
+  });
+
+  function markImageReady(key){
+    imageReady[key] = {note:'', markedAt:new Date().toISOString()};
+    persist(); render();
+  }
+  function unmarkImageReady(key){
+    removePersistedImageFile(key);
+    delete imageReady[key];
+    persist(); render();
+  }
+
+  // ---------- image processing: resize to 450x450, compress under 100KB (ServiceTitan's own spec) ----------
+  var IMG_TARGET_SIZE = 450;
+  var IMG_MAX_BYTES = 100 * 1024;
+
+  function resizeCoverSquare(img, size){
+    var canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    var ctx = canvas.getContext('2d');
+    var scale = Math.max(size / img.naturalWidth, size / img.naturalHeight);
+    var sw = size / scale, sh = size / scale;
+    var sx = (img.naturalWidth - sw) / 2, sy = (img.naturalHeight - sh) / 2;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
+    return canvas;
+  }
+
+  function compressToUnder(canvas, maxBytes, onDone){
+    var quality = 0.92;
+    function attempt(){
+      canvas.toBlob(function(blob){
+        if(!blob){ onDone(null, 0); return; }
+        if(blob.size <= maxBytes || quality <= 0.35){ onDone(blob, quality); return; }
+        quality -= 0.08;
+        attempt();
+      }, 'image/jpeg', quality);
+    }
+    attempt();
+  }
+
+  function handleImageFile(key, file){
+    var r = BY_KEY[key]; if(!r) return;
+    if(!/^image\//.test(file.type)){ window.alert('Please choose an image file (JPG, PNG, etc.).'); return; }
+    var reader = new FileReader();
+    reader.onerror = function(){ window.alert('Could not read that file.'); };
+    reader.onload = function(e){
+      var img = new Image();
+      img.onerror = function(){ window.alert('Could not read that image.'); };
+      img.onload = function(){
+        var canvas = resizeCoverSquare(img, IMG_TARGET_SIZE);
+        compressToUnder(canvas, IMG_MAX_BYTES, function(blob){
+          if(!blob){ window.alert('Could not process that image.'); return; }
+          var fr2 = new FileReader();
+          fr2.onload = function(e2){
+            var prevNote = (imageReady[key] && imageReady[key].note) || '';
+            imageReady[key] = {
+              note: prevNote,
+              markedAt: new Date().toISOString(),
+              fileData: e2.target.result,
+              fileSize: blob.size,
+              fileName: safeFileName(r.code, r.name)
+            };
+            persist();
+            persistImageFile(key);
+            refreshFilterOptions();
+            render();
+          };
+          fr2.readAsDataURL(blob);
+        });
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function safeFileName(code, name){
+    var base = (code || name || 'item').toString().replace(/[^a-z0-9_\-]+/gi, '-').replace(/^-+|-+$/g,'');
+    return (base || 'item') + '.jpg';
+  }
+
+  function downloadOneImage(key){
+    var entry = imageReady[key];
+    if(!entry || !entry.fileData) return;
+    var a = document.createElement('a');
+    a.href = entry.fileData;
+    a.download = entry.fileName || 'image.jpg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  document.getElementById('downloadImagesBtn').addEventListener('click', function(){
+    var keys = Object.keys(imageReady).filter(function(k){ return imageReady[k].fileData; });
+    if(keys.length===0) return;
+    var zip = new JSZip();
+    keys.forEach(function(k){
+      var entry = imageReady[k];
+      var base64 = entry.fileData.split(',')[1];
+      zip.file(entry.fileName, base64, {base64:true});
+    });
+    zip.generateAsync({type:'blob'}).then(function(blob){
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'Pricebook-Images-' + new Date().toISOString().slice(0,10) + '.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    });
+  });
+
+  function updateDownloadImagesButton(){
+    var n = Object.keys(imageReady).filter(function(k){ return imageReady[k].fileData; }).length;
+    var totalBytes = Object.keys(imageReady).reduce(function(sum,k){ return sum + (imageReady[k].fileSize||0); }, 0);
+    var btn = document.getElementById('downloadImagesBtn');
+    btn.disabled = n===0;
+    btn.textContent = 'Download Images (.zip) — ' + n + (totalBytes ? ' · ' + (totalBytes/1024/1024).toFixed(1)+' MB' : '');
+  }
+
+  function readRowInputs(tr){
+    var deptEl = tr.querySelector('[data-field=department]');
+    var vendorEl = tr.querySelector('[data-field=vendor]');
+    var vpnEl = tr.querySelector('[data-field=vendorPartNum]');
+    var vpEl = tr.querySelector('[data-field=vendorPrice]');
+    var hoursEl = tr.querySelector('[data-field=hours]');
+    return {
+      name: tr.querySelector('[data-field=name]').value.trim(),
+      description: tr.querySelector('[data-field=description]').value,
+      price: parseFloat(tr.querySelector('[data-field=price]').value) || 0,
+      cost: parseFloat(tr.querySelector('[data-field=cost]').value) || 0,
+      hours: hoursEl ? (hoursEl.value.trim()==='' ? null : (parseFloat(hoursEl.value) || 0)) : null,
+      type: tr.querySelector('[data-field=type]').value.trim() || 'Uncategorized',
+      brand: tr.querySelector('[data-field=brand]').value.trim(),
+      active: tr.querySelector('[data-field=active]').checked,
+      department: deptEl ? deptEl.value : 'Unassigned',
+      vendor: vendorEl ? vendorEl.value.trim() : '',
+      vendorPartNum: vpnEl ? vpnEl.value.trim() : '',
+      vendorPrice: vpEl ? (parseFloat(vpEl.value) || 0) : 0
+    };
+  }
+
+  var FIELD_LABELS = {name:'Name', description:'Description', price:'Price', cost:'Cost', hours:'Hours', type:'Item Type',
+    brand:'Brand', active:'Active', department:'Department', vendor:'Vendor',
+    vendorPartNum:'Vendor Part #', vendorPrice:'Vendor Price'};
+
+  function changedKeysFor(r, next){
+    var orig = {
+      name:r.name, description:r.description, price:r.price||0, cost:r.cost||0, hours:r.hours,
+      type:r.type, brand:r.brand, active:r.active, department:r.department, vendor:r.vendor,
+      vendorPartNum:r.vendorPartNum, vendorPrice:r.vendorPrice||0
+    };
+    return Object.keys(orig).filter(function(k){
+      if(k==='price'||k==='cost'||k==='vendorPrice') return Math.abs((orig[k]||0)-(next[k]||0))>0.001;
+      if(k==='hours') return Math.abs((orig[k]||0)-(next[k]||0))>0.0001;
+      return (orig[k]||'') !== (next[k]||'');
+    });
+  }
+
+  // commits `next` field values for row r; returns true if it actually changed anything
+  function commitFields(r, next){
+    var key = rowKey(r);
+    var changedKeys = changedKeysFor(r, next);
+    delete reviewed[key];
+    if(changedKeys.length===0){
+      delete edits[key];
+      reviewed[key] = {reviewedAt:new Date().toISOString()};
+      return false;
+    }
+    edits[key] = {fields:next, changedKeys:changedKeys, savedAt:new Date().toISOString()};
+    return true;
+  }
+
+  // last time this row was touched through Save, in this tool -- whether or not
+  // anything actually changed. ServiceTitan's own export carries no modified-date
+  // field at all, so this is the only "last reviewed" signal that exists.
+  function lastReviewedAt(r){
+    var key = rowKey(r);
+    if(edits[key]) return edits[key].savedAt;
+    if(reviewed[key]) return reviewed[key].reviewedAt;
+    return null;
+  }
+
+  function saveRow(key){
+    var r = BY_KEY[key]; if(!r) return;
+    var tr = tbody.querySelector('tr[data-key="'+CSS.escape(key)+'"]');
+    if(!tr) return;
+    var vals = readRowInputs(tr);
+    commitFields(r, vals);
+    persist();
+    refreshFilterOptions();
+    refreshTypeDatalist();
+    refreshVendorDatalist();
+    render();
+  }
+
+  function undoRow(key){
+    delete edits[key];
+    delete reviewed[key];
+    persist();
+    refreshFilterOptions();
+    refreshTypeDatalist();
+    refreshVendorDatalist();
+    render();
+  }
+
+  // ---------- bulk edit planner (maps to ServiceTitan's own Bulk Edit screen) ----------
+  var bulkPanel = document.getElementById('bulkPanel');
+
+  document.getElementById('bulkPlanBtn').addEventListener('click', function(){
+    bulkPanel.hidden = !bulkPanel.hidden;
+    if(!bulkPanel.hidden){ updateBulkPanel(); }
+  });
+  document.getElementById('bulkPanelClose').addEventListener('click', function(){ bulkPanel.hidden = true; });
+  document.getElementById('bulkField').addEventListener('change', function(){ renderBulkControls(); });
+  document.getElementById('bulkApplyBtn').addEventListener('click', applyBulk);
+
+  function updateBulkPanel(){
+    refreshBulkChrome();
+    renderBulkControls();
+  }
+
+  function refreshBulkChrome(){
+    var title = 'Bulk edit plan';
+    if(state.sheet!=='all'){
+      title += ' — ' + SHEET_LABEL[state.sheet];
+      if(state.type) title += ' / ' + state.type;
+      title += ' (' + state.status + ')';
+    }
+    document.getElementById('bulkPanelTitle').textContent = title;
+    document.getElementById('bulkSheetHint').style.display = state.sheet==='all' ? 'block' : 'none';
+    document.getElementById('bulkBody').style.display = state.sheet==='all' ? 'none' : 'block';
+    updateBulkCount();
+  }
+
+  function renderBulkControls(){
+    var field = document.getElementById('bulkField').value;
+    var c = document.getElementById('bulkControls');
+    if(field==='price'){
+      c.innerHTML =
+        '<select id="bulkPriceMode"><option value="set">Set to $</option><option value="incPct">Increase by %</option>' +
+        '<option value="decPct">Decrease by %</option><option value="incAmt">Increase by $</option><option value="decAmt">Decrease by $</option></select>' +
+        '<input type="number" id="bulkPriceValue" step="0.01" placeholder="value">' +
+        '<label class="bulk-check"><input type="checkbox" id="bulkPriceRound"> Round to nearest dollar</label>';
+    } else if(field==='description'){
+      c.innerHTML =
+        '<select id="bulkDescMode"><option value="replace">Replace with</option><option value="prepend">Prepend</option><option value="append">Append</option></select>' +
+        '<textarea id="bulkDescValue" rows="2" placeholder="text"></textarea>';
+    } else if(field==='name'){
+      c.innerHTML =
+        '<select id="bulkNameMode"><option value="prepend">Prepend</option><option value="append">Append</option></select>' +
+        '<input type="text" id="bulkNameValue" placeholder="text">';
+    } else if(field==='active'){
+      c.innerHTML = '<select id="bulkActiveMode"><option value="activate">Activate all</option><option value="deactivate">Deactivate all</option></select>';
+    } else if(field==='image'){
+      c.innerHTML = '<p class="bulk-note">Marks every item in this filter that doesn\'t already have an image as "Ready to upload" — use this when one shared photo will cover the whole group (matches ServiceTitan\'s "Add Images" bulk action, which applies to all selected items at once).</p>';
+    }
+    document.getElementById('bulkChecklist').hidden = true;
+    updateBulkCount();
+  }
+
+  function updateBulkCount(){
+    var n = state.sheet==='all' ? 0 : computeFilteredSorted().length;
+    document.getElementById('bulkApplyCount').textContent = n;
+    document.getElementById('bulkApplyBtn').disabled = n===0;
+  }
+
+  function describeBulkOp(field){
+    if(field==='price'){
+      var mode = document.getElementById('bulkPriceMode').value;
+      var val = document.getElementById('bulkPriceValue').value;
+      var round = document.getElementById('bulkPriceRound').checked;
+      var map = {set:'Set to $'+val, incPct:'Increase by '+val+'%', decPct:'Decrease by '+val+'%', incAmt:'Increase by $'+val, decAmt:'Decrease by $'+val};
+      return {column:'Price', action: map[mode] + (round?' (check "Round to nearest dollar")':'')};
+    }
+    if(field==='description'){
+      var dmode = document.getElementById('bulkDescMode').value;
+      var map2 = {replace:'Replace', prepend:'Prepend', append:'Append'};
+      return {column:'Description', action: map2[dmode] + ' — paste the same text you entered here'};
+    }
+    if(field==='name'){
+      var nmode = document.getElementById('bulkNameMode').value;
+      var map3 = {prepend:'Prepend', append:'Append'};
+      return {column:'Name', action: map3[nmode] + ' — paste the same text you entered here'};
+    }
+    if(field==='active'){
+      var amode = document.getElementById('bulkActiveMode').value;
+      return {column: amode==='activate' ? 'Activate' : 'Deactivate', action: 'button at the bottom of the screen, in Edit Mode'};
+    }
+    return {column:'Images', action:'Add Images — attach the shared photo to the whole selection'};
+  }
+
+  function applyBulk(){
+    if(state.sheet==='all') return;
+    var list = computeFilteredSorted();
+    var field = document.getElementById('bulkField').value;
+    var count = list.length;
+    if(count===0) return;
+    if(!window.confirm('Apply this to '+count+' item'+(count===1?'':'s')+'? This changes the tool\'s local copy only — you still make the matching edit in ServiceTitan.')) return;
+
+    var priceMode, priceVal, priceRound, descMode, descVal, nameMode, nameVal, activeMode;
+    if(field==='price'){
+      priceMode = document.getElementById('bulkPriceMode').value;
+      priceVal = parseFloat(document.getElementById('bulkPriceValue').value);
+      priceRound = document.getElementById('bulkPriceRound').checked;
+      if(isNaN(priceVal)){ window.alert('Enter a value first.'); return; }
+    } else if(field==='description'){
+      descMode = document.getElementById('bulkDescMode').value;
+      descVal = document.getElementById('bulkDescValue').value;
+      if(!descVal){ window.alert('Enter text first.'); return; }
+    } else if(field==='name'){
+      nameMode = document.getElementById('bulkNameMode').value;
+      nameVal = document.getElementById('bulkNameValue').value;
+      if(!nameVal){ window.alert('Enter text first.'); return; }
+    } else if(field==='active'){
+      activeMode = document.getElementById('bulkActiveMode').value;
+    }
+
+    var changedCount = 0, codes = [];
+    list.forEach(function(r){
+      var key = rowKey(r);
+      var c = committed(r);
+
+      if(field==='image'){
+        if(imageStatus(r)==='needed'){
+          imageReady[key] = {note:'shared image (bulk)', markedAt:new Date().toISOString()};
+          changedCount++; codes.push(r.code);
+        }
+        return;
+      }
+
+      var next = {name:c.name, description:c.description, price:c.price, cost:c.cost, hours:c.hours, type:c.type, brand:c.brand, active:c.active};
+      if(field==='price'){
+        var base = c.price || 0, np = base;
+        if(priceMode==='set') np = priceVal;
+        else if(priceMode==='incPct') np = base * (1 + priceVal/100);
+        else if(priceMode==='decPct') np = base * (1 - priceVal/100);
+        else if(priceMode==='incAmt') np = base + priceVal;
+        else if(priceMode==='decAmt') np = base - priceVal;
+        if(priceRound) np = Math.round(np);
+        next.price = Math.max(0, Math.round(np*100)/100);
+      } else if(field==='description'){
+        var nd = c.description||'';
+        if(descMode==='replace') nd = descVal;
+        else if(descMode==='prepend') nd = descVal + nd;
+        else if(descMode==='append') nd = nd + descVal;
+        next.description = nd;
+      } else if(field==='name'){
+        var nn = c.name||'';
+        if(nameMode==='prepend') nn = nameVal + nn;
+        else if(nameMode==='append') nn = nn + nameVal;
+        next.name = nn;
+      } else if(field==='active'){
+        next.active = activeMode==='activate';
+      }
+
+      if(commitFields(r, next)){ changedCount++; codes.push(r.code); }
+    });
+
+    persist();
+    refreshFilterOptions();
+    refreshTypeDatalist();
+    refreshVendorDatalist();
+    render();
+    showBulkChecklist(field, changedCount, codes);
+  }
+
+  function showBulkChecklist(field, count, codes){
+    var el = document.getElementById('bulkChecklist');
+    el.hidden = false;
+    if(count===0){
+      el.innerHTML = '<p>Nothing changed — every item in this filter already matched the target value.</p>';
+      return;
+    }
+    var op = describeBulkOp(field);
+    el.innerHTML =
+      '<p><b>Do this in ServiceTitan:</b> Pricebook → '+esc(SHEET_LABEL[state.sheet])+' → switch to Edit Mode → search/select these '+count+' codes → click <b>'+esc(op.column)+'</b> → '+esc(op.action)+'.</p>' +
+      '<textarea class="code-list" id="bulkCodeList" readonly rows="6">'+esc(codes.join('\n'))+'</textarea>' +
+      '<button class="btn small" id="bulkCopyBtn">Copy codes</button>';
+    document.getElementById('bulkCopyBtn').addEventListener('click', function(){
+      var ta = document.getElementById('bulkCodeList');
+      ta.select();
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(ta.value).catch(function(){ document.execCommand('copy'); });
+      } else {
+        document.execCommand('copy');
+      }
+    });
+  }
+
+  // ---------- export ----------
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    var sheets = {material:[], service:[], equipment:[]};
+    var headerRow = ['Id','Business Unit ID','Code','Name','Description','Cost','Price','MemberPrice','Hours','Active',
+      'Image1','Item Type','Brand','Department','Vendor','Vendor Part #','Vendor Price',
+      'Original Description','Changed Fields','Saved At'];
+    Object.keys(edits).forEach(function(key){
+      var r = BY_KEY[key]; if(!r) return;
+      var e = edits[key];
+      sheets[r.sheet].push([
+        r.id, r.buId===null||r.buId===undefined?'':r.buId, r.code, e.fields.name, e.fields.description,
+        e.fields.cost, e.fields.price, r.memberPrice===null||r.memberPrice===undefined?'':r.memberPrice,
+        e.fields.hours===null||e.fields.hours===undefined?'':e.fields.hours,
+        e.fields.active?1:0, r.image, e.fields.type, e.fields.brand, e.fields.department,
+        e.fields.vendor, e.fields.vendorPartNum, e.fields.vendorPrice, r.description,
+        e.changedKeys.map(function(k){return FIELD_LABELS[k];}).join(', '), e.savedAt
+      ]);
+    });
+    var wb = XLSX.utils.book_new();
+    [['material','Materials & Other Costs'],['service','Services'],['equipment','Equipment']].forEach(function(pair){
+      var rows = sheets[pair[0]];
+      var ws = XLSX.utils.aoa_to_sheet([headerRow].concat(rows));
+      ws['!cols'] = headerRow.map(function(){return {wch:18};});
+      XLSX.utils.book_append_sheet(wb, ws, pair[1]);
+    });
+    var ts = new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+    XLSX.writeFile(wb, 'Pricebook-Changes-'+ts+'.xlsx');
+  });
+
+  // ---------- vendor price list: export + re-import round trip ----------
+  document.getElementById('vendorExportBtn').addEventListener('click', function(){
+    if(!state.vendor) return;
+    var rows = ROWS.filter(function(r){
+      if(r.sheet==='service') return false;
+      var c = committed(r);
+      if(c.vendor !== state.vendor) return false;
+      if(state.status==='active' && !c.active) return false;
+      if(state.status==='inactive' && c.active) return false;
+      return true;
+    });
+    // oldest/never-reviewed first, so the most overdue items sit at the top
+    rows.sort(function(a,b){ return (lastReviewedAt(a)||'').localeCompare(lastReviewedAt(b)||''); });
+    var headerRow = ['Code','Name','Current Description','Vendor Part #','Current Price','Current Cost','Last Reviewed','New Price','New Cost'];
+    var body = rows.map(function(r){
+      var c = committed(r);
+      var lr = lastReviewedAt(r);
+      return [r.code, c.name, c.description, c.vendorPartNum, c.price||0, c.cost||0, lr ? formatShortDate(lr) : 'never', '', ''];
+    });
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet([headerRow].concat(body));
+    ws['!cols'] = [{wch:14},{wch:32},{wch:36},{wch:16},{wch:12},{wch:12},{wch:13},{wch:12},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Vendor Pricing');
+    var safeVendor = state.vendor.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'');
+    XLSX.writeFile(wb, 'Vendor-Pricing-'+safeVendor+'.xlsx');
+  });
+
+  document.getElementById('vendorImportInput').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var wb = XLSX.read(ev.target.result, {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+        applyVendorPricingImport(rows);
+      }catch(err){
+        window.alert('Could not read that file. Make sure it\'s the spreadsheet exported from here.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function applyVendorPricingImport(rows){
+    var byCode = {};
+    ROWS.forEach(function(r){ if(r.sheet!=='service') byCode[String(r.code).trim().toUpperCase()] = r; });
+
+    var updated = 0, unchanged = 0, notFound = [];
+    rows.forEach(function(row){
+      var code = String(row['Code']||'').trim();
+      if(!code) return;
+      var r = byCode[code.toUpperCase()];
+      if(!r){ notFound.push(code); return; }
+      var newPrice = row['New Price'], newCost = row['New Cost'];
+      var hasNewPrice = newPrice!=='' && newPrice!==undefined && newPrice!==null && !isNaN(parseFloat(newPrice));
+      var hasNewCost = newCost!=='' && newCost!==undefined && newCost!==null && !isNaN(parseFloat(newCost));
+      if(!hasNewPrice && !hasNewCost) return;
+
+      var c = committed(r);
+      var next = {
+        name:c.name, description:c.description, price: hasNewPrice ? parseFloat(newPrice) : c.price,
+        cost: hasNewCost ? parseFloat(newCost) : c.cost, type:c.type, brand:c.brand, active:c.active,
+        department:c.department, vendor:c.vendor, vendorPartNum:c.vendorPartNum,
+        vendorPrice: hasNewPrice ? parseFloat(newPrice) : c.vendorPrice
+      };
+      if(commitFields(r, next)) updated++; else unchanged++;
+    });
+
+    persist();
+    refreshFilterOptions();
+    refreshTypeDatalist();
+    refreshVendorDatalist();
+    render();
+
+    var msg = updated + ' item' + (updated===1?'':'s') + ' updated with new pricing';
+    if(unchanged) msg += ', ' + unchanged + ' matched but had no price change';
+    if(notFound.length) msg += '. ' + notFound.length + ' code' + (notFound.length===1?'':'s') + " from the file weren't found: " + notFound.slice(0,10).join(', ') + (notFound.length>10?'…':'');
+    window.alert(msg);
+  }
+
+  function updateVendorExportButton(){
+    document.getElementById('vendorExportBtn').disabled = !state.vendor;
+  }
+
+  function updateExportButton(){
+    var n = Object.keys(edits).length;
+    document.getElementById('exportCount').textContent = n + (n===1?' row changed':' rows changed');
+    document.getElementById('exportBtn').disabled = n===0;
+  }
+  var _origRender = render;
+  render = function(){
+    _origRender();
+    updateExportButton();
+    updateDownloadImagesButton();
+    if(!bulkPanel.hidden) refreshBulkChrome();
+  };
+
+  // ---------- init ----------
+  function afterLoad(){
+    refreshFilterOptions();
+    refreshTypeDatalist();
+    refreshVendorDatalist();
+    render();
+  }
+  loadAll();
+
+})();
+</script>
+
+<script>
+(function(){
+  "use strict";
+
+  // Fully separate from the main review tool above -- its own IIFE, own data,
+  // read-only cross-reference into the pricebook data by Code for context only.
+  var VC_SCHEMA, VC_IDX, VC_ROWS, VC_VENDORS, PB_BY_CODE = {};
+
+  // Wired immediately (not inside init()) so the view toggle works even before
+  // the vendor-cost data has finished loading.
+  document.getElementById('viewSwitch').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(this.querySelectorAll('button'), function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    var isReview = b.dataset.view === 'review';
+    document.getElementById('reviewView').style.display = isReview ? '' : 'none';
+    document.getElementById('vendorCostView').hidden = isReview;
+  });
+
+  document.getElementById('vcModeSeg').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(this.querySelectorAll('button'), function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    var isMaterial = b.dataset.vcmode === 'material';
+    document.getElementById('vcMaterialMode').hidden = !isMaterial;
+    document.getElementById('vcVendorMode').hidden = isMaterial;
+  });
+
+  Promise.all([
+    fetch('data/pricebook_review_vendor_costs.json').then(function(r){ return r.json(); }),
+    fetch('data/pricebook_review.json').then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; })
+  ]).then(function(res){
+    var VC_RAW = res[0];
+    VC_SCHEMA = VC_RAW.schema;
+    VC_IDX = {}; VC_SCHEMA.forEach(function(k,i){ VC_IDX[k]=i; });
+    VC_ROWS = VC_RAW.rows;
+    VC_VENDORS = VC_RAW.vendors;
+
+    if(res[1]){
+      try{
+        var PB_IDX = {}; res[1].schema.forEach(function(k,i){ PB_IDX[k]=i; });
+        res[1].rows.forEach(function(r){
+          var code = r[PB_IDX.code];
+          if(code) PB_BY_CODE[String(code).trim().toUpperCase()] = {price:r[PB_IDX.price], active:r[PB_IDX.active]===1};
+        });
+      }catch(e){ /* if this ever fails, the vendor-cost view still works, just without the cross-reference tag */ }
+    }
+
+    init();
+  }).catch(function(err){
+    var el = document.getElementById('vendorCostView');
+    if(el) el.innerHTML = '<div style="padding:30px;">Could not load vendor cost data: '+String(err && err.message || err)+'</div>';
+  });
+
+  function init(){
+
+  function esc(s){
+    s = (s===null||s===undefined) ? '' : String(s);
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function money(v){ return (v===null||v===undefined||isNaN(v)) ? '' : Number(v).toFixed(2); }
+
+  // ---------- by-material lookup ----------
+  var byMaterialId = {};
+  VC_ROWS.forEach(function(r){
+    var mid = r[VC_IDX.materialId];
+    (byMaterialId[mid] = byMaterialId[mid] || []).push(r);
+  });
+
+  var materialSearchDebounce;
+  document.getElementById('vcMaterialSearch').addEventListener('input', function(){
+    var q = this.value;
+    clearTimeout(materialSearchDebounce);
+    materialSearchDebounce = setTimeout(function(){ renderMaterialResults(q); }, 180);
+  });
+
+  function renderMaterialResults(q){
+    var container = document.getElementById('vcMaterialResults');
+    q = q.trim().toLowerCase();
+    if(!q){ container.innerHTML = '<div class="vc-empty">Start typing a material code or name to compare vendor costs.</div>'; return; }
+
+    var matchedIds = {};
+    VC_ROWS.forEach(function(r){
+      var code = (r[VC_IDX.code]||'').toString().toLowerCase();
+      var name = (r[VC_IDX.name]||'').toString().toLowerCase();
+      if(code.indexOf(q)>=0 || name.indexOf(q)>=0){ matchedIds[r[VC_IDX.materialId]] = true; }
+    });
+    var allIds = Object.keys(matchedIds);
+    if(allIds.length===0){ container.innerHTML = '<div class="vc-empty">No materials found for "'+esc(q)+'".</div>'; return; }
+    var ids = allIds.slice(0, 40);
+
+    var html = [];
+    ids.forEach(function(midStr){
+      var mid = Number(midStr);
+      var rows = byMaterialId[mid].slice().sort(function(a,b){
+        var ca = a[VC_IDX.cost], cb = b[VC_IDX.cost];
+        if(ca==null && cb==null) return 0;
+        if(ca==null) return 1;
+        if(cb==null) return -1;
+        return ca-cb;
+      });
+      var first = rows[0];
+      var code = first[VC_IDX.code], name = first[VC_IDX.name];
+      var pb = PB_BY_CODE[String(code).trim().toUpperCase()];
+      html.push('<div class="vc-card">');
+      html.push('<div class="vc-card-head"><span class="vc-card-code">'+esc(code)+'</span><span class="vc-card-name">'+esc(name)+'</span>' +
+        (pb ? '<span class="vc-pb-tag">In Pricebook — $'+money(pb.price)+(pb.active?'':' (inactive)')+'</span>'
+            : '<span class="vc-pb-tag vc-pb-tag-missing">Not found in Pricebook by this code</span>') +
+        '</div>');
+      html.push('<table class="vc-table"><thead><tr><th>Vendor</th><th>Cost</th><th>Part #</th><th>Primary</th><th>Active</th><th>Memo</th></tr></thead><tbody>');
+      rows.forEach(function(r){
+        html.push('<tr'+(r[VC_IDX.isPrimary]?' class="vc-primary-row"':'')+'>' +
+          '<td>'+esc(r[VC_IDX.vendor])+(r[VC_IDX.isPrimary]?' <span class="vc-primary-badge">primary</span>':'')+'</td>' +
+          '<td class="vc-num">'+(r[VC_IDX.cost]!=null?'$'+money(r[VC_IDX.cost]):'—')+'</td>' +
+          '<td class="vc-mono">'+esc(r[VC_IDX.partNum]||'—')+'</td>' +
+          '<td>'+(r[VC_IDX.isPrimary]?'Yes':'')+'</td>' +
+          '<td>'+(r[VC_IDX.isActive]?'Yes':'No')+'</td>' +
+          '<td class="vc-memo">'+esc(r[VC_IDX.memo]||'')+'</td>' +
+        '</tr>');
+      });
+      html.push('</tbody></table></div>');
+    });
+    if(allIds.length > 40){
+      html.push('<div class="vc-more-hint">Showing the first 40 matches ('+allIds.length+' total) — narrow your search for more precise results.</div>');
+    }
+    container.innerHTML = html.join('');
+  }
+
+  // ---------- by-vendor lookup ----------
+  function renderVendorList(){
+    var container = document.getElementById('vcVendorList');
+    var sorted = VC_VENDORS.slice().sort(function(a,b){ return b.materialCount - a.materialCount; });
+    container.innerHTML = sorted.map(function(v){
+      return '<button class="vc-vendor-item" data-vendor="'+esc(v.name)+'">' +
+        '<span>'+esc(v.name)+'</span>' +
+        '<span class="vc-vendor-count">'+v.materialCount+'</span>' +
+      '</button>';
+    }).join('');
+  }
+
+  document.getElementById('vcVendorList').addEventListener('click', function(e){
+    var b = e.target.closest('[data-vendor]'); if(!b) return;
+    Array.prototype.forEach.call(this.querySelectorAll('.vc-vendor-item'), function(x){x.classList.remove('on');});
+    b.classList.add('on');
+    renderVendorDetail(b.dataset.vendor);
+  });
+
+  function renderVendorDetail(vendorName){
+    var meta = VC_VENDORS.filter(function(v){ return v.name===vendorName; })[0] || {name:vendorName, materialCount:0};
+    var rows = VC_ROWS.filter(function(r){ return r[VC_IDX.vendor]===vendorName; })
+      .slice().sort(function(a,b){ return (a[VC_IDX.name]||'').localeCompare(b[VC_IDX.name]||''); });
+
+    var contactBits = [];
+    if(meta.contact) contactBits.push(esc(meta.contact));
+    if(meta.phone) contactBits.push(esc(meta.phone));
+    if(meta.email) contactBits.push('<a href="mailto:'+esc(meta.email)+'">'+esc(meta.email)+'</a>');
+    if(meta.city) contactBits.push(esc(meta.city)+(meta.state?', '+esc(meta.state):''));
+
+    var html = [];
+    html.push('<div class="vc-vendor-detail-head">');
+    html.push('<h2>'+esc(vendorName)+'</h2>');
+    if(contactBits.length) html.push('<div class="vc-contact">'+contactBits.join(' &middot; ')+'</div>');
+    html.push('<button class="btn small" id="vcExportVendorBtn">Export this list (.xlsx)</button>');
+    html.push('</div>');
+    html.push('<table class="vc-table"><thead><tr><th>Code</th><th>Name</th><th>Cost</th><th>Part #</th><th>Primary</th><th>Active</th><th>In Pricebook</th></tr></thead><tbody>');
+    rows.forEach(function(r){
+      var pb = PB_BY_CODE[String(r[VC_IDX.code]).trim().toUpperCase()];
+      html.push('<tr>' +
+        '<td class="vc-mono">'+esc(r[VC_IDX.code])+'</td>' +
+        '<td>'+esc(r[VC_IDX.name])+'</td>' +
+        '<td class="vc-num">'+(r[VC_IDX.cost]!=null?'$'+money(r[VC_IDX.cost]):'—')+'</td>' +
+        '<td class="vc-mono">'+esc(r[VC_IDX.partNum]||'—')+'</td>' +
+        '<td>'+(r[VC_IDX.isPrimary]?'Yes':'')+'</td>' +
+        '<td>'+(r[VC_IDX.isActive]?'Yes':'No')+'</td>' +
+        '<td>'+(pb ? '$'+money(pb.price)+(pb.active?'':' (inactive)') : '—')+'</td>' +
+      '</tr>');
+    });
+    html.push('</tbody></table>');
+    document.getElementById('vcVendorDetail').innerHTML = html.join('');
+
+    document.getElementById('vcExportVendorBtn').addEventListener('click', function(){
+      exportVendorList(vendorName, rows);
+    });
+  }
+
+  function exportVendorList(vendorName, rows){
+    var headerRow = ['Code','Name','Vendor Cost','Vendor Part #','Primary Vendor?','Active Vendor?','Memo'];
+    var body = rows.map(function(r){
+      return [r[VC_IDX.code], r[VC_IDX.name], r[VC_IDX.cost], r[VC_IDX.partNum],
+        r[VC_IDX.isPrimary]?1:0, r[VC_IDX.isActive]?1:0, r[VC_IDX.memo]];
+    });
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet([headerRow].concat(body));
+    ws['!cols'] = headerRow.map(function(){return {wch:18};});
+    XLSX.utils.book_append_sheet(wb, ws, 'Vendor Costs');
+    var safe = vendorName.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'');
+    XLSX.writeFile(wb, 'Vendor-Costs-'+safe+'.xlsx');
+  }
+
+  // ---------- init ----------
+  renderVendorList();
+  document.getElementById('vcMaterialResults').innerHTML = '<div class="vc-empty">Start typing a material code or name to compare vendor costs.</div>';
+
+  }
+})();
+</script>
+</body>
+</html>
