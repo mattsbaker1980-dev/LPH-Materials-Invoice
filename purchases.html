@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purchase Orders — Job Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B2430; --paper:#FFFFFF; --steel:#EEF2F5; --line:#D7DEE4; --line-soft:#E6EAED;
+  --accent:#E2620E; --good:#2E7D4F; --good-bg:#E7F3EC;
+  --warn:#C6432D; --warn-bg:#FBEAE6; --muted:#667085; --muted-2:#8C93A0;
+  --needs:#8A5A00; --needs-bg:#FBF0DD; --info:#34598A; --info-bg:#E8EFF8;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--steel);color:var(--ink);font-family:'Inter',system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;}
+a{color:var(--info);}
+.wrap{max-width:1500px;margin:0 auto;padding:0 32px 60px;}
+header.top{background:var(--ink);color:var(--paper);padding:22px 0;}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:0;}
+header.top .logo{background:#fff;border-radius:8px;padding:6px 10px;display:flex;align-items:center;}
+header.top .logo img{height:88px;width:auto;display:block;}
+header.top h1{font-size:38px;font-weight:700;margin:0;color:#F3770C;line-height:1.1;}
+header.top .titleblock{text-align:right;}
+header.top p{font-size:13px;color:#AEB6C2;margin:4px 0 0;}
+@media (max-width:700px){ header.top .logo img{height:60px;} header.top h1{font-size:28px;} header.top .titleblock{text-align:left;} .wrap{padding:0 14px 40px;} }
+.tabbar{background:var(--paper);border-bottom:1px solid var(--line);margin-bottom:22px;}
+.tabbar-inner{display:flex;flex-wrap:wrap;gap:4px;padding-top:10px;padding-bottom:0;}
+.tab-btn{font-family:inherit;font-size:13.5px;font-weight:600;color:var(--muted);background:transparent;border:none;padding:10px 4px;margin-right:22px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none;}
+.tab-btn:hover{color:var(--ink);}
+.tab-btn.active{color:var(--ink);border-bottom-color:var(--accent);}
+.tab-btn .cnt{display:inline-block;min-width:20px;padding:1px 6px;margin-left:6px;border-radius:999px;background:var(--needs-bg);color:var(--needs);font-size:11.5px;}
+.tab-btn .cnt.zero{background:var(--steel);color:var(--muted-2);}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:18px;}
+.controls{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-size:12.5px;color:var(--muted);}
+select,.search{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13px;}
+.search{width:300px;max-width:100%;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{font-size:12.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--muted);cursor:pointer;user-select:none;}
+.chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:18px;}
+.stat{background:var(--paper);padding:14px 18px;cursor:pointer;}
+.stat:hover{background:#FAFBFC;}
+.stat.active{box-shadow:inset 0 -3px 0 var(--accent);}
+.stat .num{font-size:24px;font-weight:700;line-height:1.1;}
+.stat .lbl{font-size:12.5px;color:var(--muted);margin-top:4px;}
+details.how{margin-bottom:18px;}
+details.how summary{cursor:pointer;font-weight:600;font-size:14px;}
+details.how div{font-size:13.5px;line-height:1.55;color:#344054;margin-top:10px;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;margin-bottom:14px;overflow:hidden;}
+.card.done{opacity:.72;}
+.card.problem{border-color:var(--warn);}
+.chead{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:12px 18px;border-bottom:1px solid var(--line-soft);background:#FAFBFC;}
+.chead .vendor{font-weight:700;font-size:15px;}
+.chead .meta{font-size:13px;color:var(--muted);}
+.chead .total{font-weight:700;font-size:15px;margin-left:auto;}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;}
+.pill.good{background:var(--good-bg);color:var(--good);}
+.pill.needs{background:var(--needs-bg);color:var(--needs);}
+.pill.warn{background:var(--warn-bg);color:var(--warn);}
+.pill.info{background:var(--info-bg);color:var(--info);}
+.pill.mute{background:var(--steel);color:var(--muted);}
+.cbody{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;}
+@media (max-width:900px){ .cbody{grid-template-columns:1fr;} }
+.col{padding:14px 18px;}
+.col + .col{border-left:1px solid var(--line-soft);}
+@media (max-width:900px){ .col + .col{border-left:none;border-top:1px solid var(--line-soft);} }
+.col h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+table.lines{width:100%;border-collapse:collapse;font-size:13px;}
+table.lines td{padding:4px 0;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+table.lines td.q{width:44px;color:var(--muted);}
+table.lines td.a{text-align:right;width:90px;white-space:nowrap;}
+table.lines tr.tot td{border-bottom:none;color:var(--muted);}
+table.lines tr.tot.big td{color:var(--ink);font-weight:700;}
+.job .who{font-weight:600;font-size:14px;}
+.job .sub{font-size:13px;color:var(--muted);margin-top:2px;}
+.job ul{margin:8px 0 0;padding-left:18px;font-size:13px;}
+.job li.mat{font-weight:600;}
+.writeup{font-size:12.5px;color:#344054;white-space:pre-wrap;background:var(--steel);border-radius:6px;padding:8px 10px;margin-top:8px;max-height:150px;overflow:auto;}
+.cmp{font-size:13px;margin-top:8px;}
+.cmp b.ok{color:var(--good);} .cmp b.bad{color:var(--warn);}
+.cand{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:13px;}
+.cand:hover{border-color:var(--muted-2);}
+.cand.sel{border-color:var(--accent);background:#FFF6EF;}
+.msg{font-size:13.5px;color:#344054;line-height:1.5;}
+.cfoot{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;padding:12px 18px;border-top:1px solid var(--line-soft);}
+.cfoot textarea{flex:1;min-width:240px;min-height:38px;font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;resize:vertical;}
+.btn{font-family:inherit;font-size:13px;font-weight:600;padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{border-color:var(--muted-2);}
+.btn.ok.on{background:var(--good);border-color:var(--good);color:#fff;}
+.btn.bad.on{background:var(--warn);border-color:var(--warn);color:#fff;}
+.empty{padding:40px;text-align:center;color:var(--muted);}
+#saveTag{position:fixed;left:16px;bottom:16px;z-index:60;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;color:#fff;background:var(--good);opacity:.9;display:none;}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <span class="logo"><img src="assets/logo.png" alt="Lancaster Plumbing Heating Cooling"></span>
+    <div class="titleblock">
+      <h1>Purchase Orders</h1>
+      <p id="subhead">Loading&hellip;</p>
+    </div>
+  </div>
+</header>
+
+<div class="tabbar">
+  <div class="wrap tabbar-inner" id="deptTabs">
+    <a class="tab-btn" href="./review.html">&larr; Job Review</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <details class="panel how">
+    <summary>How this page works</summary>
+    <div>
+      Every supplier invoice Mindy saves to her <b>Invoices</b> folder is read automatically (late morning and mid-afternoon on weekdays) and matched to the ServiceTitan job it was bought for. The invoice's <b>amount due</b> equals the job's PO/Bill cost in ServiceTitan to the cent, so most invoices match exactly; when the amount can't decide it, the customer named on the invoice or the tech who ordered it is used. Each invoice lands in the tab of the job's department.<br><br>
+      <b>What to check:</b> do the parts on the left belong on the job on the right? Were they billed to the customer (or covered by the task that was sold)? Does the write-up mention the work they'd be used for? Mark <b>Looks right</b> or <b>Problem</b> and add a note.<br><br>
+      <b>Pick the job</b> = the amount fits more than one job; click the right one. <b>Not matched yet</b> = no job matches the amount yet. It's re-checked every day for 3 weeks (an install that isn't finished, or a bill that hasn't posted). After that it shows as <b>No job found</b>; that's usually truck stock. <b>Stock / shop</b> orders have no job. <b>Scanned PDF</b> = this supplier sends a picture of the invoice that can't be read automatically. Open the PDF.<br><br>
+      Costs come from the daily <i>PO Cost Refresh</i> report (all departments, last 7 days). Invoices you mark here are shared: everyone sees the same marks.
+    </div>
+  </details>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="field"><label>Ordered</label>
+        <div class="chips" id="rangeChips">
+          <span class="chip" data-r="1w">One Week</span><span class="chip" data-r="2w">Two Weeks</span><span class="chip" data-r="1m">One Month</span><span class="chip" data-r="all">All</span>
+        </div>
+      </div>
+      <div class="field"><label>Show</label>
+        <select id="showSel">
+          <option value="needs">Needs review</option>
+          <option value="problem">Marked as a problem</option>
+          <option value="done">Reviewed</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+      <div class="field"><label>Search</label><input class="search" id="q" placeholder="PO #, vendor, part, customer, tech&hellip;"></div>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+  <div id="list"></div>
+</div>
+<div id="saveTag"></div>
+
+<script>
+(function(){
+  var WORKER_URL = 'https://lph-materials-invoice.mattsbaker1980.workers.dev';
+  var ST = 'https://go.servicetitan.com/#/';
+  var DEPTS = ['Plumbing','Sewer','HVAC','Electrical','General'];
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function m2(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function md(s){ if(!s) return ''; var p=s.split('-'); return (+p[1])+'/'+(+p[2]); }
+  function tryLS(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
+  var S = { data:null, statuses:{}, notes:{}, dept:tryLS('po_dept')||'Plumbing', range:tryLS('po_range')||'2w', show:'needs', q:'', kind:'' };
+  if(DEPTS.indexOf(S.dept)<0) S.dept='Plumbing';
+
+  function key(inv){ return 'inv_'+inv.id; }
+  function pickOf(inv){ var n=S.notes[key(inv)]; return n && n.excused && n.excused.pick || ''; }
+  // the job an invoice belongs to: matched automatically, or picked by a manager from the short list
+  function jobOf(inv){
+    var p=pickOf(inv), m=inv.match||{};
+    if(p){ var c=(m.candidates||[]).filter(function(x){return x.job===p;})[0]; if(c) return {info:c, how:'picked'}; if(m.jobInfo && m.jobInfo.job===p) return {info:m.jobInfo, how:m.how}; }
+    if(m.status==='matched' && m.jobInfo) return {info:m.jobInfo, how:m.how};
+    return null;
+  }
+  function deptOf(inv){ var j=jobOf(inv); return j ? (j.info.dept||'General') : ((inv.match&&inv.match.dept)||'General'); }
+  function kindOf(inv){ var m=inv.match||{}; if(jobOf(inv)) return 'matched'; return m.status||'waiting'; }
+  function reviewed(inv){ var s=S.statuses[key(inv)]; return s==='pass'||s==='fail'; }
+
+  function inRange(inv){
+    if(S.range==='all') return true;
+    var d=new Date(); d.setDate(d.getDate()-({'1w':7,'2w':14,'1m':31})[S.range]);
+    return (inv.orderDate||inv.invoiceDate||inv.readAt||'') >= d.toISOString().slice(0,10);
+  }
+  function matchesQ(inv){
+    if(!S.q) return true;
+    var j=jobOf(inv), c=(inv.match&&inv.match.candidates)||[];
+    var t=[inv.po,inv.vendor,inv.file,inv.invoiceNo,inv.orderedBy,inv.jobRef].concat((inv.lines||[]).map(function(l){return l.desc;}))
+      .concat(j?[j.info.job,j.info.customer,j.info.tech,j.info.jobType]:[]).concat(c.map(function(x){return x.job+' '+x.customer+' '+x.tech;})).join(' ').toLowerCase();
+    return S.q.toLowerCase().split(/\s+/).every(function(w){ return t.indexOf(w)>=0; });
+  }
+  function base(){ return Object.values(S.data.invoices).filter(function(i){ return inRange(i) && matchesQ(i); }); }
+  function showOk(inv){
+    var s=S.statuses[key(inv)];
+    if(S.show==='needs') return !s;
+    if(S.show==='problem') return s==='fail';
+    if(S.show==='done') return s==='pass'||s==='fail';
+    return true;
+  }
+
+  function renderTabs(){
+    var all=base(), h='<a class="tab-btn" href="./review.html">&larr; Job Review</a>';
+    DEPTS.forEach(function(d){
+      var n=all.filter(function(i){ return deptOf(i)===d && !reviewed(i); }).length;
+      h+='<button class="tab-btn'+(S.dept===d?' active':'')+'" data-d="'+d+'">'+d+'<span class="cnt'+(n?'':' zero')+'">'+n+'</span></button>';
+    });
+    $('deptTabs').innerHTML=h;
+  }
+  var KINDS=[['','All invoices'],['matched','Matched to a job'],['choose','Pick the job'],['waiting','Not matched yet'],['nomatch','No job found'],['stock','Stock / shop'],['unreadable','Scanned PDF']];
+  function renderStats(list){
+    var h='';
+    KINDS.forEach(function(k){
+      var n=k[0]?list.filter(function(i){return kindOf(i)===k[0];}).length:list.length;
+      if(k[0] && !n) return;
+      h+='<div class="stat'+(S.kind===k[0]?' active':'')+'" data-k="'+k[0]+'"><div class="num">'+n+'</div><div class="lbl">'+k[1]+'</div></div>';
+    });
+    $('stats').innerHTML=h;
+  }
+
+  function pdfLink(inv){
+    var u=inv.webUrl || ('https://lphbiz-my.sharepoint.com/personal/mindy_lphservice_com/Documents/Invoices/'+encodeURIComponent(inv.file));
+    return '<a class="btn" target="_blank" rel="noopener" href="'+esc(u)+'" title="If the file has been moved into a vendor folder, look in Mindy’s Invoices folder under the vendor">Open PDF</a>';
+  }
+  function linesHtml(inv){
+    if(inv.unreadable) return '<div class="msg">This supplier sends a scanned picture of the invoice, so it can’t be read automatically. Open the PDF to see what was bought.</div>';
+    var h='<table class="lines">';
+    (inv.lines||[]).forEach(function(l){ h+='<tr><td class="q">'+esc(l.qty)+'</td><td>'+esc(l.desc)+'</td><td class="a">'+m2(l.ext)+'</td></tr>'; });
+    h+='<tr class="tot"><td></td><td>Subtotal</td><td class="a">'+m2(inv.subtotal)+'</td></tr>';
+    if(inv.tax) h+='<tr class="tot"><td></td><td>Tax</td><td class="a">'+m2(inv.tax)+'</td></tr>';
+    h+='<tr class="tot big"><td></td><td>Amount due</td><td class="a">'+m2(inv.total)+'</td></tr></table>';
+    return h;
+  }
+  var HOW={amount:'the amount matches this job’s PO/Bill cost', customer:'the invoice names this customer', tech:'ordered by this tech, his only job that could hold it', picked:'picked by a manager'};
+  function jobHtml(j, inv){
+    var x=j.info, h='<div class="job">';
+    h+='<div class="who"><a target="_blank" rel="noopener" href="'+ST+'Job/Index/'+esc(x.job)+'">Job '+esc(x.job)+'</a> &middot; '+esc(x.customer)+'</div>';
+    h+='<div class="sub">'+esc(x.tech)+' &middot; '+esc(x.jobType||x.bu)+' &middot; completed '+md(x.date)+(x.revenue?' &middot; invoiced '+m2(x.revenue):'')+'</div>';
+    h+='<div class="sub"><span class="pill '+(j.how==='amount'?'good':'info')+'">Matched: '+esc(HOW[j.how]||j.how)+'</span></div>';
+    var diff=(+x.poCost||0)-(+inv.total||0);
+    h+='<div class="cmp">PO/Bill cost on the job: <b>'+m2(x.poCost)+'</b>'+(Math.abs(diff)<0.02?' <b class="ok">= this invoice</b>':(diff>0?' (includes other purchases too)':' <b class="bad">less than this invoice</b>'))+'</div>';
+    if(x.items && x.items.length){
+      h+='<div class="cmp" style="margin-top:10px;color:var(--muted)">On the customer’s invoice:</div><ul>';
+      x.items.forEach(function(it){ var mat=/material|equipment/i.test(it.type); h+='<li'+(mat?' class="mat"':'')+'>'+esc(it.name)+(it.price?' <span style="color:var(--muted);font-weight:400">'+m2(it.price)+'</span>':'')+(mat?' <span style="color:var(--muted);font-weight:400">(material)</span>':'')+'</li>'; });
+      h+='</ul>';
+    } else if(x.dept!=='Plumbing' && x.dept!=='Sewer' && !x.items) {
+      h+='<div class="cmp" style="color:var(--muted)">Line items for this job aren’t in the Job Review data. Open the job in ServiceTitan.</div>';
+    }
+    if(x.writeUp) h+='<div class="writeup">'+esc(x.writeUp)+'</div>';
+    return h+'</div>';
+  }
+  function rightHtml(inv){
+    var j=jobOf(inv), m=inv.match||{};
+    if(j){
+      var h=jobHtml(j, inv);
+      if(m.status==='choose') h+='<div style="margin-top:8px"><button class="btn unpick" data-k="'+key(inv)+'">Choose a different job</button></div>';
+      return h;
+    }
+    if(m.status==='choose'){
+      var h2='<div class="msg" style="margin-bottom:8px"><b>Which job was this for?</b> More than one job fits. Click the right one.</div>';
+      (m.candidates||[]).forEach(function(c){
+        h2+='<div class="cand" data-k="'+key(inv)+'" data-j="'+esc(c.job)+'"><div><b>'+esc(c.customer)+'</b> &middot; Job '+esc(c.job)+'<div style="color:var(--muted)">'+esc(c.tech)+' &middot; '+esc(c.jobType||c.bu)+' &middot; completed '+md(c.date)+' &middot; PO/Bill cost '+m2(c.poCost)+'</div></div></div>';
+      });
+      return h2;
+    }
+    var T={waiting:'No job matches yet. It’s checked again every day for 3 weeks: the bill may not have posted to the job, or it’s for an install that isn’t finished.',
+      nomatch:'No job found after 3 weeks of checking. Usually truck stock or a shop order. If it was for a job, find it in ServiceTitan by the PO number.',
+      stock:'Stock / shop order ('+esc(m.note||'')+'). No job to check.',
+      unreadable:'Scanned PDF. Open it and find the PO number in ServiceTitan (Purchasing &rarr; Purchase Orders) to see the job.'};
+    return '<div class="msg">'+(T[m.status]||'')+'</div>';
+  }
+  function cardHtml(inv){
+    var k=key(inv), s=S.statuses[k], n=S.notes[k]||{}, m=inv.match||{}, kind=kindOf(inv);
+    var pill={matched:['good','Matched'],choose:['needs','Pick the job'],waiting:['mute','Not matched yet'],nomatch:['warn','No job found'],stock:['mute','Stock / shop'],unreadable:['info','Scanned PDF']}[kind]||['mute',kind];
+    var h='<div class="card'+(s==='pass'?' done':'')+(s==='fail'?' problem':'')+'" id="c_'+esc(inv.id)+'">';
+    h+='<div class="chead"><span class="vendor">'+esc(inv.vendor)+'</span>';
+    h+='<span class="meta">PO '+esc(inv.po||'—')+(inv.invoiceNo?' &middot; inv '+esc(inv.invoiceNo):'')+'</span>';
+    h+='<span class="meta">'+(inv.orderDate||inv.invoiceDate?'ordered '+md(inv.orderDate||inv.invoiceDate):'saved '+md(inv.readAt))+(inv.orderedBy?' by '+esc(inv.orderedBy):'')+(inv.jobRef&&!/^\d+$/.test(inv.jobRef)?' &middot; job name “'+esc(inv.jobRef)+'”':'')+'</span>';
+    h+='<span class="pill '+pill[0]+'">'+pill[1]+'</span>';
+    h+='<span class="total">'+(inv.unreadable?'':m2(inv.total))+'</span>'+pdfLink(inv)+'</div>';
+    h+='<div class="cbody"><div class="col"><h4>What the supplier billed</h4>'+linesHtml(inv)+'</div><div class="col"><h4>The job</h4>'+rightHtml(inv)+'</div></div>';
+    h+='<div class="cfoot"><button class="btn ok'+(s==='pass'?' on':'')+'" data-k="'+k+'" data-s="pass">✓ Looks right</button>';
+    h+='<button class="btn bad'+(s==='fail'?' on':'')+'" data-k="'+k+'" data-s="fail">✗ Problem</button>';
+    h+='<textarea data-k="'+k+'" placeholder="Note (what’s wrong, who you talked to)…">'+esc(n.concern||'')+'</textarea></div>';
+    return h+'</div>';
+  }
+  function render(){
+    if(!S.data) return;
+    document.querySelectorAll('#rangeChips .chip').forEach(function(c){ c.classList.toggle('active', c.dataset.r===S.range); });
+    renderTabs();
+    var inDept=base().filter(function(i){ return deptOf(i)===S.dept; });
+    renderStats(inDept.filter(showOk));
+    var list=inDept.filter(showOk).filter(function(i){ return !S.kind || kindOf(i)===S.kind; });
+    var order={choose:0,matched:1,unreadable:2,waiting:3,nomatch:4,stock:5};
+    list.sort(function(a,b){ return (order[kindOf(a)]-order[kindOf(b)]) || String(b.orderDate||'').localeCompare(String(a.orderDate||'')) || String(b.po).localeCompare(String(a.po)); });
+    $('list').innerHTML = list.length ? list.map(cardHtml).join('') : '<div class="panel empty">Nothing here'+(S.show==='needs'?' to review':'')+'.</div>';
+  }
+
+  async function post(path, body){
+    var r=await fetch(WORKER_URL+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+    var d=null; try{ d=await r.json(); }catch(e){}
+    if(!r.ok||!d||!d.ok) throw new Error((d&&(d.message||d.error))||('HTTP '+r.status));
+    return d;
+  }
+  function tag(t,bad){ var el=$('saveTag'); el.textContent=t; el.style.background=bad?'var(--warn)':'var(--good)'; el.style.display='block'; clearTimeout(tag.t); tag.t=setTimeout(function(){ el.style.display='none'; }, bad?6000:1500); }
+  async function saveNote(k, patch){
+    try{ var d=await post('/api/state/note', Object.assign({job:k}, patch)); if(d.row) S.notes[k]={concern:d.row.concern, positive:d.row.positive, excused:d.row.excused}; tag('Saved ✓'); }
+    catch(e){ tag('Not saved: '+e.message, true); }
+  }
+
+  document.addEventListener('click', async function(e){
+    var t=e.target.closest('[data-d]'); if(t && t.classList.contains('tab-btn')){ S.dept=t.dataset.d; S.kind=''; tryLS('po_dept',S.dept); render(); return; }
+    t=e.target.closest('#rangeChips .chip'); if(t){ S.range=t.dataset.r; tryLS('po_range',S.range); render(); return; }
+    t=e.target.closest('.stat'); if(t){ S.kind=t.dataset.k; render(); return; }
+    t=e.target.closest('.btn[data-s]');
+    if(t){
+      var k=t.dataset.k, want=S.statuses[k]===t.dataset.s?null:t.dataset.s;
+      try{ await post('/api/state/status',{job:k,status:want}); if(want) S.statuses[k]=want; else delete S.statuses[k]; tag('Saved ✓'); render(); }
+      catch(err){ tag('Not saved: '+err.message, true); }
+      return;
+    }
+    t=e.target.closest('.cand');
+    if(t){ var kk=t.dataset.k, n=S.notes[kk]||{}; S.notes[kk]=Object.assign({}, n, {excused:Object.assign({}, n.excused||{}, {pick:t.dataset.j})}); render(); await saveNote(kk,{excuse:{code:'pick',reason:t.dataset.j}}); render(); return; }
+    t=e.target.closest('.unpick');
+    if(t){ var k2=t.dataset.k, n2=S.notes[k2]||{}; var ex=Object.assign({}, n2.excused||{}); delete ex.pick; S.notes[k2]=Object.assign({}, n2, {excused:ex}); render(); await saveNote(k2,{unexcuse:'pick'}); return; }
+  });
+  document.addEventListener('change', function(e){
+    if(e.target.matches('textarea[data-k]')){ var k=e.target.dataset.k; S.notes[k]=Object.assign({}, S.notes[k]||{}, {concern:e.target.value}); saveNote(k,{concern:e.target.value}); }
+  });
+  $('showSel').addEventListener('change', function(){ S.show=this.value; S.kind=''; render(); });
+  var qt; $('q').addEventListener('input', function(){ var v=this.value; clearTimeout(qt); qt=setTimeout(function(){ S.q=v.trim(); render(); }, 200); });
+
+  async function load(){
+    try{
+      var r=await fetch('data/po/invoices.json?t='+Date.now());
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      S.data=await r.json();
+      var n=Object.keys(S.data.invoices||{}).length;
+      $('subhead').textContent=n+' supplier invoices · updated '+new Date(S.data.updatedAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    }catch(e){ $('subhead').textContent='No invoices yet'; $('list').innerHTML='<div class="panel empty">Could not load the invoices ('+esc(e.message)+').</div>'; return; }
+    render();
+    try{
+      var d=await post('/api/state',{});
+      Object.keys(d.statuses||{}).forEach(function(k){ if(k.indexOf('inv_')===0) S.statuses[k]=d.statuses[k]; });
+      Object.keys(d.notes||{}).forEach(function(k){ if(k.indexOf('inv_')===0) S.notes[k]=d.notes[k]; });
+      render();
+    }catch(e){ tag('Couldn’t load saved marks: '+e.message, true); }
+  }
+  load();
+})();
+</script>
+</body>
+</html>

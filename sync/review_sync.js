@@ -102,6 +102,9 @@ function readWorkbook(file) {
 }
 
 function detect(cols) {
+  // "PO Cost Refresh": a light Jobs report (all departments, trailing 7 days) used to keep job PO/bill costs current
+  // for the Purchase Orders page. Checked first: it has Job # + PO/Bill Costs but none of the heavy columns.
+  if (cols.has('po/bill costs') && cols.has('job #') && !cols.has('jobs gross margin') && !cols.has('material costs as % of sales') && !cols.has('sold hours')) return 'poRefresh';
   if (cols.has('estimate id')) return 'estimates';
   if (cols.has('item name')) return 'lineItems';
   if (cols.has('total hours worked') || cols.has('sold hours')) return 'jobDetail';
@@ -279,6 +282,36 @@ function parseEstimates(rows, cols) {
     out.push({ jobNumber: job, base: { customer: str(r[I.cust]) }, section: 'estimate', data: e });
   }
   return out;
+}
+
+// PO Cost Refresh rows -> { job: { bu, done, tech, techs, cust, po, mat, eq } } (several rows per job are added up)
+function parsePoRefresh(rows, cols) {
+  const c = (n) => cols.find(n);
+  const I = { job: c('job #'), bu: c('business unit'), done: c('completion date'), tech: c('primary technician'), techs: c('assigned technicians'),
+    cust: c('customer name'), po: c('po/bill costs'), mat: c('material costs'), eq: c('equipment costs') };
+  const out = {};
+  for (const r of rows) {
+    const job = str(r[I.job]);
+    if (!isJobNo(job)) continue;
+    const x = out[job] || (out[job] = { bu: str(r[I.bu]), done: isoDate(r[I.done]), tech: str(r[I.tech]), techs: str(r[I.techs]), cust: str(r[I.cust]).trim(), po: 0, mat: 0, eq: 0 });
+    x.po = Math.round((x.po + num(r[I.po])) * 100) / 100;
+    if (I.mat !== -1) x.mat = Math.round((x.mat + num(r[I.mat])) * 100) / 100;
+    if (I.eq !== -1) x.eq = Math.round((x.eq + num(r[I.eq])) * 100) / 100;
+  }
+  return out;
+}
+const REFRESH = 'data/po/refresh.json';
+const REFRESH_KEEP_DAYS = 150;
+async function writeRefresh(store, parts, msg) {
+  const r = await store.read(REFRESH);
+  const db = r.data || { jobs: {} };
+  let n = 0;
+  for (const p of parts) for (const [k, v] of Object.entries(p)) { db.jobs[k] = v; n++; }
+  const cutoff = new Date(Date.now() - REFRESH_KEEP_DAYS * 86400000).toISOString().slice(0, 10);
+  for (const [k, v] of Object.entries(db.jobs)) if (v.done && v.done < cutoff) delete db.jobs[k];
+  db.updatedAt = new Date().toISOString();
+  await store.write(REFRESH, r.sha, db, msg);
+  return n;
 }
 
 const PARSERS = { materials: parseMaterials, jobDetail: parseJobDetail, lineItems: parseLineItems, estimates: parseEstimates };
@@ -921,6 +954,7 @@ async function main() {
 
   // 1. parse
   const updates = [];
+  const refreshParts = [];
   for (const f of opts.files) {
     const label = path.basename(f);
     try {
@@ -929,6 +963,13 @@ async function main() {
       const cols = makeCols(rows[0]);
       const kind = detect(cols);
       if (!kind) { log.reports.push({ file: label, kind: null, note: 'unrecognized header row' }); console.log(`${label}: unrecognized report, skipped.`); continue; }
+      if (kind === 'poRefresh') {
+        const part = parsePoRefresh(rows.slice(1), cols);
+        refreshParts.push(part);
+        log.reports.push({ file: label, kind, rows: rows.length - 1, jobs: Object.keys(part).length, range: filters['Date Range'] || '' });
+        console.log(`${label}: poRefresh — PO/bill costs for ${Object.keys(part).length} job(s)`);
+        continue;
+      }
       const u = PARSERS[kind](rows.slice(1), cols);
       const note = [];
       if (kind === 'estimates' && !cols.has('estimate summary') && !cols.has('summary')) note.push('no Estimate Summary column');
@@ -943,8 +984,12 @@ async function main() {
       console.log(`${label}: ERROR ${err.message}`);
     }
   }
+  if (refreshParts.length) {
+    try { const n = await writeRefresh(store, refreshParts, `PO Cost Refresh (${opts.context})`); console.log(`PO costs refreshed for ${n} job(s) -> ${REFRESH}`); }
+    catch (e) { log.errors.push('PO Cost Refresh: ' + e.message); console.log('ERROR PO Cost Refresh not saved: ' + e.message); }
+  }
   if (!updates.length) {
-    log.stage = log.errors.length ? 'failed' : 'no_data';
+    log.stage = log.errors.length ? 'failed' : (refreshParts.length ? 'refresh_only' : 'no_data');
     await writeLog(store, log);
     if (log.errors.length) process.exit(1);
     return;
@@ -1142,4 +1187,4 @@ async function writeLog(store, log) {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e.stack || e.message); process.exit(1); });
 
-module.exports = { purchaseKey, buildOpportunities, writeOpportunities, replacePairs, tierOf, expectedHours, taskHoursMap, isWrapper, sellerOf, INSTALLERS, DEMAND_CALL, matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
+module.exports = { parsePoRefresh, writeRefresh, REFRESH, purchaseKey, buildOpportunities, writeOpportunities, replacePairs, tierOf, expectedHours, taskHoursMap, isWrapper, sellerOf, INSTALLERS, DEMAND_CALL, matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
