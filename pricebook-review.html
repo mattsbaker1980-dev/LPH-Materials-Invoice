@@ -208,6 +208,8 @@
   }
   input.num-input:focus{outline:1.5px solid var(--accent); outline-offset:-1px;}
   .num-ro{font-family:var(--mono); font-size:12.5px; text-align:right; color:var(--text-dim); white-space:nowrap;}
+  .num-ro.tt-range{color:var(--text);}
+  .num-ro.tt-low{opacity:.45;}
 
   .img-badge{
     font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; white-space:nowrap; display:inline-block;
@@ -468,10 +470,11 @@
         <th data-sort="price" style="width:90px;">Price</th>
         <th data-sort="cost" style="width:90px;">Cost</th>
         <th data-sort="hours" style="width:80px;">Hours</th>
-        <th data-sort="ttJobs" style="width:70px;" title="Number of completed jobs billed under this code, from Job Review's own job history">Jobs</th>
-        <th data-sort="ttMin" style="width:85px;" title="Shortest actual on-site time seen for this code">Shortest</th>
-        <th data-sort="ttMax" style="width:85px;" title="Longest actual on-site time seen for this code">Longest</th>
-        <th data-sort="ttAvg" style="width:85px;" title="Average actual on-site time seen for this code">Avg Actual</th>
+        <th data-sort="ttJobs" style="width:70px;" title="Number of completed jobs used for this code, from Job Review's own job history. Jobs that also had a system check on the ticket are included with 1 hour deducted.">Jobs</th>
+        <th data-sort="ttMin" style="width:85px;" title="Shortest actual time seen for this code (after the system-check deduction, where it applies)">Shortest</th>
+        <th data-sort="ttMax" style="width:85px;" title="Longest actual time seen for this code (after the system-check deduction, where it applies)">Longest</th>
+        <th data-sort="ttMed" style="width:85px;" title="Median: half of the jobs took less than this, half took more. One unusually long job barely moves it.">Median</th>
+        <th data-sort="ttQ3" style="width:115px;" title="Typical range: the middle half of jobs finished between these two times (25th to 75th percentile). Sorts by the upper end. Dimmed when there are fewer than 5 jobs.">Most jobs take</th>
         <th data-sort="active" style="width:60px;">Active</th>
         <th data-sort="lastReviewed" style="width:110px;">Last Reviewed</th>
         <th class="nosort" style="width:100px;">Save</th>
@@ -489,7 +492,7 @@
   <summary>About this data</summary>
   <div class="help-body">
     <p>Rebuilt 2026-11-24, now from a complete export (inactive items included) — 27,488 items across Materials, Services and Equipment: 3,782 active, 23,706 inactive. This confirms the earlier active-only export wasn't a sign anything got deleted — every one of the 27,415 items from the last full build is still here (0 removed), plus 73 new codes. Since that last build: 807 items had a price or cost change, 23 were reactivated (inactive → active), and 12 services got genuinely reworded (mostly electrical install descriptions — "CF-55", "FXH-001", "SUBP-100" and others now read as proper customer-facing text instead of internal notes). "Faucet Repairs" (FR001/002/003/004/012/044) are still present and still have no Business Unit checked on their category — that original mystery is unchanged.</p>
-    <p>This page now lives alongside Job Review in the same site, and loads its data from files in this repo instead of being baked into the file you download. For Services, the <b>Jobs / Shortest / Longest / Avg Actual</b> columns are pulled live from Job Review's own job-history data, matched by Code — so you can see what a task is booked for (Hours) right next to what it actually takes in the field.</p>
+    <p>This page now lives alongside Job Review in the same site, and loads its data from files in this repo instead of being baked into the file you download. For Services, the <b>Jobs / Shortest / Longest / Median / Most jobs take</b> columns are pulled live from Job Review's own job-history data, matched by Code — so you can see what a task is booked for (Hours) right next to what it actually takes in the field. "Most jobs take" is the middle half of jobs (25th–75th percentile), so one unusually long job can't skew it the way an average would; it's dimmed when there are fewer than 5 jobs. Times come from jobs where this was the only repair on the ticket. Jobs that also had a system check on the ticket are included with 1 hour deducted (marked with * in Jobs); Job Review doesn't record which kind of add-on was on those jobs, so every one of them gets the same deduction.</p>
     <p>Edits and reviewed-marks save automatically to this browser as you work, the same as before — but since this is now a real website rather than a downloaded file, that storage is per-browser: edits made here won't show up if you open this page on another computer or in another browser. Use the Changes List / Vendor Pricing exports to move work between devices or hand it off. <b>Changes List and Vendor Pricing downloads are tracking/reference files, not ServiceTitan-ready imports</b> — bring them back here when you're ready to push a batch live and I'll merge them into a full copy of your original export. Images upload directly in ServiceTitan (per-item, or Bulk edit) — not through this file.</p>
   </div>
 </details>
@@ -542,24 +545,41 @@
   var SHEET_LABEL = {material:'Materials & Other Costs', service:'Services', equipment:'Equipment'};
   var DEPARTMENTS = ['Plumbing','Sewer','HVAC','Electrical','Unassigned'];
 
-  // code -> {n, min, max, avg} of real job hours, from Job Review's own task-time
-  // data (data/baseline/task_times.json + task_live.json) -- same two files its
-  // own "Task times" tab reads. Only Services get a code match; n===0 means no
-  // job history yet for that code.
+  // code -> {n, nAdj, min, max, med, q1, q3} of real job hours, from Job Review's own
+  // task-time data (data/baseline/task_times.json + task_live.json) -- the same two
+  // files its "Task times" tab reads. Only Services get a code match.
+  //
+  // Jobs where a system check / diagnostic was also on the ticket (flagged "multi" by
+  // Job Review's sync) used to be left out, because the visit hours include the check.
+  // Now they are kept, with SYSTEM_CHECK_HRS taken off the hours first. The sync does not
+  // record which kind of add-on item was on a flagged job, so every flagged job gets the
+  // same deduction. A job whose hours come out below MIN_ADJ_HRS after the deduction is
+  // dropped (the visit was too short for the numbers to mean anything).
+  var SYSTEM_CHECK_HRS = 1;
+  var MIN_ADJ_HRS = 0.25;
+  var LOW_SAMPLE = 5; // below this many jobs the typical range is shown dimmed
   var TASK_TIME = {};
+  function quantile(sorted, p){
+    var i = (sorted.length-1)*p, lo = Math.floor(i), hi = Math.ceil(i);
+    return sorted[lo] + (sorted[hi]-sorted[lo])*(i-lo);
+  }
   function buildTaskTimeMap(taskTimes, live){
     var byCode = {};
+    function add(code, hrs, multi){
+      var adj = 0;
+      if(multi){ hrs = Math.round((hrs - SYSTEM_CHECK_HRS)*100)/100; adj = 1; if(hrs < MIN_ADJ_HRS) return; }
+      var e = byCode[code] = byCode[code] || { h:[], adj:0 };
+      e.h.push(hrs); e.adj += adj;
+    }
     Object.values((taskTimes && taskTimes.tasks) || {}).forEach(function(t){
-      (t.samples || []).forEach(function(x){ if(!x[4]) (byCode[t.code] = byCode[t.code] || []).push(x[2]); });
+      (t.samples || []).forEach(function(x){ add(t.code, x[2], x[4]); });
     });
-    Object.values((live && live.jobs) || {}).forEach(function(x){
-      if(!x[5]) (byCode[x[0]] = byCode[x[0]] || []).push(x[3]);
-    });
+    Object.values((live && live.jobs) || {}).forEach(function(x){ add(x[0], x[3], x[5]); });
     var out = {};
     Object.keys(byCode).forEach(function(code){
-      var a = byCode[code];
-      var sum = a.reduce(function(s,v){ return s+v; }, 0);
-      out[code] = { n:a.length, min:Math.min.apply(null,a), max:Math.max.apply(null,a), avg:sum/a.length };
+      var a = byCode[code].h.slice().sort(function(x,y){ return x-y; });
+      out[code] = { n:a.length, nAdj:byCode[code].adj, min:a[0], max:a[a.length-1],
+                    med:quantile(a,0.5), q1:quantile(a,0.25), q3:quantile(a,0.75) };
     });
     return out;
   }
@@ -721,9 +741,9 @@
       var ca=committed(a), cb=committed(b);
       var va, vb;
       if(col==='price'||col==='cost'||col==='hours'){ va=ca[col]||0; vb=cb[col]||0; }
-      else if(col==='ttJobs'||col==='ttMin'||col==='ttMax'||col==='ttAvg'){
+      else if(col==='ttJobs'||col==='ttMin'||col==='ttMax'||col==='ttMed'||col==='ttQ3'){
         var ta=taskTimeFor(a), tb=taskTimeFor(b);
-        var field = col==='ttJobs'?'n':col==='ttMin'?'min':col==='ttMax'?'max':'avg';
+        var field = col==='ttJobs'?'n':col==='ttMin'?'min':col==='ttMax'?'max':col==='ttMed'?'med':'q3';
         va = ta ? ta[field] : -1; vb = tb ? tb[field] : -1;
       }
       else if(col==='active'){ va=ca.active?1:0; vb=cb.active?1:0; }
@@ -839,10 +859,11 @@
       '<td><input class="num-input" data-field="price" value="'+money(c.price)+'"></td>' +
       '<td><input class="num-input" data-field="cost" value="'+money(c.cost)+'"></td>' +
       '<td>'+hoursCell+'</td>' +
-      '<td class="num-ro">'+(tt?tt.n.toLocaleString():'<span class="vendor-na">—</span>')+'</td>' +
+      '<td class="num-ro"'+(tt&&tt.nAdj?' title="'+tt.nAdj+' of these '+tt.n+' jobs also had a system check on the ticket, so '+SYSTEM_CHECK_HRS+' hour was deducted from each"':'')+'>'+(tt?tt.n.toLocaleString()+(tt.nAdj?'*':''):'<span class="vendor-na">—</span>')+'</td>' +
       '<td class="num-ro">'+(tt?hrsFmt(tt.min):'')+'</td>' +
       '<td class="num-ro">'+(tt?hrsFmt(tt.max):'')+'</td>' +
-      '<td class="num-ro">'+(tt?hrsFmt(tt.avg):'')+'</td>' +
+      '<td class="num-ro'+(tt&&tt.n<LOW_SAMPLE?' tt-low':'')+'">'+(tt?hrsFmt(tt.med):'')+'</td>' +
+      '<td class="num-ro tt-range'+(tt&&tt.n<LOW_SAMPLE?' tt-low':'')+'"'+(tt&&tt.n<LOW_SAMPLE?' title="Only '+tt.n+' job'+(tt.n===1?'':'s')+' -- too few to call this typical"':'')+'>'+(tt?hrsFmt(tt.q1)+' – '+hrsFmt(tt.q3):'')+'</td>' +
       '<td><label class="toggle"><input type="checkbox" data-field="active" '+(c.active?'checked':'')+'><span class="slider"></span></label></td>' +
       '<td>'+reviewedCell+'</td>' +
       '<td><div class="row-actions"><button class="btn small" data-action="save" data-key="'+esc(key)+'">Save</button>'+savedBadge+undo+'</div></td>' +
@@ -869,7 +890,7 @@
       if(gb && (i===0 || committed(visible[i-1]).type!==committed(r).type)){
         var t2 = committed(r).type;
         var cnt = gb.counts[t2];
-        html.push('<tr class="group-row"><td colspan="18"><span>'+esc(t2)+'</span> — '+cnt+' item'+(cnt===1?'':'s')+'</td></tr>');
+        html.push('<tr class="group-row"><td colspan="19"><span>'+esc(t2)+'</span> — '+cnt+' item'+(cnt===1?'':'s')+'</td></tr>');
       }
       html.push(renderRow(r));
     });
