@@ -170,6 +170,10 @@ tr.reviewed td{opacity:.72;}
 .bar{height:6px;border-radius:3px;background:var(--line-soft);overflow:hidden;min-width:60px;}
 .bar i{display:block;height:100%;background:var(--accent);}
 @media (max-width:700px){ .wrap{padding:0 16px 40px;} .search{min-width:0;width:100%;} }
+.bought{grid-column:1/-1;}
+.bought .po{padding:8px 0;border-top:1px solid var(--line-soft,#E6EAED);} .bought .po:first-of-type{border-top:none;padding-top:0;}
+.bought .pohd{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:4px;}
+.costnote{margin-top:10px;padding:8px 10px;border-radius:6px;background:#FBF1DC;color:#7A4E00;font-size:12.5px;line-height:1.45;}
 </style>
 </head>
 <body>
@@ -264,10 +268,11 @@ tr.reviewed td{opacity:.72;}
     po_not_billed:'PO costs, $0 invoiced', sold_not_found:'Sold, not billed yet', general_time:'General Time', gt_option:'General Time option', po_not_recorded:'PO not recorded as materials', materials_not_billed:'Material cost, nothing billed', no_writeup:'No write-up',
     negative_margin:'Negative margin', material_not_recorded:'Material likely not recorded', high_material_cost:'Material cost over 30% of revenue', short_visit:'Very short visit', long_visit:'Long visit', replace_vs_new:'Billed as replacement, looks new',
     ai_not_billed:'Work done, not billed', ai_billed_not_described:'Billed, not described', ai_options:'Options gap',
-    ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note'
+    ai_writeup:'Write-up issue', ai_other:'Review note', ai_issue:'Review note', ai_purchase:'What was bought'
   };
   // Plain-English "what this means / what to check" shown under each flag.
   var HOW = {
+    ai_purchase:'Claude compared what the supplier billed for this job (from Mindy\u2019s Invoices folder, matched by PO number) with what was recorded on the invoice and what the write-up describes. Check the PO and the invoice\u2019s material lines in ServiceTitan.',
     material_not_recorded:'A task was billed that almost always has a certain part recorded with it (learned from your jobs since January, plus the parts linked to that task in your pricebook), but that part isn\u2019t on this invoice. It may have been used and not taken out of inventory. Check the truck stock / ask the tech.',
     no_options:'No estimate was built on this visit. On a system check or service call the tech should almost always find something to offer. Check: were there really no recommendations?',
     one_option:'Only one estimate was built. Customers usually do better with a choice (good / better / best). Check: was a second option reasonable?',
@@ -307,7 +312,7 @@ tr.reviewed td{opacity:.72;}
     j._dept = dept(j.businessUnit);
     j._rev = m.revenue!=null ? m.revenue : (d.revenue||0);
     j._inv = j.invoices.reduce(function(s,i){return s+(i.total||0);},0);
-    j._po = j.invoices.reduce(function(s,i){return s+(i.poCost||0)+(i.billCost||0);},0);
+    j._po = Math.max(j.invoices.reduce(function(s,i){return s+(i.poCost||0)+(i.billCost||0);},0), (j.purchaseCost&&j.purchaseCost.actual)||0);
     j._mat = Math.max(m.materialCost||0, j.invoices.reduce(function(s,i){return s+(i.materialCost||0);},0));
     j._opts = Math.max(j.estimates.length, d.estimatesCount||0);
     j._sold = j.estimates.filter(function(e){return e.status==='Sold';}).length;
@@ -723,6 +728,7 @@ tr.reviewed td{opacity:.72;}
     if(j.fromEstimate){ var fe=j.fromEstimate; lk+='<div class="linkbox">Follow-up job for work sold on <a class="jumpjob" data-job="'+esc(fe.jobNumber)+'">job '+esc(fe.jobNumber)+'</a>: \u201c'+esc(fe.estimateName)+'\u201d '+money2(fe.subtotal)+(fe.soldOn?' (sold '+fdate(fe.soldOn)+')':'')+(fe.match==='exact'?' \u2014 invoice lines match the estimate exactly.':' \u2014 likely match (same customer, similar amount).')+'</div>'; }
     h+='<div class="card"><h4><span>Options presented</span><span>'+j._opts+'</span></h4>'+lk+e+'</div>';
     h+='</div>';
+    if(j.purchases && j.purchases.length) h+='<div style="margin-top:14px;">'+boughtHtml(j)+'</div>';
     // facts
     var med = j.medianHours;
     h+=taskTimeHtml(j);
@@ -731,7 +737,7 @@ tr.reviewed td{opacity:.72;}
       '<div><span>Paid time</span>'+hrs(d.paidHours)+'</div>'+
       '<div><span>Sold hours</span>'+(d.soldHours?hrs(d.soldHours):'—')+'</div>'+
       '<div><span>Revenue</span>'+money2(j._rev)+'</div>'+
-      '<div><span>Gross margin</span>'+(m.revenue&&m.grossMargin!=null? (m.grossMargin/m.revenue*100).toFixed(1)+'%' : (m.grossMarginPct!=null? m.grossMarginPct+'%':'—'))+'</div>'+
+      '<div><span>Gross margin</span>'+marginHtml(j,m)+'</div>'+
       '<div><span>Material / PO cost</span>'+money2(j._mat)+' / '+money2(j._po)+'</div>'+
       '<div><span>Assigned</span>'+esc(d.assignedTechs||j.primaryTech||'—')+'</div>'+
       '<div><span>Campaign</span>'+esc(d.campaign||'—')+'</div>'+
@@ -785,6 +791,38 @@ tr.reviewed td{opacity:.72;}
   }
   function q(arr,p){ if(!arr.length) return null; var a=arr.slice().sort(function(x,y){return x-y;}); var i=(a.length-1)*p, lo=Math.floor(i), hi=Math.ceil(i); return a[lo]+(a[hi]-a[lo])*(i-lo); }
   function mins(h){ return Math.round(Math.abs(h)*60); }
+  // Parts bought for the job (ServiceTitan PO download + the supplier's invoice from Mindy's Invoices folder)
+  function boughtHtml(j){
+    var pc=j.purchaseCost||{};
+    var h='<div class="card bought"><h4>What was bought</h4>';
+    j.purchases.forEach(function(p){
+      h+='<div class="po"><div class="pohd"><span><b>PO '+esc(p.po)+'</b> · '+esc(p.vendor)+'</span><span class="none" style="display:inline;">'+esc(p.created?p.created.slice(5).replace('-','/'):'')+(p.createdBy?' · '+esc(p.createdBy):'')+'</span></div>';
+      if(p.memo) h+='<div class="none" style="font-style:normal;">Memo: '+esc(p.memo)+'</div>';
+      if(p.supplier && p.supplier.length){
+        p.supplier.forEach(function(v){
+          h+='<ul class="items">'+v.lines.map(function(l){ return '<li><span>'+(l.qty&&l.qty!==1?l.qty+' × ':'')+esc(l.desc)+'</span><span>'+money2(l.ext)+'</span></li>'; }).join('')+'</ul>'+
+            '<div class="costline"><span>Supplier invoice '+esc(v.invoiceNo||'')+(v.date?' ('+esc(v.date.slice(5).replace('-','/'))+')':'')+' · before tax</span><span>'+money2(v.subtotal)+'</span></div>'+
+            (v.tax?'<div class="costline"><span>Tax</span><span>'+money2(v.tax)+'</span></div>':'');
+        });
+      } else {
+        h+='<ul class="items">'+p.lines.map(function(l){ return '<li><span>'+(l.qty&&l.qty!==1?l.qty+' × ':'')+esc(l.desc||'—')+'</span><span>'+money2(l.total)+'</span></li>'; }).join('')+'</ul>'+
+          '<div class="none">PO lines from ServiceTitan; the supplier invoice hasn’t been read yet.</div>';
+      }
+      h+='</div>';
+    });
+    if(pc.late) h+='<div class="costnote">ServiceTitan showed '+money2(pc.st)+' PO cost when this job was copied; the POs add up to <b>'+money2(pc.actual)+'</b> before tax. The bill most likely posted after the job closed. Cost and margin here use the PO amount.</div>';
+    return h+'</div>';
+  }
+  function marginHtml(j,m){
+    var base = m.revenue&&m.grossMargin!=null ? m.grossMargin/m.revenue*100 : (m.grossMarginPct!=null? +m.grossMarginPct : null);
+    if(base==null) return '—';
+    var pc=j.purchaseCost;
+    if(pc && pc.late && m.revenue && m.grossMargin!=null){
+      var adj=(m.grossMargin-(pc.actual-pc.st))/m.revenue*100;
+      return '<s class="none" style="display:inline;">'+base.toFixed(1)+'%</s> '+adj.toFixed(1)+'% <span class="none" style="display:inline;">after the '+money2(pc.actual-pc.st)+' PO bill</span>';
+    }
+    return base.toFixed(1)+'%';
+  }
   function taskTimeHtml(j){
     var tt=j.taskTime; if(!tt) return '';
     if(!TT){ loadTT().then(function(){ render(); }); return ''; }

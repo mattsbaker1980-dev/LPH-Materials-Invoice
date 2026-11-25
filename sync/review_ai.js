@@ -16,7 +16,9 @@
 //         // only for jobs that have a "materialsGap" block in the queue:
 //         "materialsGapFor": <purchasedOnPO copied from queue>, "likelyUnrecorded": ["SDR 35 pipe", ...], "gapNote": "...",
 //         // only for jobs that have a "replaceCheck" block in the queue:
-//         "replaceCode": "<copied>", "replaceVerdict": "replaced" | "new_install" | "unclear", "replaceEvidence": "..." }]
+//         "replaceCode": "<copied>", "replaceVerdict": "replaced" | "new_install" | "unclear", "replaceEvidence": "...",
+//         // only for jobs that have a "purchases" block in the queue:
+//         "purchaseKey": "<copied purchases.key>", "purchaseNotes": [{ "type": "bought_not_recorded" | "doesnt_fit" | "other", "severity": "high" | "low", "text": "..." }] }]
 //
 //   3) GH_TOKEN=... node review_ai.js apply results.json [--local <repoDir>]
 //      Saves the results onto each job and recomputes flags for the month.
@@ -84,10 +86,17 @@ function needsReplaceReview(job) {
   const r = job.aiReview && job.aiReview.replace;
   return !r || r.fingerprint !== L.reviewFingerprint(job) || !it.some((x) => x.code === r.code);
 }
+// Jobs with supplier invoices on file (sync/po_data.js): Claude compares what was bought with what was recorded
+// on the invoice and what the write-up says. Re-asked when a new supplier invoice arrives.
+function needsPurchaseReview(job) {
+  const key = L.purchaseKey(job); if (!key) return false;
+  if (GAP_SINCE && (!job.completionDate || job.completionDate < GAP_SINCE)) return false;
+  return !(job.aiReview && job.aiReview.purchase && job.aiReview.purchase.key === key);
+}
 let ONLY_GT = false;
 function needsReview(job) {
   if (ONLY_GT) return needsGtReview(job);
-  if (needsGapReview(job) || needsGtReview(job) || needsReplaceReview(job)) return true;
+  if (needsGapReview(job) || needsGtReview(job) || needsReplaceReview(job) || needsPurchaseReview(job)) return true;
   if (ONLY_GAP) return false;
   if (SINCE && (!job.completionDate || job.completionDate < SINCE)) return false;
   const hasWriteUp = job.invoices.some((i) => (i.items || []).length || i.summary);
@@ -135,6 +144,10 @@ async function queue(o) {
           candidates: gtCandidates(pb, x.desc || '', j.jobType).map((c) => `${c.code} | ${c.name} | $${c.price} | ${c.hours}h + $${c.materialCost} mat${c.desc && c.desc !== c.name ? ' | ' + c.desc.slice(0, 110) : ''}`),
         }));
       }
+      if (needsPurchaseReview(j)) {
+        out[out.length - 1].purchases = { key: L.purchaseKey(j), bought: j.purchases.filter((p) => p.supplier.length).map((p) => ({ po: p.po, vendor: p.vendor, memo: p.memo,
+          items: p.supplier.flatMap((v) => v.lines.map((l) => `${l.qty} × ${l.desc} — $${l.ext}`)) })) };
+      }
       if (needsReplaceReview(j)) {
         const x = replaceItems(j)[0], p = PAIRS.get(x.code);
         out[out.length - 1].replaceCheck = { code: x.code, billed: `${x.name} $${x.price}`, installTask: `${p.install.name} (standard $${p.install.price}, member $${p.install.member})`,
@@ -160,6 +173,10 @@ async function countRemaining(store, index, taken) {
   return Math.max(0, n - taken);
 }
 
+function purchaseOf(r) {
+  return { key: String(r.purchaseKey), notes: (Array.isArray(r.purchaseNotes) ? r.purchaseNotes : []).slice(0, 4).map((x) => ({
+    type: ['bought_not_recorded', 'doesnt_fit', 'other'].includes(x.type) ? x.type : 'other', severity: x.severity === 'high' ? 'high' : 'low', text: String(x.text || '').slice(0, 300) })) };
+}
 async function apply(o) {
   const results = JSON.parse(fs.readFileSync(o.file, 'utf8'));
   const list = Array.isArray(results) ? results : results.results || results.jobs;
@@ -167,6 +184,7 @@ async function apply(o) {
   const idx = await store.read(`${L.DIR}/index.json`);
   const pb = (await store.read('data/pricebook.json')).data;
   if (pb) pb._matRules = ((await store.read('data/baseline/material_rules.json')).data || {}).rules || null;
+  if (pb) pb._po = { pos: (await store.read('data/po/pos.json')).data, sup: ((await store.read('data/po/supplier.json')).data || {}) };
   if (pb) pb._taskHours = L.taskHoursMap((await store.read('data/baseline/task_times.json')).data, (await store.read('data/baseline/task_live.json')).data);
   const svc = {}; (pb ? pb.services : []).forEach((x) => { svc[x.code.toLowerCase()] = x; });
   const months = {};
@@ -179,13 +197,15 @@ async function apply(o) {
     if (!job) { missing++; continue; }
     if (r.fingerprint !== L.reviewFingerprint(job)) { stale++; continue; } // data changed after it was queued
     const old = job.aiReview || {};
-    if (r.verdict == null && old.fingerprint) { // partial result (e.g. only a replaceCheck answer): keep the existing review
+    if (r.verdict == null) { // partial result (only a replaceCheck / purchases answer): keep the existing review, never invent one
+      job.aiReview = job.aiReview || {};
       if (r.replaceCode && ['replaced', 'new_install', 'unclear'].includes(r.replaceVerdict)) job.aiReview.replace = { code: String(r.replaceCode), verdict: r.replaceVerdict, evidence: r.replaceEvidence ? String(r.replaceEvidence).slice(0, 250) : undefined, fingerprint: r.fingerprint };
+      if (r.purchaseKey) job.aiReview.purchase = purchaseOf(r);
       saved++; continue;
     }
     const keepGt = old.gt;
     job.aiReview = {
-      gt: keepGt, replace: old.replace,
+      gt: keepGt, replace: old.replace, purchase: r.purchaseKey ? purchaseOf(r) : old.purchase,
       // keep an earlier materials-gap read unless this result brings a new one (needsGapReview re-queues if the PO total changes)
       gapFor: old.gapFor, likelyUnrecorded: old.likelyUnrecorded, gapNote: old.gapNote,
       fingerprint: r.fingerprint, reviewedAt: new Date().toISOString(),

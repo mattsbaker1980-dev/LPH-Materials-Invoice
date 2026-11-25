@@ -104,6 +104,28 @@ Return `"replaceCode"` (copied `code`), `"replaceVerdict"`, and `"replaceEvidenc
 or paraphrasing what decided it, e.g. "Write-up says techs added two tees and a bypass and ran a new drain line;
 no old softener removed." Don't also raise it as an `issues` entry — the tool shows it as its own flag.
 
+## What was bought (only for jobs that have a `purchases` block)
+
+`purchases.bought` lists what the supplier actually billed for this job: each job PO, the vendor, the tech's PO memo,
+and the supplier's line items (quantity × description — extended price). Compare it with what was billed and recorded
+on the invoice (the MAT/material lines and the service lines) and with the tech's write-up.
+
+Return `"purchaseKey"` (copied exactly from `purchases.key`) and `"purchaseNotes"`: an array, **empty when it all lines up**.
+Each note is `{ "type", "severity", "text" }`:
+- `"bought_not_recorded"` — a real part was bought for this job (e.g. a water heater, a pump, a valve, a length of pipe)
+  but nothing on the invoice records it as material used or covers it with a matching task. `"high"` when the part is
+  over about $100. Name the part, the PO and the amount: "Rheem 50-gal water heater bought on PO 95277 ($607) isn't
+  recorded as material on the invoice."
+- `"doesnt_fit"` — something bought doesn't match the work described or billed (a sewage pump on a job whose write-up
+  is a faucet repair). `"high"` only when it is clearly unrelated and over about $100.
+- `"other"` — anything else worth a manager's look (quantities far above what the write-up describes, two of a part
+  that was installed once). Usually `"low"`.
+
+Don't flag: small fittings, glue, tape, solder, CPVC/PEX by the foot or other consumables that go with the main part;
+a part covered by a pricebook task that includes that part (e.g. "Install 50 Gal Electric Water Heater" covers the
+heater even if it isn't a MAT line); parts bought for a warranty replacement the write-up mentions; returns or credits.
+Don't repeat this as an `issues` entry — the tool shows it as its own flag.
+
 ## General Time (only for jobs that have a `generalTime` block)
 
 Techs sometimes bill a "General Time" / Grid Task line (`gtCode` like GT-0075-0020 = 0.75 labor hours +
@@ -133,6 +155,8 @@ for every line in the block (use `"tasks": []` plus a `reason` when nothing fits
 ## Output
 
 Write a JSON array to `results.json`. Copy `jobNumber` and `fingerprint` exactly from the queue.
+Jobs with a `purchases` block also get `"purchaseKey"` and `"purchaseNotes"` (see "What was bought"); a job that is in the
+queue only for that check may return just `jobNumber`, `fingerprint`, `purchaseKey` and `purchaseNotes`.
 
 ```json
 [

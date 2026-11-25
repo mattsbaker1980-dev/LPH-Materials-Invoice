@@ -552,7 +552,7 @@ function computeFlags(job, ctx) {
   const invTotal = job.invoices.reduce((s, i) => s + (i.total || 0), 0);
   const items = job.invoices.flatMap((i) => i.items || []);
   const materialLines = items.filter((i) => /material|equipment/i.test(i.type));
-  const poCost = job.invoices.reduce((s, i) => s + (i.poCost || 0) + (i.billCost || 0), 0);
+  const poCost = Math.max(job.invoices.reduce((s, i) => s + (i.poCost || 0) + (i.billCost || 0), 0), (job.purchaseCost && job.purchaseCost.actual) || 0);
   const matCost = Math.max(m.materialCost || 0, job.invoices.reduce((s, i) => s + (i.materialCost || 0), 0));
   const revenue = m.revenue != null ? m.revenue : (d.revenue != null ? d.revenue : invTotal);
   const type = job.jobType || '';
@@ -579,6 +579,10 @@ function computeFlags(job, ctx) {
   const ai = job.aiReview;
   if (ai && ai.fingerprint === reviewFingerprint(job) && Array.isArray(ai.issues)) {
     ai.issues.forEach((x) => add('ai_' + (x.type || 'issue'), x.severity === 'high' ? 'warn' : 'info', x.text));
+  }
+  // what the supplier billed for this job vs what was recorded / written up (Claude read both)
+  if (ai && ai.purchase && ai.purchase.key === purchaseKey(job)) {
+    (ai.purchase.notes || []).forEach((x) => add('ai_purchase', x.severity === 'high' ? 'warn' : 'info', x.text));
   }
 
   // --- General Time used instead of a real pricebook task
@@ -771,13 +775,42 @@ function gtPriceMap(pb) {
   _gtPriceCache = { pb, map };
   return map;
 }
+// ---------------------------------------------------------------- purchases (sync/po_data.js)
+// Job POs from the ServiceTitan PO downloads + what the supplier billed (Mindy's Invoices folder).
+// ServiceTitan's job PO cost often lags: the supplier bill posts days after the job closes, after the Job Review
+// took its copy. So the job's parts cost is corrected from the POs here.
+function poIndex(po) {
+  if (!po || !po.pos) return null;
+  if (po._byJob) return po._byJob;
+  const by = {};
+  Object.values(po.pos.pos || {}).forEach((p) => { if (p.job && p.status !== 'Canceled') (by[p.job] = by[p.job] || []).push(p); });
+  po._byJob = by;
+  return by;
+}
+const purchaseKey = (j) => (j.purchases || []).flatMap((p) => p.supplier.map((v) => p.po + ':' + (v.invoiceNo || v.file))).sort().join(',');
+function attachPurchases(j, ctx) {
+  const list = ctx.poByJob && ctx.poByJob[j.jobNumber];
+  if (!list || !list.length) { delete j.purchases; delete j.purchaseCost; return; }
+  const sup = (ctx.po && ctx.po.sup && ctx.po.sup.invoices) || {};
+  j.purchases = list.slice().sort((a, b) => a.created.localeCompare(b.created) || a.po.localeCompare(b.po)).map((p) => ({
+    po: p.po, vendor: p.vendor, status: p.status, created: p.created, createdBy: p.createdBy, memo: p.memo || undefined, poTotal: p.total,
+    lines: p.lines.map((l) => ({ desc: l.desc || l.name, qty: l.qty, total: l.total })),
+    supplier: (sup[p.po] || []).map((v) => ({ vendor: v.vendor, invoiceNo: v.invoiceNo, date: v.date, file: v.file, lines: v.lines, subtotal: v.subtotal, tax: v.tax, total: v.total, checked: v.checked })),
+  }));
+  const st = j.invoices.reduce((s, i) => s + (i.poCost || 0) + (i.billCost || 0), 0);
+  // supplier subtotal (before tax) when we have it, else the PO total
+  const actual = Math.round(j.purchases.reduce((a, p) => a + (p.supplier.length ? p.supplier.reduce((b, v) => b + (v.subtotal || 0), 0) : (p.poTotal || 0)), 0) * 100) / 100;
+  const withTax = Math.round(j.purchases.reduce((a, p) => a + (p.supplier.length ? p.supplier.reduce((b, v) => b + (v.total || 0), 0) : (p.poTotal || 0)), 0) * 100) / 100;
+  j.purchaseCost = { st: Math.round(st * 100) / 100, actual, withTax, late: actual - st >= 5 };
+}
+
 function recomputeMonth(monthData, pb) {
   const jobs = Object.values(monthData.jobs);
   const byType = {};
   jobs.forEach((j) => { if (j.detail && j.detail.hoursWorked > 0) (byType[j.jobType] = byType[j.jobType] || []).push(j.detail.hoursWorked); });
-  const ctx = { medianHoursByType: {}, gtPrice: gtPriceMap(pb), matRules: (pb && pb._matRules) || null, replacePairs: replacePairs(pb), taskHours: (pb && pb._taskHours) || null, pbSvc: new Map(((pb && pb.services) || []).map((x) => [x.code, x])) };
+  const ctx = { medianHoursByType: {}, gtPrice: gtPriceMap(pb), matRules: (pb && pb._matRules) || null, replacePairs: replacePairs(pb), taskHours: (pb && pb._taskHours) || null, po: (pb && pb._po) || null, poByJob: poIndex(pb && pb._po), pbSvc: new Map(((pb && pb.services) || []).map((x) => [x.code, x])) };
   for (const [t, a] of Object.entries(byType)) if (a.length >= 5) ctx.medianHoursByType[t] = median(a);
-  jobs.forEach((j) => { const sl = sellerOf(j); if (sl) j.seller = sl; else delete j.seller; if (INSTALLERS.includes(j.primaryTech)) j.installer = true; else delete j.installer; j.flags = computeFlags(j, ctx); j.medianHours = ctx.medianHoursByType[j.jobType] || null; const tt = taskTimeOf(j); const ex = j.detail ? expectedHours(j, ctx) : null; if (tt && tt.multi && ex && ex.parts.length > 1) { const other = ex.parts.filter((x) => x.name !== tt.name).reduce((s2, x) => s2 + (x.hrs || 0), 0); if (other > 0) { tt.other = Math.round(other * 100) / 100; tt.adj = Math.max(0, Math.round((tt.hrs - other) * 100) / 100); } } if (tt) j.taskTime = tt; else delete j.taskTime; if (ex && ex.hrs) j.expectedHours = ex; else delete j.expectedHours; });
+  jobs.forEach((j) => { attachPurchases(j, ctx); const sl = sellerOf(j); if (sl) j.seller = sl; else delete j.seller; if (INSTALLERS.includes(j.primaryTech)) j.installer = true; else delete j.installer; j.flags = computeFlags(j, ctx); j.medianHours = ctx.medianHoursByType[j.jobType] || null; const tt = taskTimeOf(j); const ex = j.detail ? expectedHours(j, ctx) : null; if (tt && tt.multi && ex && ex.parts.length > 1) { const other = ex.parts.filter((x) => x.name !== tt.name).reduce((s2, x) => s2 + (x.hrs || 0), 0); if (other > 0) { tt.other = Math.round(other * 100) / 100; tt.adj = Math.max(0, Math.round((tt.hrs - other) * 100) / 100); } } if (tt) j.taskTime = tt; else delete j.taskTime; if (ex && ex.hrs) j.expectedHours = ex; else delete j.expectedHours; });
   monthData.updatedAt = new Date().toISOString();
   monthData.jobCount = jobs.length;
   monthData.flaggedCount = jobs.filter((j) => j.flags.some((x) => x.level === 'warn')).length;
@@ -972,6 +1005,7 @@ async function main() {
     matRules = deriveRules(counts, pbData);
   }
   if (pbData) pbData._matRules = matRules;
+  if (pbData) pbData._po = { pos: (await store.read('data/po/pos.json')).data, sup: ((await store.read('data/po/supplier.json')).data || {}) };
   if (pbData) pbData._taskHours = taskHoursMap((await store.read('data/baseline/task_times.json')).data, live);
   // 4a. link sold estimates to follow-up jobs across the touched months and their neighbours
   const touched = Object.keys(monthCache).filter((m) => monthCache[m].dirty);
@@ -1108,4 +1142,4 @@ async function writeLog(store, log) {
 
 if (require.main === module) main().catch((e) => { console.error('FATAL', e.stack || e.message); process.exit(1); });
 
-module.exports = { buildOpportunities, writeOpportunities, replacePairs, tierOf, expectedHours, taskHoursMap, isWrapper, sellerOf, INSTALLERS, DEMAND_CALL, matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
+module.exports = { purchaseKey, buildOpportunities, writeOpportunities, replacePairs, tierOf, expectedHours, taskHoursMap, isWrapper, sellerOf, INSTALLERS, DEMAND_CALL, matFootprint, addCounts, deriveRules, workTasks, repairTasks, taskTimeOf, deptOf, NOT_TASK, WRAPPER, writeMonth, splitMonth, linkSoldWork, linkLeads, readWorkbook, makeCols, detect, PARSERS, computeFlags, summaryNotBilled, reviewFingerprint, recomputeMonth, median, makeStore, DIR };
