@@ -12,10 +12,10 @@
   --ink:#1B2430; --paper:#FFFFFF; --steel:#EEF2F5; --line:#D7DEE4; --line-soft:#E6EAED;
   --accent:#E2620E; --good:#2E7D4F; --good-bg:#E7F3EC;
   --warn:#C6432D; --warn-bg:#FBEAE6; --muted:#667085; --muted-2:#8C93A0;
-  --needs:#8A5A00; --needs-bg:#FBF0DD; --info:#34598A; --info-bg:#E8EFF8;
+  --blue-bg:#DCE7F3; --blue-soft:#E9F0F8; --needs:#8A5A00; --needs-bg:#FBF0DD; --info:#34598A; --info-bg:#E8EFF8;
 }
 *{box-sizing:border-box;}
-body{margin:0;background:var(--steel);color:var(--ink);font-family:'Inter',system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;}
+body{margin:0;background:var(--blue-bg);color:var(--ink);font-family:'Inter',system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;}
 a{color:var(--info);}
 .wrap{max-width:1500px;margin:0 auto;padding:0 32px 60px;}
 header.top{background:var(--ink);color:var(--paper);padding:22px 0;}
@@ -103,9 +103,19 @@ tr.row:hover,tr.row.open{background:#F6F8FA;}
 tr.row td.muted{color:var(--muted);font-size:12.5px;}
 tr.row .rv{font-size:12.5px;font-weight:600;white-space:nowrap;}
 tr.row .rv.pass{color:var(--good);} tr.row .rv.fail{color:var(--warn);} tr.row .rv.none{color:var(--muted-2);font-weight:400;}
-tr.detail > td{background:var(--steel);padding:14px 16px;}
+tr.detail > td{background:var(--blue-soft);padding:14px 16px;}
 tr.detail .card{margin:0;}
 @media (min-width:1050px){ .table-wrap{overflow:visible;} }
+.tgl{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:12.5px;font-weight:600;white-space:nowrap;}
+.tgl input{position:absolute;opacity:0;width:0;height:0;}
+.tgl .trk{width:38px;height:22px;border-radius:999px;background:#C9D1D9;position:relative;transition:background .15s;flex-shrink:0;}
+.tgl .knb{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s;}
+.tgl input:checked + .trk{background:var(--good);}
+.tgl input:checked + .trk .knb{left:19px;}
+.tgl.needs .tl{color:var(--needs);} .tgl.pass .tl{color:var(--good);}
+.tgl.busy{opacity:.55;pointer-events:none;}
+.btn.save{background:var(--ink);border-color:var(--ink);color:#fff;}
+.btn.save:disabled{opacity:.5;cursor:default;}
 .empty{padding:40px;text-align:center;color:var(--muted);}
 #saveTag{position:fixed;left:16px;bottom:16px;z-index:60;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;color:#fff;background:var(--good);opacity:.9;display:none;}
 </style>
@@ -132,7 +142,7 @@ tr.detail .card{margin:0;}
     <summary>How this page works</summary>
     <div>
       Every supplier invoice Mindy saves to her <b>Invoices</b> folder is read automatically (late morning and mid-afternoon on weekdays) and matched to the ServiceTitan job it was bought for. The invoice's <b>amount due</b> equals the job's PO/Bill cost in ServiceTitan to the cent, so most invoices match exactly; when the amount can't decide it, the customer named on the invoice or the tech who ordered it is used. Each invoice lands in the tab of the job's department.<br><br>
-      <b>What to check:</b> do the parts on the left belong on the job on the right? Were they billed to the customer (or covered by the task that was sold)? Does the write-up mention the work they'd be used for? Mark <b>Looks right</b> or <b>Problem</b> and add a note.<br><br>
+      <b>What to check:</b> do the parts on the left belong on the job on the right? Were they billed to the customer (or covered by the task that was sold)? Does the write-up mention the work they'd be used for? When you’re done, slide it to <b>Reviewed</b>. If there’s a problem, write it in the note box and click <b>Save</b>; it shows as <b>Problem noted</b> in the list (Show → Has a problem note).<br><br>
       <b>Pick the job</b> = the amount fits more than one job; click the right one. <b>Not matched yet</b> = no job matches the amount yet. It's re-checked every day for 3 weeks (an install that isn't finished, or a bill that hasn't posted). After that it shows as <b>No job found</b>; that's usually truck stock. <b>Stock / shop</b> orders have no job. <b>Scanned PDF</b> = this supplier sends a picture of the invoice that can't be read automatically. Open the PDF.<br><br>
       Costs come from the daily <i>PO Cost Refresh</i> report (all departments, last 7 days). Invoices you mark here are shared: everyone sees the same marks.
     </div>
@@ -148,7 +158,7 @@ tr.detail .card{margin:0;}
       <div class="field"><label>Show</label>
         <select id="showSel">
           <option value="needs">Needs review</option>
-          <option value="problem">Marked as a problem</option>
+          <option value="problem">Has a problem note</option>
           <option value="done">Reviewed</option>
           <option value="all">All</option>
         </select>
@@ -186,6 +196,7 @@ tr.detail .card{margin:0;}
   }
   function deptOf(inv){ var j=jobOf(inv); return j ? (j.info.dept||'General') : ((inv.match&&inv.match.dept)||'General'); }
   function kindOf(inv){ var m=inv.match||{}; if(jobOf(inv)) return 'matched'; return m.status||'waiting'; }
+  function hasNote(inv){ var n=S.notes[key(inv)]; return !!(n && String(n.concern||'').trim()); }
   function reviewed(inv){ var s=S.statuses[key(inv)]; return s==='pass'||s==='fail'; }
 
   function inRange(inv){
@@ -204,7 +215,7 @@ tr.detail .card{margin:0;}
   function showOk(inv){
     var s=S.statuses[key(inv)];
     if(S.show==='needs') return !s;
-    if(S.show==='problem') return s==='fail';
+    if(S.show==='problem') return hasNote(inv);
     if(S.show==='done') return s==='pass'||s==='fail';
     return true;
   }
@@ -302,9 +313,8 @@ tr.detail .card{margin:0;}
     h+='<span class="pill '+pill[0]+'">'+pill[1]+'</span>';
     h+='<span class="total">'+(inv.unreadable?'':m2(inv.total))+'</span>'+pdfLink(inv)+'</div>';
     h+='<div class="cbody"><div class="col"><h4>What the supplier billed</h4>'+linesHtml(inv)+'</div><div class="col"><h4>The job</h4>'+rightHtml(inv)+'</div></div>';
-    h+='<div class="cfoot"><button class="btn ok'+(s==='pass'?' on':'')+'" data-k="'+k+'" data-s="pass">✓ Looks right</button>';
-    h+='<button class="btn bad'+(s==='fail'?' on':'')+'" data-k="'+k+'" data-s="fail">✗ Problem</button>';
-    h+='<textarea data-k="'+k+'" placeholder="Note (what’s wrong, who you talked to)…">'+esc(n.concern||'')+'</textarea></div>';
+    h+='<div class="cfoot"><textarea data-k="'+k+'" placeholder="Problem? Write what\u2019s wrong (and who you talked to), then Save\u2026">'+esc(n.concern||'')+'</textarea>';
+    h+='<button class="btn save" data-save="'+k+'">Save</button></div>';
     return h+'</div>';
   }
   function render(){
@@ -317,7 +327,7 @@ tr.detail .card{margin:0;}
     // newest order date first, then vendor A-Z, then PO number
     list.sort(function(a,b){ return String(b.orderDate||b.invoiceDate||b.readAt||'').localeCompare(String(a.orderDate||a.invoiceDate||a.readAt||'')) || String(a.vendor||'').localeCompare(String(b.vendor||'')) || String(a.po).localeCompare(String(b.po)); });
     if(!list.length){ $('list').innerHTML='<div class="panel empty">Nothing here'+(S.show==='needs'?' to review':'')+'.</div>'; return; }
-    var h='<div class="table-wrap"><table class="list"><thead><tr><th>Ordered</th><th>Vendor</th><th>PO #</th><th>Ordered by</th><th>Job</th><th>Customer</th><th>Tech</th><th class="num">Amount</th><th>Status</th><th>Reviewed</th></tr></thead><tbody>';
+    var h='<div class="table-wrap"><table class="list"><thead><tr><th>Ordered</th><th>Vendor</th><th>PO #</th><th>Ordered by</th><th>Job</th><th>Customer</th><th>Tech</th><th class="num">Amount</th><th>Status</th><th>Review</th></tr></thead><tbody>';
     list.forEach(function(inv){ h+=rowHtml(inv); if(S.open[inv.id]) h+='<tr class="detail"><td colspan="10">'+cardHtml(inv)+'</td></tr>'; });
     $('list').innerHTML=h+'</tbody></table></div>';
   }
@@ -332,7 +342,9 @@ tr.detail .card{margin:0;}
     h+='<td>'+(x?esc(x.customer):'')+'</td><td class="muted">'+(x?esc(x.tech):'')+'</td>';
     h+='<td class="num">'+(inv.unreadable?'':m2(inv.total))+'</td>';
     h+='<td><span class="pill '+p[0]+'">'+p[1]+'</span></td>';
-    h+='<td><span class="rv '+(s||'none')+'">'+(s==='pass'?'\u2713 Looks right':s==='fail'?'\u2717 Problem':'\u2014')+'</span></td></tr>';
+    var on=s==='pass'||s==='fail';
+    h+='<td class="nowrap"><label class="tgl '+(on?'pass':'needs')+'"><input type="checkbox" class="status-tgl" data-k="'+k+'"'+(on?' checked':'')+'><span class="trk"><span class="knb"></span></span><span class="tl">'+(on?'Reviewed':'Needs checked')+'</span></label>'+
+      (hasNote(inv)?' <span class="pill warn" title="'+esc(S.notes[k].concern)+'">Problem noted</span>':'')+'</td></tr>';
     return h;
   }
   async function post(path, body){
@@ -352,12 +364,13 @@ tr.detail .card{margin:0;}
     t=e.target.closest('#rangeChips .chip'); if(t){ S.range=t.dataset.r; tryLS('po_range',S.range); render(); return; }
     t=e.target.closest('.stat'); if(t){ S.kind=t.dataset.k; render(); return; }
     t=e.target.closest('tr.row');
-    if(t && !e.target.closest('a')){ var id=t.dataset.id; if(S.open[id]) delete S.open[id]; else S.open[id]=true; render(); return; }
-    t=e.target.closest('.btn[data-s]');
+    if(t && !e.target.closest('a') && !e.target.closest('.tgl')){ var id=t.dataset.id; if(S.open[id]) delete S.open[id]; else S.open[id]=true; render(); return; }
+    t=e.target.closest('.btn[data-save]');
     if(t){
-      var k=t.dataset.k, want=S.statuses[k]===t.dataset.s?null:t.dataset.s;
-      try{ await post('/api/state/status',{job:k,status:want}); if(want) S.statuses[k]=want; else delete S.statuses[k]; tag('Saved ✓'); render(); }
-      catch(err){ tag('Not saved: '+err.message, true); }
+      var ks=t.dataset.save, ta=document.querySelector('textarea[data-k="'+ks+'"]'), v=ta?ta.value:'';
+      t.disabled=true; t.textContent='Saving\u2026';
+      S.notes[ks]=Object.assign({}, S.notes[ks]||{}, {concern:v});
+      await saveNote(ks,{concern:v}); render();
       return;
     }
     t=e.target.closest('.cand');
@@ -365,8 +378,13 @@ tr.detail .card{margin:0;}
     t=e.target.closest('.unpick');
     if(t){ var k2=t.dataset.k, n2=S.notes[k2]||{}; var ex=Object.assign({}, n2.excused||{}); delete ex.pick; S.notes[k2]=Object.assign({}, n2, {excused:ex}); render(); await saveNote(k2,{unexcuse:'pick'}); return; }
   });
-  document.addEventListener('change', function(e){
-    if(e.target.matches('textarea[data-k]')){ var k=e.target.dataset.k; S.notes[k]=Object.assign({}, S.notes[k]||{}, {concern:e.target.value}); saveNote(k,{concern:e.target.value}); }
+  document.addEventListener('change', async function(e){
+    if(!e.target.classList.contains('status-tgl')) return;
+    var k=e.target.dataset.k, want=e.target.checked?'pass':null, lab=e.target.closest('.tgl');
+    lab.classList.add('busy');
+    try{ await post('/api/state/status',{job:k,status:want}); if(want) S.statuses[k]=want; else delete S.statuses[k]; tag('Saved \u2713'); }
+    catch(err){ e.target.checked=!e.target.checked; tag('Not saved: '+err.message, true); }
+    render();
   });
   $('showSel').addEventListener('change', function(){ S.show=this.value; S.kind=''; render(); });
   var qt; $('q').addEventListener('input', function(){ var v=this.value; clearTimeout(qt); qt=setTimeout(function(){ S.q=v.trim(); render(); }, 200); });
