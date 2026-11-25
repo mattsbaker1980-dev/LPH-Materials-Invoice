@@ -1024,6 +1024,7 @@ async function main() {
 // Every Sewer Install visit since OPP_SINCE where options were presented, with what was offered and whether it sold.
 // Status, follow-up dates and notes live in the Worker's database; this file is only the ServiceTitan side.
 const OPP_SINCE = '2026-11-01';
+const OPP_SERVICE_MIN = 2500;
 const OPP_SKIP_TYPE = /^(sold work|warranty|recall|non-repair)/i;
 // Same customer = same name, or same last name + first initial (ServiceTitan spellings drift: "Rohar Shover" / "Roly Shover").
 const custWords = (n) => String(n || '').toLowerCase().replace(/[^a-z0-9& ]+/g, ' ').split(/\s+/).filter((w) => w && !/^\d+$/.test(w));
@@ -1035,8 +1036,11 @@ function sameCustomer(a, b) {
 }
 function buildOpportunities(allJobs) {
   // 1. visits with options presented, grouped by customer (several visits for one customer = one opportunity)
-  const visits = allJobs.filter((j) => deptOf(j.businessUnit) === 'Sewer Install' && j.completionDate && j.completionDate >= OPP_SINCE
-    && !OPP_SKIP_TYPE.test(j.jobType || '') && (j.estimates || []).some((e) => e && e.name))
+  // Sewer Install visits with options, plus Sewer Service visits that presented a big (>= $2,500) option:
+  // those are the excavation / replacement opportunities even when the call was booked as service.
+  const bigOpt = (j) => (j.estimates || []).some((e) => e && e.name && (e.subtotal || 0) >= OPP_SERVICE_MIN);
+  const visits = allJobs.filter((j) => j.completionDate && j.completionDate >= OPP_SINCE && (j.estimates || []).some((e) => e && e.name)
+    && ((deptOf(j.businessUnit) === 'Sewer Install' && !OPP_SKIP_TYPE.test(j.jobType || '')) || (deptOf(j.businessUnit) === 'Sewer Service' && bigOpt(j))))
     .sort((a, b) => a.completionDate.localeCompare(b.completionDate) || a.jobNumber.localeCompare(b.jobNumber));
   const groups = [];
   visits.forEach((j) => { const g = groups.find((x) => sameCustomer(x.customer, j.customer)); if (g) g.visits.push(j); else groups.push({ customer: j.customer, visits: [j] }); });
@@ -1059,8 +1063,9 @@ function buildOpportunities(allJobs) {
     }));
     const matchesOption = (x) => opts.some((o) => o.name.toLowerCase() === String(x.name || '').toLowerCase() || (o.amount > 0 && Math.abs(o.amount - x.amount) / o.amount <= 0.15));
     const sold = [];
-    sales.filter((x) => sameCustomer(x.customer, g.customer) && (x.soldOn || '') >= first.completionDate
-      && (matchesOption(x) || (/^Sewer/.test(x.dept) && x.amount >= 2000)))
+    // only a real sewer sale closes it: $2,000+ (a $93 drain clearing or a small add-on doesn't)
+    sales.filter((x) => sameCustomer(x.customer, g.customer) && (x.soldOn || '') >= first.completionDate && x.amount >= 2000
+      && (matchesOption(x) || /^Sewer/.test(x.dept)))
       .forEach((x) => {
         // a sold estimate and the Sold Work job it became are one sale
         const dup = sold.find((y) => (x.job && y.job === x.job && y.name === x.name) || (x.workJob && y.workJob === x.workJob));
@@ -1072,7 +1077,8 @@ function buildOpportunities(allJobs) {
       key: first.jobNumber, job: last.jobNumber, date: last.completionDate, firstDate: first.completionDate,
       tech: last.primaryTech || '', customer: last.customer || '',
       jobType: last.jobType || '',
-      visits: g.visits.map((v) => ({ job: v.jobNumber, date: v.completionDate, tech: v.primaryTech || '', jobType: v.jobType || '', customer: v.customer || '',
+      dept: deptOf(last.businessUnit),
+      visits: g.visits.map((v) => ({ job: v.jobNumber, date: v.completionDate, tech: v.primaryTech || '', jobType: v.jobType || '', dept: deptOf(v.businessUnit), customer: v.customer || '',
         writeUp: (v.invoices || []).map((i) => i.summary || '').filter(Boolean).join('\n\n').slice(0, 2500) })),
       options: opts, sold, dismissed: opts.every((o) => o.status === 'Dismissed'),
     };
