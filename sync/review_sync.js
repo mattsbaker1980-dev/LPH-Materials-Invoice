@@ -1024,7 +1024,7 @@ async function main() {
 // Every Sewer Install visit since OPP_SINCE where options were presented, with what was offered and whether it sold.
 // Status, follow-up dates and notes live in the Worker's database; this file is only the ServiceTitan side.
 const OPP_SINCE = '2026-11-01';
-const OPP_SERVICE_MIN = 2500;
+const OPP_SERVICE_MIN = 5000;
 const OPP_SKIP_TYPE = /^(sold work|warranty|recall|non-repair)/i;
 // Same customer = same name, or same last name + first initial (ServiceTitan spellings drift: "Rohar Shover" / "Roly Shover").
 const custWords = (n) => String(n || '').toLowerCase().replace(/[^a-z0-9& ]+/g, ' ').split(/\s+/).filter((w) => w && !/^\d+$/.test(w));
@@ -1036,7 +1036,7 @@ function sameCustomer(a, b) {
 }
 function buildOpportunities(allJobs) {
   // 1. visits with options presented, grouped by customer (several visits for one customer = one opportunity)
-  // Sewer Install visits with options, plus Sewer Service visits that presented a big (>= $2,500) option:
+  // Sewer Install visits with options, plus Sewer Service visits that presented a big (>= $5,000) option:
   // those are the excavation / replacement opportunities even when the call was booked as service.
   const bigOpt = (j) => (j.estimates || []).some((e) => e && e.name && (e.subtotal || 0) >= OPP_SERVICE_MIN);
   const visits = allJobs.filter((j) => j.completionDate && j.completionDate >= OPP_SINCE && (j.estimates || []).some((e) => e && e.name)

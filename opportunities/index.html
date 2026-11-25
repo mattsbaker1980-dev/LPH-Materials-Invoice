@@ -199,7 +199,7 @@ tr.detail td{background:#FFFCF9;padding:0;}
       </div>
   </div>
 
-  <p class="foot">Every Sewer Install visit since Nov 1 where options were presented, plus Sewer Service visits that presented an option of $2,500 or more, updated each morning from ServiceTitan. Several visits for the same customer count as one opportunity, and it switches to <b>Sold</b> by itself when ServiceTitan shows a sale for that customer, even if the estimate was rebuilt and sold on a different job. Status, follow-up dates and notes are shared with everyone who opens this page. Customer phone and email are in ServiceTitan; use the job number link.</p>
+  <p class="foot">Every Sewer Install visit since Nov 1 where options were presented, plus Sewer Service visits that presented an option of $5,000 or more, updated each morning from ServiceTitan. Several visits for the same customer count as one opportunity, and it switches to <b>Sold</b> by itself when ServiceTitan shows a sale for that customer, even if the estimate was rebuilt and sold on a different job. Status, follow-up dates and notes are shared with everyone who opens this page. Customer phone and email are in ServiceTitan; use the job number link.</p>
 </div>
 
 <div id="printArea"></div>
@@ -479,7 +479,7 @@ tr.detail td{background:#FFFCF9;padding:0;}
       var r = await fetch('../data/opportunities/opps.json?t='+Date.now());
       if(!r.ok) throw new Error('HTTP '+r.status);
       data = await r.json();
-      $('subhead').textContent = 'Updated '+new Date(data.updatedAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' · Sewer Install options since Nov 1, plus Sewer Service options $2,500+';
+      $('subhead').textContent = 'Updated '+new Date(data.updatedAt).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' · Sewer Install options since Nov 1, plus Sewer Service options $5,000+';
     }catch(e){ $('subhead').textContent='Could not load opportunities ('+e.message+')'; }
     var t = ls('opp_tech'); if(t && data.jobs.some(function(j){return j.tech===t;})) ui.tech=t;
     fillWho(); setRange('all');
