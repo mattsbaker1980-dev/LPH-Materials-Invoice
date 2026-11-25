@@ -93,6 +93,19 @@ table.lines tr.tot.big td{color:var(--ink);font-weight:700;}
 .btn:hover{border-color:var(--muted-2);}
 .btn.ok.on{background:var(--good);border-color:var(--good);color:#fff;}
 .btn.bad.on{background:var(--warn);border-color:var(--warn);color:#fff;}
+.table-wrap{border:1px solid var(--line);border-radius:10px;overflow-x:auto;background:var(--paper);}
+table.list{width:100%;border-collapse:collapse;min-width:1050px;}
+table.list thead th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);background:var(--steel);white-space:nowrap;position:sticky;top:0;z-index:3;}
+table.list tbody td{padding:10px 12px;font-size:13.5px;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+table.list th.num,table.list td.num{text-align:right;}
+tr.row{cursor:pointer;}
+tr.row:hover,tr.row.open{background:#F6F8FA;}
+tr.row td.muted{color:var(--muted);font-size:12.5px;}
+tr.row .rv{font-size:12.5px;font-weight:600;white-space:nowrap;}
+tr.row .rv.pass{color:var(--good);} tr.row .rv.fail{color:var(--warn);} tr.row .rv.none{color:var(--muted-2);font-weight:400;}
+tr.detail > td{background:var(--steel);padding:14px 16px;}
+tr.detail .card{margin:0;}
+@media (min-width:1050px){ .table-wrap{overflow:visible;} }
 .empty{padding:40px;text-align:center;color:var(--muted);}
 #saveTag{position:fixed;left:16px;bottom:16px;z-index:60;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;color:#fff;background:var(--good);opacity:.9;display:none;}
 </style>
@@ -159,7 +172,7 @@ table.lines tr.tot.big td{color:var(--ink);font-weight:700;}
   function m2(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function md(s){ if(!s) return ''; var p=s.split('-'); return (+p[1])+'/'+(+p[2]); }
   function tryLS(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
-  var S = { data:null, statuses:{}, notes:{}, dept:tryLS('po_dept')||'Plumbing', range:tryLS('po_range')||'2w', show:'needs', q:'', kind:'' };
+  var S = { data:null, statuses:{}, notes:{}, dept:tryLS('po_dept')||'Plumbing', range:tryLS('po_range')||'2w', show:'needs', q:'', kind:'', open:{} };
   if(DEPTS.indexOf(S.dept)<0) S.dept='Plumbing';
 
   function key(inv){ return 'inv_'+inv.id; }
@@ -301,11 +314,27 @@ table.lines tr.tot.big td{color:var(--ink);font-weight:700;}
     var inDept=base().filter(function(i){ return deptOf(i)===S.dept; });
     renderStats(inDept.filter(showOk));
     var list=inDept.filter(showOk).filter(function(i){ return !S.kind || kindOf(i)===S.kind; });
-    var order={choose:0,matched:1,unreadable:2,waiting:3,nomatch:4,stock:5};
-    list.sort(function(a,b){ return (order[kindOf(a)]-order[kindOf(b)]) || String(b.orderDate||'').localeCompare(String(a.orderDate||'')) || String(b.po).localeCompare(String(a.po)); });
-    $('list').innerHTML = list.length ? list.map(cardHtml).join('') : '<div class="panel empty">Nothing here'+(S.show==='needs'?' to review':'')+'.</div>';
+    // newest order date first, then vendor A-Z, then PO number
+    list.sort(function(a,b){ return String(b.orderDate||b.invoiceDate||b.readAt||'').localeCompare(String(a.orderDate||a.invoiceDate||a.readAt||'')) || String(a.vendor||'').localeCompare(String(b.vendor||'')) || String(a.po).localeCompare(String(b.po)); });
+    if(!list.length){ $('list').innerHTML='<div class="panel empty">Nothing here'+(S.show==='needs'?' to review':'')+'.</div>'; return; }
+    var h='<div class="table-wrap"><table class="list"><thead><tr><th>Ordered</th><th>Vendor</th><th>PO #</th><th>Ordered by</th><th>Job</th><th>Customer</th><th>Tech</th><th class="num">Amount</th><th>Status</th><th>Reviewed</th></tr></thead><tbody>';
+    list.forEach(function(inv){ h+=rowHtml(inv); if(S.open[inv.id]) h+='<tr class="detail"><td colspan="10">'+cardHtml(inv)+'</td></tr>'; });
+    $('list').innerHTML=h+'</tbody></table></div>';
   }
-
+  var PILL={matched:['good','Matched'],choose:['needs','Pick the job'],waiting:['mute','Not matched yet'],nomatch:['warn','No job found'],stock:['mute','Stock / shop'],unreadable:['info','Scanned PDF']};
+  function rowHtml(inv){
+    var j=jobOf(inv), k=key(inv), s=S.statuses[k], kind=kindOf(inv), p=PILL[kind]||['mute',kind], x=j?j.info:null;
+    var c=(!x && inv.match && inv.match.candidates)||[];
+    var h='<tr class="row'+(S.open[inv.id]?' open':'')+'" data-id="'+esc(inv.id)+'">';
+    h+='<td class="nowrap">'+md(inv.orderDate||inv.invoiceDate||inv.readAt)+'</td>';
+    h+='<td>'+esc(inv.vendor)+'</td><td>'+esc(inv.po||'\u2014')+'</td><td class="muted">'+esc(inv.orderedBy||'')+'</td>';
+    h+='<td>'+(x?esc(x.job):(c.length?'<span class="muted">'+c.length+' possible</span>':''))+'</td>';
+    h+='<td>'+(x?esc(x.customer):'')+'</td><td class="muted">'+(x?esc(x.tech):'')+'</td>';
+    h+='<td class="num">'+(inv.unreadable?'':m2(inv.total))+'</td>';
+    h+='<td><span class="pill '+p[0]+'">'+p[1]+'</span></td>';
+    h+='<td><span class="rv '+(s||'none')+'">'+(s==='pass'?'\u2713 Looks right':s==='fail'?'\u2717 Problem':'\u2014')+'</span></td></tr>';
+    return h;
+  }
   async function post(path, body){
     var r=await fetch(WORKER_URL+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
     var d=null; try{ d=await r.json(); }catch(e){}
@@ -322,6 +351,8 @@ table.lines tr.tot.big td{color:var(--ink);font-weight:700;}
     var t=e.target.closest('[data-d]'); if(t && t.classList.contains('tab-btn')){ S.dept=t.dataset.d; S.kind=''; tryLS('po_dept',S.dept); render(); return; }
     t=e.target.closest('#rangeChips .chip'); if(t){ S.range=t.dataset.r; tryLS('po_range',S.range); render(); return; }
     t=e.target.closest('.stat'); if(t){ S.kind=t.dataset.k; render(); return; }
+    t=e.target.closest('tr.row');
+    if(t && !e.target.closest('a')){ var id=t.dataset.id; if(S.open[id]) delete S.open[id]; else S.open[id]=true; render(); return; }
     t=e.target.closest('.btn[data-s]');
     if(t){
       var k=t.dataset.k, want=S.statuses[k]===t.dataset.s?null:t.dataset.s;
