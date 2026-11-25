@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Purchase Orders — Job Review</title>
+<title>Purchase Order Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,6 +23,11 @@ header.top .wrap{display:flex;align-items:center;justify-content:space-between;g
 header.top .logo{background:#fff;border-radius:8px;padding:6px 10px;display:flex;align-items:center;}
 header.top .logo img{height:88px;width:auto;display:block;}
 header.top h1{font-size:38px;font-weight:700;margin:0;color:#F3770C;line-height:1.1;}
+header.top .appnav{display:flex;gap:8px;background:#2A3340;padding:5px;border-radius:999px;}
+header.top .appnav a{font-size:14px;font-weight:600;color:#C9D1DB;text-decoration:none;padding:9px 18px;border-radius:999px;white-space:nowrap;}
+header.top .appnav a:hover{color:#fff;}
+header.top .appnav a.active{background:#E2620E;color:#fff;}
+@media (max-width:900px){ header.top .appnav{order:3;width:100%;justify-content:center;} }
 header.top .titleblock{text-align:right;}
 header.top p{font-size:13px;color:#AEB6C2;margin:4px 0 0;}
 @media (max-width:700px){ header.top .logo img{height:60px;} header.top h1{font-size:28px;} header.top .titleblock{text-align:left;} .wrap{padding:0 14px 40px;} }
@@ -124,24 +129,19 @@ tr.detail .card{margin:0;}
 <header class="top">
   <div class="wrap">
     <span class="logo"><img src="assets/logo.png" alt="Lancaster Plumbing Heating Cooling"></span>
+    <nav class="appnav"><a href="./review.html">Job Review</a><a href="./purchases.html" class="active">Purchase Order Review</a></nav>
     <div class="titleblock">
-      <h1>Purchase Orders</h1>
+      <h1>Purchase Order Review</h1>
       <p id="subhead">Loading&hellip;</p>
     </div>
   </div>
 </header>
 
-<div class="tabbar">
-  <div class="wrap tabbar-inner" id="deptTabs">
-    <a class="tab-btn" href="./review.html">&larr; Job Review</a>
-  </div>
-</div>
-
-<div class="wrap">
+<div class="wrap" style="padding-top:22px;">
   <details class="panel how">
     <summary>How this page works</summary>
     <div>
-      Every supplier invoice Mindy saves to her <b>Invoices</b> folder is read automatically (late morning and mid-afternoon on weekdays) and matched to the ServiceTitan job it was bought for. The invoice's <b>amount due</b> equals the job's PO/Bill cost in ServiceTitan to the cent, so most invoices match exactly; when the amount can't decide it, the customer named on the invoice or the tech who ordered it is used. Each invoice lands in the tab of the job's department.<br><br>
+      Every supplier invoice Mindy saves to her <b>Invoices</b> folder is read automatically (late morning and mid-afternoon on weekdays) and matched to the ServiceTitan job it was bought for. The invoice's <b>amount due</b> equals the job's PO/Bill cost in ServiceTitan to the cent, so most invoices match exactly; when the amount can't decide it, the customer named on the invoice or the tech who ordered it is used. Each invoice is filed under the job's department; invoices with no job yet are under <b>General</b>.<br><br>
       <b>What to check:</b> do the parts on the left belong on the job on the right? Were they billed to the customer (or covered by the task that was sold)? Does the write-up mention the work they'd be used for? When you’re done, slide it to <b>Reviewed</b>. If there’s a problem, write it in the note box and click <b>Save</b>; it shows as <b>Problem noted</b> in the list (Show → Has a problem note).<br><br>
       <b>Pick the job</b> = the amount fits more than one job; click the right one. <b>Not matched yet</b> = no job matches the amount yet. It's re-checked every day for 3 weeks (an install that isn't finished, or a bill that hasn't posted). After that it shows as <b>No job found</b>; that's usually truck stock. <b>Stock / shop</b> orders have no job. <b>Scanned PDF</b> = this supplier sends a picture of the invoice that can't be read automatically. Open the PDF.<br><br>
       Costs come from the daily <i>PO Cost Refresh</i> report (all departments, last 7 days). Invoices you mark here are shared: everyone sees the same marks.
@@ -150,20 +150,20 @@ tr.detail .card{margin:0;}
 
   <div class="panel">
     <div class="controls">
-      <div class="field"><label>Ordered</label>
-        <div class="chips" id="rangeChips">
-          <span class="chip" data-r="1w">One Week</span><span class="chip" data-r="2w">Two Weeks</span><span class="chip" data-r="1m">One Month</span><span class="chip" data-r="all">All</span>
-        </div>
-      </div>
+      <div class="field"><label>Date range (ordered)</label><div class="chips" id="rangeChips">
+        <span class="chip" data-r="yday">Yesterday</span><span class="chip" data-r="1w">One Week</span><span class="chip" data-r="1m">One Month</span></div></div>
+      <div class="field"><label>From &ndash; To</label><div style="display:flex;gap:6px;align-items:center;"><input type="date" id="fromD" class="search" style="width:auto;"><span>&ndash;</span><input type="date" id="toD" class="search" style="width:auto;"></div></div>
+      <div class="field"><label>Department</label><div class="chips" id="deptChips"></div></div>
+      <div class="field"><label>Technician</label><select id="techSel"><option value="">All technicians</option></select></div>
       <div class="field"><label>Show</label>
         <select id="showSel">
-          <option value="needs">Needs review</option>
+          <option value="needs">Needs checked</option>
           <option value="problem">Has a problem note</option>
           <option value="done">Reviewed</option>
-          <option value="all">All</option>
+          <option value="all">All invoices</option>
         </select>
       </div>
-      <div class="field"><label>Search</label><input class="search" id="q" placeholder="PO #, vendor, part, customer, tech&hellip;"></div>
+      <div class="field"><label>Search</label><input class="search" id="q" placeholder="PO #, vendor, part, customer&hellip;"></div>
     </div>
   </div>
 
@@ -176,14 +176,14 @@ tr.detail .card{margin:0;}
 (function(){
   var WORKER_URL = 'https://lph-materials-invoice.mattsbaker1980.workers.dev';
   var ST = 'https://go.servicetitan.com/#/';
-  var DEPTS = ['Plumbing','Sewer','HVAC','Electrical','General'];
+  var DEPTS = ['All','HVAC Service','HVAC Install','Plumbing','Electrical','Sewer Service','Sewer Install','General'];
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function m2(n){ n=+n||0; return (n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function md(s){ if(!s) return ''; var p=s.split('-'); return (+p[1])+'/'+(+p[2]); }
   function tryLS(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
-  var S = { data:null, statuses:{}, notes:{}, dept:tryLS('po_dept')||'Plumbing', range:tryLS('po_range')||'2w', show:'needs', q:'', kind:'', open:{} };
-  if(DEPTS.indexOf(S.dept)<0) S.dept='Plumbing';
+  var S = { data:null, statuses:{}, notes:{}, dept:tryLS('po_dept2')||'All', tech:'', range:tryLS('po_range2')||'1m', from:'', to:'', show:'needs', q:'', kind:'', open:{} };
+  if(DEPTS.indexOf(S.dept)<0) S.dept='All';
 
   function key(inv){ return 'inv_'+inv.id; }
   function pickOf(inv){ var n=S.notes[key(inv)]; return n && n.excused && n.excused.pick || ''; }
@@ -194,15 +194,25 @@ tr.detail .card{margin:0;}
     if(m.status==='matched' && m.jobInfo) return {info:m.jobInfo, how:m.how};
     return null;
   }
-  function deptOf(inv){ var j=jobOf(inv); return j ? (j.info.dept||'General') : ((inv.match&&inv.match.dept)||'General'); }
+  // same department names as the Job Review (from the job's business unit); no job yet = General
+  function buDept(bu){ var s=String(bu||'').toLowerCase(); if(s.indexOf('hvac')>=0) return s.indexOf('install')>=0?'HVAC Install':'HVAC Service'; if(s.indexOf('elec')>=0) return 'Electrical'; if(s.indexOf('sewer')>=0) return s.indexOf('install')>=0?'Sewer Install':'Sewer Service'; if(s.indexOf('plumb')>=0) return 'Plumbing'; return 'General'; }
+  function deptOf(inv){ var j=jobOf(inv); return j ? buDept(j.info.bu) : 'General'; }
+  function techsOf(inv){ var j=jobOf(inv); return j ? String(j.info.tech||'').split(/\s*,\s*/).filter(Boolean) : []; }
   function kindOf(inv){ var m=inv.match||{}; if(jobOf(inv)) return 'matched'; return m.status||'waiting'; }
   function hasNote(inv){ var n=S.notes[key(inv)]; return !!(n && String(n.concern||'').trim()); }
   function reviewed(inv){ var s=S.statuses[key(inv)]; return s==='pass'||s==='fail'; }
 
+  function iso(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+  function computeRange(){
+    var t=new Date(), f=new Date();
+    if(S.range==='custom' && S.from && S.to) return {from:S.from, to:S.to};
+    if(S.range==='yday'){ f.setDate(f.getDate()-1); return {from:iso(f), to:iso(f)}; }
+    if(S.range==='1w') f.setDate(f.getDate()-7); else { S.range=S.range==='custom'?'custom':'1m'; f.setMonth(f.getMonth()-1); }
+    return {from:iso(f), to:iso(t)};
+  }
   function inRange(inv){
-    if(S.range==='all') return true;
-    var d=new Date(); d.setDate(d.getDate()-({'1w':7,'2w':14,'1m':31})[S.range]);
-    return (inv.orderDate||inv.invoiceDate||inv.readAt||'') >= d.toISOString().slice(0,10);
+    var r=computeRange(), d=inv.orderDate||inv.invoiceDate||inv.readAt||'';
+    return d>=r.from && d<=r.to;
   }
   function matchesQ(inv){
     if(!S.q) return true;
@@ -220,14 +230,22 @@ tr.detail .card{margin:0;}
     return true;
   }
 
-  function renderTabs(){
-    var all=base(), h='<a class="tab-btn" href="./review.html">&larr; Job Review</a>';
-    DEPTS.forEach(function(d){
-      var n=all.filter(function(i){ return deptOf(i)===d && !reviewed(i); }).length;
-      h+='<button class="tab-btn'+(S.dept===d?' active':'')+'" data-d="'+d+'">'+d+'<span class="cnt'+(n?'':' zero')+'">'+n+'</span></button>';
-    });
-    $('deptTabs').innerHTML=h;
+  function renderFilters(){
+    var r=computeRange();
+    document.querySelectorAll('#rangeChips .chip').forEach(function(c){ c.classList.toggle('active', c.dataset.r===S.range); });
+    $('fromD').value=r.from; $('toD').value=r.to;
+    var all=base();
+    $('deptChips').innerHTML=DEPTS.map(function(d){
+      var n=d==='All'?all.filter(function(i){return !reviewed(i);}).length:all.filter(function(i){ return deptOf(i)===d && !reviewed(i); }).length;
+      return '<span class="chip'+(d===S.dept?' active':'')+'" data-d="'+d+'">'+d+(n?' <b style="font-weight:600">'+n+'</b>':'')+'</span>';
+    }).join('');
+    var techs={}; all.filter(inDept).forEach(function(i){ techsOf(i).forEach(function(t){ techs[t]=1; }); });
+    var list=Object.keys(techs).sort();
+    if(S.tech && list.indexOf(S.tech)<0) list.push(S.tech);
+    $('techSel').innerHTML='<option value="">'+(S.dept==='All'?'All technicians':'All '+esc(S.dept)+' technicians')+'</option>'+list.map(function(t){ return '<option'+(t===S.tech?' selected':'')+'>'+esc(t)+'</option>'; }).join('');
   }
+  function inDept(i){ return S.dept==='All' || deptOf(i)===S.dept; }
+  function inTech(i){ return !S.tech || techsOf(i).indexOf(S.tech)>=0; }
   var KINDS=[['','All invoices'],['matched','Matched to a job'],['choose','Pick the job'],['waiting','Not matched yet'],['nomatch','No job found'],['stock','Stock / shop'],['unreadable','Scanned PDF']];
   function renderStats(list){
     var h='';
@@ -319,11 +337,10 @@ tr.detail .card{margin:0;}
   }
   function render(){
     if(!S.data) return;
-    document.querySelectorAll('#rangeChips .chip').forEach(function(c){ c.classList.toggle('active', c.dataset.r===S.range); });
-    renderTabs();
-    var inDept=base().filter(function(i){ return deptOf(i)===S.dept; });
-    renderStats(inDept.filter(showOk));
-    var list=inDept.filter(showOk).filter(function(i){ return !S.kind || kindOf(i)===S.kind; });
+    renderFilters();
+    var rows=base().filter(function(i){ return inDept(i) && inTech(i); });
+    renderStats(rows.filter(showOk));
+    var list=rows.filter(showOk).filter(function(i){ return !S.kind || kindOf(i)===S.kind; });
     // newest order date first, then vendor A-Z, then PO number
     list.sort(function(a,b){ return String(b.orderDate||b.invoiceDate||b.readAt||'').localeCompare(String(a.orderDate||a.invoiceDate||a.readAt||'')) || String(a.vendor||'').localeCompare(String(b.vendor||'')) || String(a.po).localeCompare(String(b.po)); });
     if(!list.length){ $('list').innerHTML='<div class="panel empty">Nothing here'+(S.show==='needs'?' to review':'')+'.</div>'; return; }
@@ -360,8 +377,8 @@ tr.detail .card{margin:0;}
   }
 
   document.addEventListener('click', async function(e){
-    var t=e.target.closest('[data-d]'); if(t && t.classList.contains('tab-btn')){ S.dept=t.dataset.d; S.kind=''; tryLS('po_dept',S.dept); render(); return; }
-    t=e.target.closest('#rangeChips .chip'); if(t){ S.range=t.dataset.r; tryLS('po_range',S.range); render(); return; }
+    var t=e.target.closest('#deptChips .chip'); if(t){ S.dept=t.dataset.d; S.tech=''; S.kind=''; tryLS('po_dept2',S.dept); render(); return; }
+    t=e.target.closest('#rangeChips .chip'); if(t){ S.range=t.dataset.r; tryLS('po_range2',S.range); render(); return; }
     t=e.target.closest('.stat'); if(t){ S.kind=t.dataset.k; render(); return; }
     t=e.target.closest('tr.row');
     if(t && !e.target.closest('a') && !e.target.closest('.tgl')){ var id=t.dataset.id; if(S.open[id]) delete S.open[id]; else S.open[id]=true; render(); return; }
@@ -386,6 +403,8 @@ tr.detail .card{margin:0;}
     catch(err){ e.target.checked=!e.target.checked; tag('Not saved: '+err.message, true); }
     render();
   });
+  $('techSel').addEventListener('change', function(){ S.tech=this.value; S.kind=''; render(); });
+  ['fromD','toD'].forEach(function(id){ $(id).addEventListener('change', function(){ if($('fromD').value && $('toD').value){ S.range='custom'; S.from=$('fromD').value; S.to=$('toD').value; render(); } }); });
   $('showSel').addEventListener('change', function(){ S.show=this.value; S.kind=''; render(); });
   var qt; $('q').addEventListener('input', function(){ var v=this.value; clearTimeout(qt); qt=setTimeout(function(){ S.q=v.trim(); render(); }, 200); });
 
