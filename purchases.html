@@ -229,8 +229,8 @@ table.lines tr.tot.big td{color:var(--ink);font-weight:700;}
   function pdfLink(inv){
     var g=guidOf(inv.id);
     if(!g) return '<a class="btn" target="_blank" rel="noopener" href="'+esc(inv.webUrl||SP+'/Documents/Invoices/'+encodeURIComponent(inv.file))+'">Open PDF</a>';
-    return '<a class="btn" target="_blank" rel="noopener" href="'+SP+'/_layouts/15/Doc.aspx?sourcedoc=%7B'+g+'%7D&amp;action=view">Open PDF</a>'+
-      ' <a class="btn" style="font-weight:500" target="_blank" rel="noopener" href="'+SP+'/_layouts/15/download.aspx?UniqueId='+g+'">Download</a>';
+    // Doc.aspx (the OneDrive viewer) only opens the folder for PDFs; download.aspx opens the actual invoice
+    return '<a class="btn" target="_blank" rel="noopener" href="'+SP+'/_layouts/15/download.aspx?UniqueId='+g+'">Open PDF</a>';
   }
   function linesHtml(inv){
     if(inv.unreadable) return '<div class="msg">This supplier sends a scanned picture of the invoice, so it can’t be read automatically. Open the PDF to see what was bought.</div>';
